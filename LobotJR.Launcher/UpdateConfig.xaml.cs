@@ -18,11 +18,20 @@ namespace LobotJR.Launcher
 
         private void Ok_Click(object sender, RoutedEventArgs e)
         {
-            ClientIdValue = ClientId.Text;
-            ClientSecretValue = ClientSecret.Text;
-            RedirectUriValue = RedirectUri.Text;
-            this.DialogResult = true;
-            this.Close();
+            if (string.IsNullOrWhiteSpace(ClientId.Text)
+                || string.IsNullOrWhiteSpace(ClientSecret.Text)
+                || string.IsNullOrWhiteSpace(RedirectUri.Text))
+            {
+                MessageBox.Show(this, "All fields must be filled out", "Missing Data", MessageBoxButton.OK, MessageBoxImage.Question);
+            }
+            else
+            {
+                ClientIdValue = ClientId.Text;
+                ClientSecretValue = ClientSecret.Text;
+                RedirectUriValue = RedirectUri.Text;
+                this.DialogResult = true;
+                this.Close();
+            }
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)

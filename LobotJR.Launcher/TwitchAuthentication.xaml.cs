@@ -40,7 +40,7 @@ namespace LobotJR.Launcher
                 // The wpf browser control doesn't have an event for redirects or load failures
                 // if we get to the navigated event twice without a load complete, it's probably
                 // a redirect, which means our twitch client data is wrong.
-                MessageBox.Show("Unable to load twitch authentication page, please confirm your client data and try again.", "Twitch Authentication Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, "Unable to load twitch authentication page, please confirm your client data and try again.", "Twitch Authentication Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 UpdateClientData();
 
             }
@@ -71,7 +71,7 @@ namespace LobotJR.Launcher
                 }
                 else
                 {
-                    MessageBox.Show("CSRF attack detected, exiting application", "Security Error", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                    MessageBox.Show(this, "CSRF attack detected, exiting application", "Security Error", MessageBoxButton.OK, MessageBoxImage.Exclamation);
                     Close();
                 }
             }
@@ -101,6 +101,12 @@ namespace LobotJR.Launcher
             if (FileUtils.HasClientData())
             {
                 _clientData = FileUtils.ReadClientData();
+                if (string.IsNullOrWhiteSpace(_clientData.ClientId)
+                    || string.IsNullOrWhiteSpace(_clientData.ClientSecret)
+                    || string.IsNullOrWhiteSpace(_clientData.RedirectUri))
+                {
+                    UpdateClientData();
+                }
             }
             else
             {
@@ -119,7 +125,7 @@ namespace LobotJR.Launcher
             var result = updateModal.ShowDialog();
             if (!result.HasValue || !result.Value)
             {
-                MessageBox.Show("Unable to launch lobot without proper client config. Closing.", "Missing Client Config", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, "Unable to launch lobot without proper client config. Closing.", "Missing Client Config", MessageBoxButton.OK, MessageBoxImage.Error);
                 Close();
             }
             else
