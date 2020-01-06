@@ -15,7 +15,9 @@ using Adventures;
 using Equipment;
 using Companions;
 using GroupFinder;
-
+using LobotJR.Shared.Authentication;
+using LobotJR.Shared;
+using LobotJR.Shared.Utility;
 
 namespace TwitchBot
 {
@@ -380,10 +382,10 @@ namespace TwitchBot
             bool betActive = false;
             bool betsAllowed = false;
 
-            string oAuthToken = System.IO.File.ReadAllText(@"token.txt"); // token.txt must be in the same folder as EXE
-            string clientSecret = System.IO.File.ReadAllText(@"secret.txt");
-            IrcClient irc = new IrcClient("irc.chat.twitch.tv", 80, "lobotjr", oAuthToken);
-            IrcClient group = new IrcClient("irc.chat.twitch.tv", 80, "lobotjr", oAuthToken);
+            var clientData = FileUtils.ReadClientData();
+            AuthToken.Token = FileUtils.ReadTokenData();
+            IrcClient irc = new IrcClient("irc.chat.twitch.tv", 80, "lobotjr", AuthToken.Token.AccessToken);
+            IrcClient group = new IrcClient("irc.chat.twitch.tv", 80, "lobotjr", AuthToken.Token.AccessToken);
             // 199.9.253.119
             connected = irc.connected;
 
@@ -402,7 +404,7 @@ namespace TwitchBot
                 irc.joinRoom(channel);
                 group.joinRoom("jtv");
                 DateTime awardLast = DateTime.Now;
-                Currency wolfcoins = new Currency();
+                Currency wolfcoins = new Currency(clientData);
                 wolfcoins.UpdateViewers(channel);
                 wolfcoins.UpdateSubs();
 

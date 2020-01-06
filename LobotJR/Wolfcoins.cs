@@ -11,7 +11,10 @@ using TwitchBot;
 using Classes;
 using Adventures;
 using Equipment;
-
+using LobotJR.Shared.Authentication;
+using LobotJR.Shared;
+using LobotJR.Shared.Utility;
+using LobotJR.Shared.Client;
 
 namespace Wolfcoins
 {
@@ -87,7 +90,7 @@ namespace Wolfcoins
         private string xpPath = "XP.json";
         private string classPath = "classData.json";
 
-        string subsAuth = System.IO.File.ReadAllText(@"subsAuth.txt");
+        private ClientData clientData;
 
         private const int COINMAX = Int32.MaxValue;
 
@@ -102,8 +105,9 @@ namespace Wolfcoins
 		
         public const int baseRespecCost = 250;
 
-        public Currency()
+        public Currency(ClientData clientData)
         {
+            this.clientData = clientData;
             Init();
         }
 
@@ -524,18 +528,29 @@ namespace Wolfcoins
         public void UpdateSubs()
         {
             var nextLink = "https://api.twitch.tv/kraken/channels/lobosjr/subscriptions?limit=100&offset=0";
+            var maxRetries = 10;
+            var retryCount = 0;
             do
             {
                 var request = (HttpWebRequest) WebRequest.Create(nextLink);
                 request.Accept = "application/vnd.twitchtv.v3+json";
                 request.Headers.Add("Client-ID", "c95v57t6nfrpts7dqk2urruyc8d0ln1");
-                request.Headers.Add("Authorization", string.Format("OAuth {0}", subsAuth));
+                request.Headers.Add("Authorization", string.Format("OAuth {0}", AuthToken.Token.AccessToken));
                 request.UserAgent = "LobosJrBot";
  
                 try
                 {
-                    using (var response = request.GetResponse())
+                    using (var response = (HttpWebResponse) request.GetResponse())
                     {
+                        if (response.StatusCode == HttpStatusCode.Unauthorized)
+                        {
+                            if (++retryCount >= maxRetries)
+                            {
+                                throw new Exception($"Failed to authenticate after {maxRetries} attempts. Aborting.");
+                            }
+                            AuthToken.Refresh(clientData.ClientId, clientData.ClientSecret, AuthToken.Token.RefreshToken);
+                            continue;
+                        }
                         using (var stream = response.GetResponseStream())
                         {
                             using (var reader = new StreamReader(stream))
