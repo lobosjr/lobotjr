@@ -144,7 +144,7 @@ namespace LobotJR.Launcher
             AddQuery(builder, "client_id", _clientData.ClientId);
             AddQuery(builder, "redirect_uri", _clientData.RedirectUri);
             AddQuery(builder, "response_type", "code");
-            AddQuery(builder, "scope", "chat:read chat:edit whispers:read whispers:edit");
+            AddQuery(builder, "scope", _scope);
             AddQuery(builder, "force_verify", "true");
             AddQuery(builder, "state", _state);
             Browser.Navigate(builder.Uri);
