@@ -24,7 +24,7 @@ namespace LobotJR.Shared.User
             var request = new RestRequest("helix/users", Method.GET);
             request.AddHeader("Accept", "application/json");
             request.AddHeader("Authorization", $"Bearer {token}");
-            request.AddHeader("login", username);
+            request.AddQueryParameter("login", username);
             var response = client.Execute<UserResponse>(request);
             switch (response.StatusCode)
             {
