@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace LobotJR.Shared.Authentication
+﻿namespace LobotJR.Shared.Authentication
 {
     /// <summary>
     /// Contains the pair of tokens required to access streamer data and act as

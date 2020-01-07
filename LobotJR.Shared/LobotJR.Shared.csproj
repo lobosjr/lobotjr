@@ -54,12 +54,20 @@
     <Compile Include="Authentication\TokenData.cs" />
     <Compile Include="Authentication\TokenResponse.cs" />
     <Compile Include="Client\ClientData.cs" />
+    <Compile Include="Common\Pagination.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Subscribers\SubscriberData.cs" />
+    <Compile Include="Subscribers\SubscriberResponse.cs" />
+    <Compile Include="Subscribers\Subscribers.cs" />
+    <Compile Include="User\Users.cs" />
+    <Compile Include="User\UserData.cs" />
+    <Compile Include="User\UserResponse.cs" />
     <Compile Include="Utility\FileUtils.cs" />
     <Compile Include="Utility\NewtonsoftDeserializer.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

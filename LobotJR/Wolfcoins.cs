@@ -15,6 +15,8 @@ using LobotJR.Shared.Authentication;
 using LobotJR.Shared;
 using LobotJR.Shared.Utility;
 using LobotJR.Shared.Client;
+using LobotJR.Shared.Subscribers;
+using LobotJR.Shared.User;
 
 namespace Wolfcoins
 {
@@ -85,7 +87,6 @@ namespace Wolfcoins
         public Data viewers = new Data();
         List<string> viewerList = new List<string>();
         public HashSet<string> subSet = new HashSet<string>();
-        public List<SubscriberData.Subscription> subsList = new List<SubscriberData.Subscription>();
         private string path = "wolfcoins.json";
         private string xpPath = "XP.json";
         private string classPath = "classData.json";
@@ -527,60 +528,33 @@ namespace Wolfcoins
 
         public void UpdateSubs(string broadcastToken)
         {
-            var nextLink = "https://api.twitch.tv/kraken/channels/lobosjr/subscriptions?limit=100&offset=0";
-            var maxRetries = 10;
-            var retryCount = 0;
-            do
+            var userData = Users.Get(broadcastToken);
+            var broadcastUser = userData.Data.FirstOrDefault();
+            IEnumerable<LobotJR.Shared.Subscribers.SubscriberData> subscribers = null;
+            if (broadcastUser != null)
             {
-                var request = (HttpWebRequest) WebRequest.Create(nextLink);
-                request.Accept = "application/vnd.twitchtv.v3+json";
-                request.Headers.Add("Client-ID", "c95v57t6nfrpts7dqk2urruyc8d0ln1");
-                request.Headers.Add("Authorization", string.Format("OAuth {0}", broadcastToken));
-                request.UserAgent = "LobosJrBot";
- 
                 try
                 {
-                    using (var response = (HttpWebResponse) request.GetResponse())
-                    {
-                        if (response.StatusCode == HttpStatusCode.Unauthorized)
-                        {
-                            if (++retryCount >= maxRetries)
-                            {
-                                throw new Exception($"Failed to authenticate after {maxRetries} attempts. Aborting.");
-                            }
-                            AuthToken.Refresh(clientData.ClientId, clientData.ClientSecret, broadcastToken);
-                            continue;
-                        }
-                        using (var stream = response.GetResponseStream())
-                        {
-                            using (var reader = new StreamReader(stream))
-                            {
-                                var data = reader.ReadToEnd();
-                                var subList = JsonConvert.DeserializeObject<SubscriberData.RootObject>(data);
-                                if (subList.subscriptions.Count > 0)
-                                {
-                                    nextLink = subList._links.next;
-                                    subsList.AddRange(subList.subscriptions);
-                                }
-                                else
-                                {
-                                    nextLink = "";
-                                }
-                            }
-                        }
-                    }
+                     subscribers = Subscribers.GetAll(broadcastToken, broadcastUser.Id);
                 }
-                catch(Exception)
+                catch (UnauthorizedAccessException)
                 {
-                    Console.WriteLine("Unable to retrieve full sub list.");
+                    var refreshResponse = AuthToken.Refresh(clientData.ClientId, clientData.ClientSecret, broadcastToken);
+                    broadcastToken = refreshResponse.AccessToken;
                 }
-            } while (!string.IsNullOrWhiteSpace(nextLink));
- 
-            foreach (var sub in subsList)
-            {
-                subSet.Add(sub.user.name);
+                if (subscribers == null)
+                {
+                    try
+                    {
+                        subscribers = Subscribers.GetAll(broadcastToken, broadcastUser.Id);
+                    }
+                    catch { }
+                }
             }
-            Console.WriteLine("Subscriber list may or may not have been updated!");
+            if (subscribers != null)
+            {
+                subSet = new HashSet<string>(subscribers.Select(x => x.UserName));
+            }
         }
 
         public void UpdateViewers(string channel)
