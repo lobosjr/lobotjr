@@ -533,6 +533,7 @@ namespace Wolfcoins
             var userData = Users.Get(AuthToken.Token.AccessToken, "lobosjr");
             var channelId = userData.Data.First().Id;
             var nextLink = $"https://api.twitch.tv/kraken/channels/{channelId}/subscriptions?limit=100&offset=0";
+            var offset = 0;
             var maxRetries = 10;
             var retryCount = 0;
             do
@@ -564,7 +565,15 @@ namespace Wolfcoins
                                 var subList = JsonConvert.DeserializeObject<SubscriberData.RootObject>(data);
                                 if (subList.subscriptions.Count > 0)
                                 {
-                                    nextLink = subList._links.next;
+                                    if (!string.IsNullOrWhiteSpace(subList._cursor))
+                                    {
+                                        nextLink = $"https://api.twitch.tv/kraken/channels/{channelId}/subscriptions?cursor={subList._cursor}";
+                                    }
+                                    else
+                                    {
+                                        offset += subList.subscriptions.Count;
+                                        nextLink = $"https://api.twitch.tv/kraken/channels/{channelId}/subscriptions?limit=100&offset={offset}";
+                                    }
                                     subsList.AddRange(subList.subscriptions);
                                 }
                                 else
