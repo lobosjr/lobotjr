@@ -51,6 +51,7 @@
   <ItemGroup>
     <Compile Include="Authentication\RefreshRequest.cs" />
     <Compile Include="Authentication\AuthToken.cs" />
+    <Compile Include="Authentication\TokenData.cs" />
     <Compile Include="Authentication\TokenResponse.cs" />
     <Compile Include="Client\ClientData.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

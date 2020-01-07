@@ -64,26 +64,14 @@ namespace LobotJR.Shared.Utility
         }
 
         /// <summary>
-        /// Writes the results of the last authentication call to a json file.
-        /// Uses token.json in the executing folder unless a different value is
-        /// specified.
-        /// </summary>
-        /// <param name="filename">The name of the file to write to. Only
-        /// specify this value if you need a non-default location.</param>
-        public static void WriteTokenData(string filename = _tokenJson)
-        {
-            WriteTokenData(AuthToken.Token, filename);
-        }
-
-        /// <summary>
         /// Writes the results of the an authentication call to a json file.
         /// Uses token.json in the executing folder unless a different value is
         /// specified.
         /// </summary>
-        /// <param name="tokenData">The token response to write out.</param>
+        /// <param name="tokenData">The token data to write out.</param>
         /// <param name="filename">The name of the file to write to. Only
         /// specify this value if you need a non-default location.</param>
-        public static void WriteTokenData(TokenResponse tokenData, string filename = _tokenJson)
+        public static void WriteTokenData(TokenData tokenData, string filename = _tokenJson)
         {
             File.WriteAllText(filename, JsonConvert.SerializeObject(tokenData));
         }
@@ -95,9 +83,9 @@ namespace LobotJR.Shared.Utility
         /// <param name="filename">The name of the file to read from. Only
         /// specify this value if you need a non-default location.</param>
         /// <returns>A token data object loaded from a file.</returns>
-        public static TokenResponse ReadTokenData(string filename = _tokenJson)
+        public static TokenData ReadTokenData(string filename = _tokenJson)
         {
-            return JsonConvert.DeserializeObject<TokenResponse>(File.ReadAllText(filename));
+            return JsonConvert.DeserializeObject<TokenData>(File.ReadAllText(filename));
         }
     }
 }

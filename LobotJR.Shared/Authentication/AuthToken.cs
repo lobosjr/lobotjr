@@ -11,12 +11,6 @@ namespace LobotJR.Shared.Authentication
     public class AuthToken
     {
         /// <summary>
-        /// Contains the response from the most recent fetch or refresh
-        /// operation.
-        /// </summary>
-        public static TokenResponse Token { get; set; }
-
-        /// <summary>
         /// Acquires a user access token using the oauth authorization code flow.
         /// </summary>
         /// <param name="clientId">The client id of your registered twitch app.</param>
@@ -38,7 +32,6 @@ namespace LobotJR.Shared.Authentication
             var response = client.Execute<TokenResponse>(request);
             if (response.StatusCode == HttpStatusCode.OK)
             {
-                Token = response.Data;
                 return response.Data;
             }
             return null;
@@ -64,7 +57,6 @@ namespace LobotJR.Shared.Authentication
             var response = client.Execute<TokenResponse>(request);
             if (response.StatusCode == HttpStatusCode.OK)
             {
-                Token = response.Data;
                 return response.Data;
             }
             return null;

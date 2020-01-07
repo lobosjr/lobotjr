@@ -383,9 +383,9 @@ namespace TwitchBot
             bool betsAllowed = false;
 
             var clientData = FileUtils.ReadClientData();
-            AuthToken.Token = FileUtils.ReadTokenData();
-            IrcClient irc = new IrcClient("irc.chat.twitch.tv", 80, "lobotjr", AuthToken.Token.AccessToken);
-            IrcClient group = new IrcClient("irc.chat.twitch.tv", 80, "lobotjr", AuthToken.Token.AccessToken);
+            var tokenData = FileUtils.ReadTokenData();
+            IrcClient irc = new IrcClient("irc.chat.twitch.tv", 80, "lobotjr", tokenData.ChatToken.AccessToken);
+            IrcClient group = new IrcClient("irc.chat.twitch.tv", 80, "lobotjr", tokenData.ChatToken.AccessToken);
             // 199.9.253.119
             connected = irc.connected;
 
@@ -406,7 +406,7 @@ namespace TwitchBot
                 DateTime awardLast = DateTime.Now;
                 Currency wolfcoins = new Currency(clientData);
                 wolfcoins.UpdateViewers(channel);
-                wolfcoins.UpdateSubs();
+                wolfcoins.UpdateSubs(tokenData.BroadcastToken.AccessToken);
 
                 UpdateDungeons(dungeonListPath, ref dungeonList);
 
