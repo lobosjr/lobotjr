@@ -15,6 +15,7 @@ using LobotJR.Shared.Authentication;
 using LobotJR.Shared;
 using LobotJR.Shared.Utility;
 using LobotJR.Shared.Client;
+using LobotJR.Shared.User;
 
 namespace Wolfcoins
 {
@@ -527,13 +528,17 @@ namespace Wolfcoins
 
         public void UpdateSubs()
         {
-            var nextLink = "https://api.twitch.tv/kraken/channels/lobosjr/subscriptions?limit=100&offset=0";
+            // ALERT: You can get rid of the dynamic lookup and just use a static channel id
+            // Your channel id is 28640725
+            var userData = Users.Get(AuthToken.Token.AccessToken, "lobosjr");
+            var channelId = userData.Data.First().Id;
+            var nextLink = $"https://api.twitch.tv/kraken/channels/{channelId}/subscriptions?limit=100&offset=0";
             var maxRetries = 10;
             var retryCount = 0;
             do
             {
                 var request = (HttpWebRequest) WebRequest.Create(nextLink);
-                request.Accept = "application/vnd.twitchtv.v3+json";
+                request.Accept = "application/vnd.twitchtv.v5+json";
                 request.Headers.Add("Client-ID", "c95v57t6nfrpts7dqk2urruyc8d0ln1");
                 request.Headers.Add("Authorization", string.Format("OAuth {0}", AuthToken.Token.AccessToken));
                 request.UserAgent = "LobosJrBot";

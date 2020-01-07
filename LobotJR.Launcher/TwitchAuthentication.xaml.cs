@@ -15,7 +15,7 @@ namespace LobotJR.Launcher
     public partial class MainWindow : Window
     {
         private const string _cancelAuthUri = "https://id.twitch.tv/oauth2/authorize";
-        private const string _scope = "chat:read chat:edit whispers:read whispers:edit channel:read:subscriptions";
+        private const string _scope = "chat:read chat:edit whispers:read whispers:edit channel_subscriptions";
 
         private ClientData _clientData;
         private bool _isNavigating = false;
