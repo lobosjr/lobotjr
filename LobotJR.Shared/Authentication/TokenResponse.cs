@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace LobotJR.Shared.Authentication
 {
@@ -19,6 +20,10 @@ namespace LobotJR.Shared.Authentication
         /// The number of seconds from the time of issuance until the token expires.
         /// </summary>
         public int ExpiresIn { get; set; }
+        /// <summary>
+        /// Calculated upon receipt using ExpiresIn
+        /// </summary>
+        public DateTime ExpirationDate { get; set; }
         /// <summary>
         /// The list of scopes the token has access to.
         /// </summary>

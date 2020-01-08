@@ -383,9 +383,9 @@ namespace TwitchBot
             bool betsAllowed = false;
 
             var clientData = FileUtils.ReadClientData();
-            AuthToken.Token = FileUtils.ReadTokenData();
-            IrcClient irc = new IrcClient("irc.chat.twitch.tv", 80, "lobotjr", AuthToken.Token.AccessToken);
-            IrcClient group = new IrcClient("irc.chat.twitch.tv", 80, "lobotjr", AuthToken.Token.AccessToken);
+            var tokenData = FileUtils.ReadTokenData();
+            IrcClient irc = new IrcClient("irc.chat.twitch.tv", 80, "lobotjr", tokenData.ChatToken.AccessToken);
+            IrcClient group = new IrcClient("irc.chat.twitch.tv", 80, "lobotjr", tokenData.ChatToken.AccessToken);
             // 199.9.253.119
             connected = irc.connected;
 
@@ -406,7 +406,7 @@ namespace TwitchBot
                 DateTime awardLast = DateTime.Now;
                 Currency wolfcoins = new Currency(clientData);
                 wolfcoins.UpdateViewers(channel);
-                wolfcoins.UpdateSubs();
+                wolfcoins.UpdateSubs(tokenData.BroadcastToken.AccessToken);
 
                 UpdateDungeons(dungeonListPath, ref dungeonList);
 
@@ -423,6 +423,7 @@ namespace TwitchBot
 
                 while (connected)
                 {
+                    UpdateTokens(tokenData, clientData);
                     // message[0] has username, message[1] has message
                     string[] message = irc.readMessage(wolfcoins, channel);
                     string[] whispers = group.readMessage(wolfcoins, channel);
@@ -2862,6 +2863,7 @@ namespace TwitchBot
                 }
 
                 Console.WriteLine("Connection terminated.");
+                UpdateTokens(tokenData, clientData, true);
                 connected = false;
                 #endregion
             }
@@ -3048,6 +3050,25 @@ namespace TwitchBot
 
                 Console.WriteLine("Connection terminated.");
                 #endregion
+            }
+        }
+
+        static void UpdateTokens(TokenData tokenData, LobotJR.Shared.Client.ClientData clientData, bool force = false)
+        {
+            bool tokenUpdated = false;
+            if (force || DateTime.Now >= tokenData.ChatToken.ExpirationDate)
+            {
+                tokenUpdated = true;
+                tokenData.ChatToken = AuthToken.Refresh(clientData.ClientId, clientData.ClientSecret, tokenData.ChatToken.RefreshToken);
+            }
+            if (force || DateTime.Now >= tokenData.BroadcastToken.ExpirationDate)
+            {
+                tokenUpdated = true;
+                tokenData.BroadcastToken = AuthToken.Refresh(clientData.ClientId, clientData.ClientSecret, tokenData.BroadcastToken.RefreshToken);
+            }
+            if (tokenUpdated)
+            {
+                FileUtils.WriteTokenData(tokenData);
             }
         }
 

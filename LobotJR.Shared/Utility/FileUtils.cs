@@ -31,12 +31,13 @@ namespace LobotJR.Shared.Utility
         }
 
         /// <summary>
-        /// Determines if the default client data file exists.
+        /// Determines if the client data file exists. Uses client-data.json in
+        /// the executing folder unless a different value is specified.
         /// </summary>
         /// <returns>True if a file exists at the default location.</returns>
-        public static bool HasClientData()
+        public static bool HasClientData(string filename = _clientJson)
         {
-            return File.Exists(_clientJson);
+            return File.Exists(filename);
         }
 
         /// <summary>
@@ -64,15 +65,13 @@ namespace LobotJR.Shared.Utility
         }
 
         /// <summary>
-        /// Writes the results of the last authentication call to a json file.
-        /// Uses token.json in the executing folder unless a different value is
-        /// specified.
+        /// Determines if the token data file exists. Uses token.json in the
+        /// executing folder unless a different value is specified.
         /// </summary>
-        /// <param name="filename">The name of the file to write to. Only
-        /// specify this value if you need a non-default location.</param>
-        public static void WriteTokenData(string filename = _tokenJson)
+        /// <returns>True if a file exists at the default location.</returns>
+        public static bool HasTokenData(string filename = _tokenJson)
         {
-            WriteTokenData(AuthToken.Token, filename);
+            return File.Exists(filename);
         }
 
         /// <summary>
@@ -83,7 +82,7 @@ namespace LobotJR.Shared.Utility
         /// <param name="tokenData">The token response to write out.</param>
         /// <param name="filename">The name of the file to write to. Only
         /// specify this value if you need a non-default location.</param>
-        public static void WriteTokenData(TokenResponse tokenData, string filename = _tokenJson)
+        public static void WriteTokenData(TokenData tokenData, string filename = _tokenJson)
         {
             File.WriteAllText(filename, JsonConvert.SerializeObject(tokenData));
         }
@@ -95,9 +94,16 @@ namespace LobotJR.Shared.Utility
         /// <param name="filename">The name of the file to read from. Only
         /// specify this value if you need a non-default location.</param>
         /// <returns>A token data object loaded from a file.</returns>
-        public static TokenResponse ReadTokenData(string filename = _tokenJson)
+        public static TokenData ReadTokenData(string filename = _tokenJson)
         {
-            return JsonConvert.DeserializeObject<TokenResponse>(File.ReadAllText(filename));
+            try
+            {
+                return JsonConvert.DeserializeObject<TokenData>(File.ReadAllText(filename));
+            }
+            catch (JsonSerializationException)
+            {
+                return null;
+            }
         }
     }
 }

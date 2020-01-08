@@ -1,5 +1,6 @@
 ﻿using LobotJR.Shared.Utility;
 using RestSharp;
+using System;
 using System.Net;
 using System.Web;
 
@@ -10,12 +11,6 @@ namespace LobotJR.Shared.Authentication
     /// </summary>
     public class AuthToken
     {
-        /// <summary>
-        /// Contains the response from the most recent fetch or refresh
-        /// operation.
-        /// </summary>
-        public static TokenResponse Token { get; set; }
-
         /// <summary>
         /// Acquires a user access token using the oauth authorization code flow.
         /// </summary>
@@ -38,7 +33,27 @@ namespace LobotJR.Shared.Authentication
             var response = client.Execute<TokenResponse>(request);
             if (response.StatusCode == HttpStatusCode.OK)
             {
-                Token = response.Data;
+                response.Data.ExpirationDate = DateTime.Now.AddSeconds(response.Data.ExpiresIn);
+                return response.Data;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Validates a token to confirm it is still valid and active.
+        /// </summary>
+        /// <param name="token">The access token to validate.</param>
+        /// <returns>The validation response.</returns>
+        public static ValidationResponse Validate(string token)
+        {
+            var client = new RestClient("https://id.twitch.tv");
+            client.AddHandler("application/json", () => NewtonsoftDeserializer.Default);
+            var request = new RestRequest("oauth2/validate", Method.GET);
+            request.AddHeader("Accept", "application/json");
+            request.AddHeader("Authorization", $"OAuth {token}");
+            var response = client.Execute<ValidationResponse>(request);
+            if (response.StatusCode == HttpStatusCode.OK)
+            {
                 return response.Data;
             }
             return null;
@@ -57,14 +72,12 @@ namespace LobotJR.Shared.Authentication
             client.AddHandler("application/json", () => NewtonsoftDeserializer.Default);
             var request = new RestRequest("oauth2/token", Method.POST);
             request.AddHeader("Accept", "application/json");
-            request.AddQueryParameter("grant_type", "refresh_token");
-            request.AddQueryParameter("refresh_token", HttpUtility.UrlEncode(refreshToken));
-            request.AddQueryParameter("client_id", clientId);
-            request.AddQueryParameter("client_secret", clientSecret);
+            request.AddHeader("Content-Type", "application/x-www-form-urlencoded");
+            request.AddParameter("application/x-www-form-urlencoded", $"grant_type=refresh_token&refresh_token={refreshToken}&client_id={clientId}&client_secret={clientSecret}", ParameterType.RequestBody);
             var response = client.Execute<TokenResponse>(request);
             if (response.StatusCode == HttpStatusCode.OK)
             {
-                Token = response.Data;
+                response.Data.ExpirationDate = DateTime.Now.AddSeconds(response.Data.ExpiresIn);
                 return response.Data;
             }
             return null;

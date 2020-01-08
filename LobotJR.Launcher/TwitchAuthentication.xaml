@@ -7,7 +7,13 @@
         mc:Ignorable="d"
         Title="Authenticate LobotJr" Height="750" Width="500" Loaded="Window_Loaded">
     <Grid>
-        <WebBrowser x:Name="Browser" Navigated="Browser_Navigated" LoadCompleted="Browser_LoadCompleted"/>
-
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <Label x:Name="LoginLabel" Content="Chat Account" FontWeight="Bold" FontSize="18" HorizontalAlignment="Center" />
+        <WebBrowser x:Name="Browser" Navigated="Browser_Navigated" LoadCompleted="Browser_LoadCompleted" Grid.Row="1" />
+        <Button x:Name="UpdateClientData" Content="Update Client Data" Grid.Row="2" ToolTip="Use this to verify client data if the auth pages aren't loading." FontSize="18" FontWeight="Bold" Click="UpdateClientData_Click"/>
     </Grid>
 </Window>

@@ -526,11 +526,11 @@ namespace Wolfcoins
             return -1;
         }
 
-        public void UpdateSubs()
+        public void UpdateSubs(string broadcastToken)
         {
             // ALERT: You can get rid of the dynamic lookup and just use a static channel id
             // Your channel id is 28640725
-            var userData = Users.Get(AuthToken.Token.AccessToken, "lobosjr");
+            var userData = Users.Get(broadcastToken, "lobosjr");
             var channelId = userData.Data.First().Id;
             var nextLink = $"https://api.twitch.tv/kraken/channels/{channelId}/subscriptions?limit=100&offset=0";
             var offset = 0;
@@ -541,7 +541,7 @@ namespace Wolfcoins
                 var request = (HttpWebRequest) WebRequest.Create(nextLink);
                 request.Accept = "application/vnd.twitchtv.v5+json";
                 request.Headers.Add("Client-ID", "c95v57t6nfrpts7dqk2urruyc8d0ln1");
-                request.Headers.Add("Authorization", string.Format("OAuth {0}", AuthToken.Token.AccessToken));
+                request.Headers.Add("Authorization", string.Format("OAuth {0}", broadcastToken));
                 request.UserAgent = "LobosJrBot";
  
                 try
@@ -554,7 +554,7 @@ namespace Wolfcoins
                             {
                                 throw new Exception($"Failed to authenticate after {maxRetries} attempts. Aborting.");
                             }
-                            AuthToken.Refresh(clientData.ClientId, clientData.ClientSecret, AuthToken.Token.RefreshToken);
+                            AuthToken.Refresh(clientData.ClientId, clientData.ClientSecret, broadcastToken);
                             continue;
                         }
                         using (var stream = response.GetResponseStream())
