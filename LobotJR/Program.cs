@@ -3059,16 +3059,37 @@ namespace TwitchBot
             if (force || DateTime.Now >= tokenData.ChatToken.ExpirationDate)
             {
                 tokenUpdated = true;
-                tokenData.ChatToken = AuthToken.Refresh(clientData.ClientId, clientData.ClientSecret, tokenData.ChatToken.RefreshToken);
+                try
+                {
+                    tokenData.ChatToken = AuthToken.Refresh(clientData.ClientId, clientData.ClientSecret, tokenData.ChatToken.RefreshToken);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Exception occurred refreshing the chat token: {e.Message}\n{e.StackTrace}");
+                }
             }
             if (force || DateTime.Now >= tokenData.BroadcastToken.ExpirationDate)
             {
                 tokenUpdated = true;
-                tokenData.BroadcastToken = AuthToken.Refresh(clientData.ClientId, clientData.ClientSecret, tokenData.BroadcastToken.RefreshToken);
+                try
+                {
+                    tokenData.BroadcastToken = AuthToken.Refresh(clientData.ClientId, clientData.ClientSecret, tokenData.BroadcastToken.RefreshToken);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Exception occurred refreshing the streamer token: {e.Message}\n{e.StackTrace}");
+                }
             }
             if (tokenUpdated)
             {
-                FileUtils.WriteTokenData(tokenData);
+                try
+                {
+                    FileUtils.WriteTokenData(tokenData);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Exception occurred writing the updated token data: {e.Message}\n{e.StackTrace}");
+                }
             }
         }
 
