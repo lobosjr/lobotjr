@@ -587,6 +587,7 @@ namespace Wolfcoins
                 catch(Exception)
                 {
                     Console.WriteLine("Unable to retrieve full sub list.");
+                    nextLink = "";
                 }
             } while (!string.IsNullOrWhiteSpace(nextLink));
  

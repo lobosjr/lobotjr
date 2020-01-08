@@ -54,7 +54,16 @@ namespace TwitchBot
 
         static void UpdateDungeons(string dungeonListPath, ref Dictionary<int, string> dungeonList)
         {
-            IEnumerable<string> fileText = System.IO.File.ReadLines(dungeonListPath, UTF8Encoding.Default);
+            IEnumerable<string> fileText;
+            if (File.Exists(dungeonListPath))
+            {
+                fileText = File.ReadLines(dungeonListPath, UTF8Encoding.Default);
+            }
+            else
+            {
+                fileText = new List<string>();
+                Console.WriteLine($"Failed to load dungeon list file, {dungeonListPath} not found.");
+            }
 
             dungeonList = new Dictionary<int, string>();
             int dungeonIter = 1;
@@ -73,11 +82,21 @@ namespace TwitchBot
 
         static void UpdateItems(string itemListPath, ref Dictionary<int, string> itemList, ref Dictionary<int, Item> itemDatabase)
         {
-            IEnumerable<string> fileText = System.IO.File.ReadLines(itemListPath, UTF8Encoding.Default);
+            IEnumerable<string> fileText;
+            if (File.Exists(itemListPath))
+            {
+                fileText = File.ReadLines(itemListPath, UTF8Encoding.Default);
+            }
+            else
+            {
+                fileText = new List<string>();
+                Console.WriteLine($"Failed to load item list file, {itemListPath} not found.");
+            }
             itemDatabase = new Dictionary<int, Item>();
             itemList = new Dictionary<int, string>();
             int itemIter = 1;
-            fileText = System.IO.File.ReadLines(itemListPath, UTF8Encoding.Default);
+            // ALERT: Was there a reason you were loading this from the file twice?
+            // fileText = System.IO.File.ReadLines(itemListPath, UTF8Encoding.Default);
             foreach (var line in fileText)
             {
                 string[] temp = line.Split(',');
@@ -357,7 +376,17 @@ namespace TwitchBot
             Dictionary<int, Item> itemDatabase = new Dictionary<int,Item>();
             Dictionary<int, Pet> petDatabase = new Dictionary<int, Pet>();
 
-            IEnumerable<string> subathonFile = System.IO.File.ReadLines("C:/Users/Lobos/Dropbox/Stream/subathon.txt", UTF8Encoding.Default);
+            var subathonPath = "C:/Users/Lobos/Dropbox/Stream/subathon.txt";
+            IEnumerable<string> subathonFile;
+            if (File.Exists(subathonPath))
+            {
+                subathonFile = File.ReadLines(subathonPath, UTF8Encoding.Default);
+            }
+            else
+            {
+                subathonFile = new List<string>();
+                Console.WriteLine($"Failed to load subathon file, {subathonPath} not found.");
+            }
 
             Dictionary <int, string> dungeonList = new Dictionary<int, string>();
             string dungeonListPath = "content/dungeonlist.ini";

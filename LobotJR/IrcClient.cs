@@ -44,7 +44,7 @@ namespace TwitchBot
                 inputStream = new StreamReader(tcpClient.GetStream());
                 outputStream = new StreamWriter(tcpClient.GetStream());
 
-                outputStream.WriteLine("PASS " + password);
+                outputStream.WriteLine("PASS oauth:" + password);
                 outputStream.WriteLine("NICK " + username);
                 outputStream.WriteLine("USER " + username + " 8 * :" + username);
                 outputStream.Flush();
