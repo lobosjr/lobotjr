@@ -534,8 +534,6 @@ namespace Wolfcoins
             var channelId = userData.Data.First().Id;
             var nextLink = $"https://api.twitch.tv/kraken/channels/{channelId}/subscriptions?limit=100&offset=0";
             var offset = 0;
-            var maxRetries = 10;
-            var retryCount = 0;
             do
             {
                 var request = (HttpWebRequest) WebRequest.Create(nextLink);
@@ -550,12 +548,8 @@ namespace Wolfcoins
                     {
                         if (response.StatusCode == HttpStatusCode.Unauthorized)
                         {
-                            if (++retryCount >= maxRetries)
-                            {
-                                throw new Exception($"Failed to authenticate after {maxRetries} attempts. Aborting.");
-                            }
-                            AuthToken.Refresh(clientData.ClientId, clientData.ClientSecret, broadcastToken);
-                            continue;
+                            Console.WriteLine($"Unauthorized response retrieving subscribers using broadcast token {broadcastToken}");
+                            break;
                         }
                         using (var stream = response.GetResponseStream())
                         {
