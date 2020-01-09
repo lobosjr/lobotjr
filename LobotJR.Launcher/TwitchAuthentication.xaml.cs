@@ -71,7 +71,12 @@ namespace LobotJR.Launcher
                 if (_tokenData.ChatToken == null)
                 {
                     _tokenData.ChatToken = HandleAuthResponse(e.Uri);
-                    if (_tokenData.BroadcastToken == null)
+                    if (_tokenData.ChatToken == null)
+                    {
+                        MessageBox.Show("Failed to re-obtain chat token, trying again.");
+                        LoadTwitchAuthPage(Browser, _chatScope, "Bot Account");
+                    }
+                    else if (_tokenData.BroadcastToken == null)
                     {
                         LoadTwitchAuthPage(Browser, _broadcastScope, "Streamer Account");
                     }
@@ -83,7 +88,15 @@ namespace LobotJR.Launcher
                 else
                 {
                     _tokenData.BroadcastToken = HandleAuthResponse(e.Uri);
-                    LaunchBot();
+                    if (_tokenData.BroadcastToken == null)
+                    {
+                        MessageBox.Show("Failed to obtain broadcast token, trying again.");
+                        LoadTwitchAuthPage(Browser, _broadcastScope, "Streamer Account");
+                    }
+                    else
+                    {
+                        LaunchBot();
+                    }
                 }
             }
         }
