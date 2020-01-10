@@ -182,11 +182,19 @@ namespace TwitchBot
 
         static void UpdatePets(string petListPath, ref Dictionary<int, string> petList, ref Dictionary<int, Pet> petDatabase)
         {
-            IEnumerable<string> fileText = System.IO.File.ReadLines(petListPath, UTF8Encoding.Default);
+            IEnumerable<string> fileText;
+            if (File.Exists(petListPath))
+            {
+                fileText = File.ReadLines(petListPath, UTF8Encoding.Default);
+            }
+            else
+            {
+                fileText = new List<string>();
+                Console.WriteLine($"Failed to load item list file, {petListPath} not found.");
+            }
             petDatabase = new Dictionary<int, Pet>();
             petList = new Dictionary<int, string>();
             int petIter = 1;
-            fileText = System.IO.File.ReadLines(petListPath, UTF8Encoding.Default);
             foreach (var line in fileText)
             {
                 string[] temp = line.Split(',');
@@ -278,11 +286,19 @@ namespace TwitchBot
 
         static void UpdateFish(string fishListPath, ref Dictionary<int, string> fishList, ref List<Fish> fishDatabase)
         {
-            IEnumerable<string> fileText = System.IO.File.ReadLines(fishListPath, UTF8Encoding.Default);
+            IEnumerable<string> fileText;
+            if (File.Exists(fishListPath))
+            {
+                fileText = File.ReadLines(fishListPath, UTF8Encoding.Default);
+            }
+            else
+            {
+                fileText = new List<string>();
+                Console.WriteLine($"Failed to load item list file, {fishListPath} not found.");
+            }
             fishDatabase = new List<Fish>();
             fishList = new Dictionary<int, string>();
             int fishIter = 0;
-            fileText = System.IO.File.ReadLines(fishListPath, UTF8Encoding.Default);
             foreach (var line in fileText)
             {
                 fishIter++;
