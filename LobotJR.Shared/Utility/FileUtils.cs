@@ -31,12 +31,13 @@ namespace LobotJR.Shared.Utility
         }
 
         /// <summary>
-        /// Determines if the default client data file exists.
+        /// Determines if the client data file exists. Uses client-data.json in
+        /// the executing folder unless a different value is specified.
         /// </summary>
         /// <returns>True if a file exists at the default location.</returns>
-        public static bool HasClientData()
+        public static bool HasClientData(string filename = _clientJson)
         {
-            return File.Exists(_clientJson);
+            return File.Exists(filename);
         }
 
         /// <summary>
@@ -64,11 +65,21 @@ namespace LobotJR.Shared.Utility
         }
 
         /// <summary>
+        /// Determines if the token data file exists. Uses token.json in the
+        /// executing folder unless a different value is specified.
+        /// </summary>
+        /// <returns>True if a file exists at the default location.</returns>
+        public static bool HasTokenData(string filename = _tokenJson)
+        {
+            return File.Exists(filename);
+        }
+
+        /// <summary>
         /// Writes the results of the an authentication call to a json file.
         /// Uses token.json in the executing folder unless a different value is
         /// specified.
         /// </summary>
-        /// <param name="tokenData">The token data to write out.</param>
+        /// <param name="tokenData">The token response to write out.</param>
         /// <param name="filename">The name of the file to write to. Only
         /// specify this value if you need a non-default location.</param>
         public static void WriteTokenData(TokenData tokenData, string filename = _tokenJson)
@@ -85,7 +96,14 @@ namespace LobotJR.Shared.Utility
         /// <returns>A token data object loaded from a file.</returns>
         public static TokenData ReadTokenData(string filename = _tokenJson)
         {
-            return JsonConvert.DeserializeObject<TokenData>(File.ReadAllText(filename));
+            try
+            {
+                return JsonConvert.DeserializeObject<TokenData>(File.ReadAllText(filename));
+            }
+            catch (JsonSerializationException)
+            {
+                return null;
+            }
         }
     }
 }

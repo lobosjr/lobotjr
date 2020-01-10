@@ -13,6 +13,7 @@ class Data
 
     public class Chatters
     {
+        public List<string> vips { get; set; }
         public List<string> moderators { get; set; }
         public List<string> staff { get; set; }
         public List<string> viewers { get; set; }
@@ -62,6 +63,7 @@ class SubscriberData
 
     public class RootObject
     {
+        public string _cursor { get; set; }
         public int _total { get; set; }
         public Links _links { get; set; }
         public List<Subscription> subscriptions { get; set; }

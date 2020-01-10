@@ -2,6 +2,7 @@
 using LobotJR.Shared.Client;
 using LobotJR.Shared.Utility;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Windows;
@@ -16,14 +17,15 @@ namespace LobotJR.Launcher
     public partial class MainWindow : Window
     {
         private const string _cancelAuthUri = "https://id.twitch.tv/oauth2/authorize";
-        private const string _chatScope = "chat:read chat:edit whispers:read whispers:edit";
-        private const string _broadcastScope = "channel:read:subscriptions";
+
+        private static IEnumerable<string> _chatScopes = new List<string>(new string[] { "chat:read", "chat:edit", "whispers:read", "whispers:edit", "channel:moderate" });
+        private static IEnumerable<string> _broadcastScopes = new List<string>(new string[] { "channel_subscriptions" });
 
         private ClientData _clientData;
         private bool _isNavigating = false;
         private string _state = Guid.NewGuid().ToString();
 
-        private TokenResponse chatResponse;
+        private TokenData _tokenData;
 
 
         public MainWindow()
@@ -33,8 +35,20 @@ namespace LobotJR.Launcher
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            LoadClientData();
-            LoadTwitchAuthPage(Browser, _chatScope, "Chat Account");
+            _clientData = LoadClientData();
+            _tokenData = LoadTokenData();
+            if (_tokenData.ChatToken == null)
+            {
+                LoadTwitchAuthPage(Browser, _chatScopes, "Bot Account");
+            }
+            else if (_tokenData.BroadcastToken == null)
+            {
+                LoadTwitchAuthPage(Browser, _broadcastScopes, "Streamer Account");
+            }
+            else
+            {
+                LaunchBot();
+            }
         }
 
         private void Browser_Navigated(object sender, NavigationEventArgs e)
@@ -45,7 +59,7 @@ namespace LobotJR.Launcher
                 // if we get to the navigated event twice without a load complete, it's probably
                 // a redirect, which means our twitch client data is wrong.
                 MessageBox.Show(this, "Unable to load twitch authentication page, please confirm your client data and try again.", "Twitch Authentication Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                LaunchClientDataUpdater();
+                LaunchClientDataUpdater(_clientData);
 
             }
             _isNavigating = true;
@@ -56,26 +70,39 @@ namespace LobotJR.Launcher
             }
             else if (e.Uri.ToString().StartsWith(_clientData.RedirectUri))
             {
-                if (chatResponse == null)
+                if (_tokenData.ChatToken == null)
                 {
-                    chatResponse = HandleAuthResponse(e.Uri);
-                    LoadTwitchAuthPage(Browser, _broadcastScope, "Broadcaster Account");
+                    _tokenData.ChatToken = HandleAuthResponse(e.Uri);
+                    var validationResponse = AuthToken.Validate(_tokenData.ChatToken.AccessToken);
+                    _tokenData.ChatUser = validationResponse.Login;
+                    if (_tokenData.ChatToken == null)
+                    {
+                        MessageBox.Show("Failed to re-obtain chat token, trying again.");
+                        LoadTwitchAuthPage(Browser, _chatScopes, "Bot Account");
+                    }
+                    else if (_tokenData.BroadcastToken == null)
+                    {
+                        LoadTwitchAuthPage(Browser, _broadcastScopes, "Streamer Account");
+                    }
+                    else
+                    {
+                        LaunchBot();
+                    }
                 }
                 else
                 {
-                    var data = new TokenData()
+                    _tokenData.BroadcastToken = HandleAuthResponse(e.Uri);
+                    var validationResponse = AuthToken.Validate(_tokenData.BroadcastToken.AccessToken);
+                    _tokenData.BroadcastUser = validationResponse.Login;
+                    if (_tokenData.BroadcastToken == null)
                     {
-                        ChatToken = chatResponse,
-                        BroadcastToken = HandleAuthResponse(e.Uri)
-                    };
-                    FileUtils.WriteTokenData(data);
-                    using (var lobot = new Process())
-                    {
-                        lobot.StartInfo.FileName = "LobotJR.exe";
-                        lobot.StartInfo.UseShellExecute = true;
-                        lobot.Start();
+                        MessageBox.Show("Failed to obtain broadcast token, trying again.");
+                        LoadTwitchAuthPage(Browser, _broadcastScopes, "Streamer Account");
                     }
-                    Close();
+                    else
+                    {
+                        LaunchBot();
+                    }
                 }
             }
         }
@@ -83,6 +110,19 @@ namespace LobotJR.Launcher
         private void Browser_LoadCompleted(object sender, NavigationEventArgs e)
         {
             _isNavigating = false;
+        }
+
+        private void LaunchBot()
+        {
+            FileUtils.WriteTokenData(_tokenData);
+            Hide();
+            using (var lobot = new Process())
+            {
+                lobot.StartInfo.FileName = "LobotJR.exe";
+                lobot.StartInfo.UseShellExecute = true;
+                lobot.Start();
+            }
+            Close();
         }
 
         private TokenResponse HandleAuthResponse(Uri uri)
@@ -121,32 +161,73 @@ namespace LobotJR.Launcher
             }
         }
 
-        private void LoadClientData()
+        private ClientData LoadClientData()
         {
+            ClientData clientData;
             if (FileUtils.HasClientData())
             {
-                _clientData = FileUtils.ReadClientData();
-                if (string.IsNullOrWhiteSpace(_clientData.ClientId)
-                    || string.IsNullOrWhiteSpace(_clientData.ClientSecret)
-                    || string.IsNullOrWhiteSpace(_clientData.RedirectUri))
+                clientData = FileUtils.ReadClientData();
+                if (string.IsNullOrWhiteSpace(clientData.ClientId)
+                    || string.IsNullOrWhiteSpace(clientData.ClientSecret)
+                    || string.IsNullOrWhiteSpace(clientData.RedirectUri))
                 {
-                    LaunchClientDataUpdater();
+                    LaunchClientDataUpdater(clientData);
                 }
             }
             else
             {
-                _clientData = new ClientData();
-                _clientData.ClientSecret = FileUtils.ReadLegacySecret();
-                LaunchClientDataUpdater();
+                clientData = new ClientData()
+                {
+                    ClientSecret = FileUtils.ReadLegacySecret()
+                };
+                LaunchClientDataUpdater(clientData);
             }
+            return clientData;
         }
 
-        private void LaunchClientDataUpdater()
+        private TokenData LoadTokenData()
+        {
+            if (FileUtils.HasTokenData())
+            {
+                var tokenData = FileUtils.ReadTokenData();
+                if (tokenData != null)
+                {
+                    if (tokenData.ChatToken != null)
+                    {
+                        var validationResponse = AuthToken.Validate(tokenData.ChatToken.AccessToken);
+                        if (validationResponse == null)
+                        {
+                            tokenData.ChatToken = AuthToken.Refresh(_clientData.ClientId, _clientData.ClientSecret, tokenData.ChatToken.RefreshToken);
+                        }
+                        else if (!validationResponse.Login.Equals(tokenData.ChatUser) || _chatScopes.Any(x => !validationResponse.Scopes.Contains(x)))
+                        {
+                            tokenData.ChatToken = null;
+                        }
+                    }
+                    if (tokenData.BroadcastToken != null)
+                    {
+                        var validationResponse = AuthToken.Validate(tokenData.BroadcastToken.AccessToken);
+                        if (validationResponse == null)
+                        {
+                            tokenData.BroadcastToken = AuthToken.Refresh(_clientData.ClientId, _clientData.ClientSecret, tokenData.BroadcastToken.RefreshToken);
+                        }
+                        else if (!validationResponse.Login.Equals(tokenData.BroadcastUser) || _broadcastScopes.Any(x => !validationResponse.Scopes.Contains(x)))
+                        {
+                            tokenData.BroadcastToken = null;
+                        }
+                    }
+                    return tokenData;
+                }
+            }
+            return new TokenData();
+        }
+
+        private void LaunchClientDataUpdater(ClientData clientData)
         {
             var updateModal = new UpdateConfig();
-            updateModal.ClientIdValue = _clientData.ClientId;
-            updateModal.ClientSecretValue= _clientData.ClientSecret;
-            updateModal.RedirectUriValue = _clientData.RedirectUri;
+            updateModal.ClientIdValue = clientData.ClientId;
+            updateModal.ClientSecretValue = clientData.ClientSecret;
+            updateModal.RedirectUriValue = clientData.RedirectUri;
             var result = updateModal.ShowDialog();
             if (!result.HasValue || !result.Value)
             {
@@ -155,14 +236,14 @@ namespace LobotJR.Launcher
             }
             else
             {
-                _clientData.ClientId = updateModal.ClientIdValue;
-                _clientData.ClientSecret = updateModal.ClientSecretValue;
-                _clientData.RedirectUri = updateModal.RedirectUriValue;
-                FileUtils.WriteClientData(_clientData);
+                clientData.ClientId = updateModal.ClientIdValue;
+                clientData.ClientSecret = updateModal.ClientSecretValue;
+                clientData.RedirectUri = updateModal.RedirectUriValue;
+                FileUtils.WriteClientData(clientData);
             }
         }
 
-        private void LoadTwitchAuthPage(WebBrowser control, string scope, string title)
+        private void LoadTwitchAuthPage(WebBrowser control, IEnumerable<string> scopes, string title)
         {
             LoginLabel.Content = title;
 
@@ -171,7 +252,7 @@ namespace LobotJR.Launcher
             AddQuery(builder, "client_id", _clientData.ClientId);
             AddQuery(builder, "redirect_uri", _clientData.RedirectUri);
             AddQuery(builder, "response_type", "code");
-            AddQuery(builder, "scope", scope);
+            AddQuery(builder, "scope", string.Join(" ", scopes));
             AddQuery(builder, "force_verify", "true");
             AddQuery(builder, "state", _state);
             control.Navigate(builder.Uri);
@@ -179,8 +260,8 @@ namespace LobotJR.Launcher
 
         private void UpdateClientData_Click(object sender, RoutedEventArgs e)
         {
-            LaunchClientDataUpdater();
-            LoadTwitchAuthPage(Browser, _chatScope, "Chat Account");
+            LaunchClientDataUpdater(_clientData);
+            LoadTwitchAuthPage(Browser, _chatScopes, "Chat Account");
         }
     }
 }

@@ -16,6 +16,7 @@ namespace TwitchBot
     {
         public DateTime timeLast;
         public DateTime dungeonTimeLast;
+        public DateTime lastReconnect;
         public bool connected;
         public Queue<string> messageQueue = new Queue<string>();
         public Queue<Dictionary<Party,string>> dungeonQueue = new Queue<Dictionary<Party,string>>();
@@ -24,6 +25,8 @@ namespace TwitchBot
         private string username;
         private string channel;
         private string myIp;
+        private int myPort;
+        private string myPassword;
 
         private TcpClient tcpClient;
         private StreamReader inputStream;
@@ -33,8 +36,11 @@ namespace TwitchBot
         {
             timeLast = DateTime.Now;
             dungeonTimeLast = DateTime.Now;
+            lastReconnect = DateTime.Now;
             this.username = username;
             this.myIp = ip;
+            this.myPort = port;
+            this.myPassword = password;
             tcpClient = new TcpClient(ip, port);
             this.connected = tcpClient.Connected;
 
@@ -44,7 +50,7 @@ namespace TwitchBot
                 inputStream = new StreamReader(tcpClient.GetStream());
                 outputStream = new StreamWriter(tcpClient.GetStream());
 
-                outputStream.WriteLine("PASS " + password);
+                outputStream.WriteLine("PASS oauth:" + password);
                 outputStream.WriteLine("NICK " + username);
                 outputStream.WriteLine("USER " + username + " 8 * :" + username);
                 outputStream.Flush();
@@ -94,10 +100,15 @@ namespace TwitchBot
         // if there's no chat cooldown, lobot tries to send a message from the queue and then remove it. otherwise, do nothing
         public void processQueue()
         {
+            if (!IsConnected())
+            {
+                Reconnect();
+            }
+
             if ((DateTime.Now - timeLast).TotalMilliseconds > cooldown)
             {
                 string temp = messageQueue.Dequeue();
-                string msg = ":" + username + "!" + username + "@" + username + "tmi.twitch.tv PRIVMSG #" + channel + " :" + temp;
+                string msg = ":" + username + "!" + username + "@" + username + ".tmi.twitch.tv PRIVMSG #" + channel + " :" + temp;
                 
                 try
                     {
@@ -106,20 +117,99 @@ namespace TwitchBot
                     catch(Exception e)
                     {
                         messageQueue.Enqueue(temp);
-                        Console.WriteLine("Error occured: " + e);
+                        //Console.WriteLine("Error occured: " + e);
+                        Reconnect();
                     }
                 timeLast = DateTime.Now;
             }
             
         }
 
+        public bool IsConnected()
+        {
+            {
+                try
+                {
+                    if (tcpClient != null && tcpClient.Client != null && tcpClient.Client.Connected)
+                    {
+                        /* pear to the documentation on Poll:
+                         * When passing SelectMode.SelectRead as a parameter to the Poll method it will return 
+                         * -either- true if Socket.Listen(Int32) has been called and a connection is pending;
+                         * -or- true if data is available for reading; 
+                         * -or- true if the connection has been closed, reset, or terminated; 
+                         * otherwise, returns false
+                         */
+
+                        // Detect if client disconnected
+                        if (tcpClient.Client.Poll(0, SelectMode.SelectRead))
+                        {
+                            byte[] buff = new byte[1];
+                            if (tcpClient.Client.Receive(buff, SocketFlags.Peek) == 0)
+                            {
+                                // Client disconnected
+                                return false;
+                            }
+                            else
+                            {
+                                return true;
+                            }
+                        }
+
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
+
+        public void Reconnect()
+        {
+            if (connected)
+            {
+                connected = false;
+                Console.WriteLine("Disconnected from server. Retrying connection...");
+            }
+
+            if ((DateTime.Now - lastReconnect).TotalSeconds > 5)
+            {
+                tcpClient = new TcpClient(this.myIp, this.myPort);
+                this.connected = tcpClient.Connected;
+
+                if (connected)
+                {
+                    connected = true;
+                    Console.WriteLine("Successfully reconnected to IRC server: " + this.myIp);
+                    inputStream = new StreamReader(tcpClient.GetStream());
+                    outputStream = new StreamWriter(tcpClient.GetStream());
+
+                    outputStream.WriteLine("PASS " + this.myPassword);
+                    outputStream.WriteLine("NICK " + username);
+                    outputStream.WriteLine("USER " + username + " 8 * :" + username);
+                    outputStream.Flush();
+                }
+                else
+                {
+                    Console.WriteLine("Failed to reconnect to IRC server: " + this.myIp);
+                    lastReconnect = DateTime.Now;
+                }
+                lastReconnect = DateTime.Now;
+            }
+        }
+
         public string[] readMessage(Currency userList, string channel)
         {
-            //if (tcpClient.Connected != true)
-            //{
-            //    string[] buf = { };
-            //    return buf;
-            //}
+            if (!IsConnected())
+            {
+                Reconnect();
+            }
+
             try
             {
                 if (tcpClient.GetStream().DataAvailable)
@@ -134,7 +224,7 @@ namespace TwitchBot
                         {
                             if (check.Contains("d.va") || userList.subSet.Contains(temp[0]))
                             {
-                                int i = 0;
+                                
                             }
                             else if( check.Contains("OCEAN MAN 🌊  😍"))
                             {
@@ -182,8 +272,9 @@ namespace TwitchBot
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Bot disconnected. Reason: " + ex);
+                //Console.WriteLine("Bot disconnected. Reason: " + ex);
                 string[] buf = { "Bot disconnected. Reason: " + ex };
+                Reconnect();
                 return buf;
                 // Todo: Open a new connection, or otherwise gracefully close bot.
             }
@@ -193,6 +284,11 @@ namespace TwitchBot
 
         public string[] readMessage()
         {
+            if (!IsConnected())
+            {
+                Reconnect();
+            }
+
             if (tcpClient.GetStream().DataAvailable)
             {
                 string message = inputStream.ReadLine();
@@ -217,6 +313,11 @@ namespace TwitchBot
 
         public string[] parseMessage(string message)
         {
+            if (!IsConnected())
+            {
+                Reconnect();
+            }
+
             if (message.StartsWith("PING"))
             {
                 //PONG
