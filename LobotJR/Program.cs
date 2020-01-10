@@ -413,13 +413,14 @@ namespace TwitchBot
 
             var clientData = FileUtils.ReadClientData();
             var tokenData = FileUtils.ReadTokenData();
-            IrcClient irc = new IrcClient("irc.chat.twitch.tv", 80, "lobotjr", tokenData.ChatToken.AccessToken);
-            IrcClient group = new IrcClient("irc.chat.twitch.tv", 80, "lobotjr", tokenData.ChatToken.AccessToken);
+            IrcClient irc = new IrcClient("irc.chat.twitch.tv", 80, tokenData.ChatUser, tokenData.ChatToken.AccessToken);
+            IrcClient group = new IrcClient("irc.chat.twitch.tv", 80, tokenData.ChatUser, tokenData.ChatToken.AccessToken);
             // 199.9.253.119
             connected = irc.connected;
 
             if (connected)
             {
+                Console.WriteLine($"Logged in as {tokenData.ChatUser}");
                 irc.sendIrcMessage("twitch.tv/membership");
             }
             if (group.connected)
@@ -429,7 +430,7 @@ namespace TwitchBot
             if (!twitchPlays)
             {
                 #region NormalBot
-                const string channel = "lobosjr";
+                string channel = tokenData.BroadcastUser;
                 irc.joinRoom(channel);
                 group.joinRoom("jtv");
                 DateTime awardLast = DateTime.Now;

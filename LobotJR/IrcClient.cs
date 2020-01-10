@@ -97,7 +97,7 @@ namespace TwitchBot
             if ((DateTime.Now - timeLast).TotalMilliseconds > cooldown)
             {
                 string temp = messageQueue.Dequeue();
-                string msg = ":" + username + "!" + username + "@" + username + "tmi.twitch.tv PRIVMSG #" + channel + " :" + temp;
+                string msg = ":" + username + "!" + username + "@" + username + ".tmi.twitch.tv PRIVMSG #" + channel + " :" + temp;
                 
                 try
                     {
