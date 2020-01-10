@@ -5,12 +5,15 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Net;
+using System.Collections.Specialized;
 using System.Web;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using TwitchBot;
 using Classes;
 using Adventures;
 using Equipment;
+using Fishing;
 
 
 namespace Wolfcoins
@@ -78,12 +81,16 @@ namespace Wolfcoins
         public Dictionary<string, int> coinList = new Dictionary<string,int>();
         public Dictionary<string, int> xpList = new Dictionary<string, int>();
         public Dictionary<string, CharClass> classList = new Dictionary<string, CharClass>();
+        public Dictionary<string, Fisherman> fishingList = new Dictionary<string, Fisherman>();
+        public List<Fish> fishingLeaderboard = new List<Fish>();
 
         public Data viewers = new Data();
         List<string> viewerList = new List<string>();
         public HashSet<string> subSet = new HashSet<string>();
         public List<SubscriberData.Subscription> subsList = new List<SubscriberData.Subscription>();
         private string path = "wolfcoins.json";
+        private string fishingPath = "fishing.json";
+        private string fishingLeaderboardPath = "fishingLeaderboard.json";
         private string xpPath = "XP.json";
         private string classPath = "classData.json";
 
@@ -99,7 +106,8 @@ namespace Wolfcoins
         public const int ROGUE = 3;
         public const int RANGER = 4;
         public const int CLERIC = 5;
-		
+
+        public const string clientID = "c95v57t6nfrpts7dqk2urruyc8d0ln1";
         public const int baseRespecCost = 250;
 
         public Currency()
@@ -119,6 +127,7 @@ namespace Wolfcoins
             if(Exists(xpList, user))
             {
                 
+
                 float xp = (float)xpList[user];
                 
                 if (xp <= 81)
@@ -129,6 +138,33 @@ namespace Wolfcoins
                 return (int)level;
             }
             return 0;
+        }
+
+        public string gloatWithPrestige(string user)
+        {
+
+            if (Exists(xpList, user) && Exists(classList, user))
+            {
+
+
+                float xp = (float)xpList[user];
+
+                if (xp <= 81)
+                    return "1";
+
+                float level = (float)Math.Pow((xp - 50.0f) / 4.0f, (1.0f / 3.0f));
+
+                string ret = " Level " + (int)level;
+
+                if (classList[user].prestige > -1)
+                {
+                    int prestigeLevel = classList[user].prestige;
+                    ret += ", Prestige Level " + (int)prestigeLevel;
+                }
+
+                return ret;
+            }
+            return "0";
         }
 
         public int determineLevel(int xp)
@@ -297,7 +333,7 @@ namespace Wolfcoins
                         }
                     }
 
-                    if (!(classList.ContainsKey(user)) &&newLevel > prevLevel && newLevel == 3)
+                    if (!(classList.ContainsKey(user)) && newLevel > prevLevel && newLevel == 3)
                     {
                         CharClass newClass = new CharClass();
                         newClass.classType = -1;
@@ -347,7 +383,8 @@ namespace Wolfcoins
                         }
                         if (newLevel > 5)
                         {
-                            classList[user].level = newLevel;
+                            if(classList.ContainsKey(user))
+                                classList[user].level = newLevel;
                         }
                     }
 
@@ -460,7 +497,7 @@ namespace Wolfcoins
                         }
                     }
 
-                    if (newLevel > prevLevel && newLevel > 3 && classList != null & !classList.ContainsKey(user))
+                    if (newLevel > prevLevel && newLevel >= 3 && classList != null & !classList.ContainsKey(user))
                     {
                         CharClass newChar = new CharClass();
                         newChar.classType = -1;
@@ -521,17 +558,88 @@ namespace Wolfcoins
             return -1;
         }
 
+        //public void UpdateSubs()
+        //{
+        //    var nextLink = "https://api.twitch.tv/helix/subscriptions?broadcaster_id=28640725&limit=100&offset=0";
+        //    do
+        //    {
+        //        var request = (HttpWebRequest) WebRequest.Create(nextLink);
+        //        request.Accept = "application/vnd.twitchtv.v3+json";
+        //        request.Headers.Add("Client-ID", "c95v57t6nfrpts7dqk2urruyc8d0ln1");
+        //        request.Headers.Add("Authorization", string.Format("Bearer dhxrcj8x8e4tsft77292deuif7y5pj"));
+        //        request.UserAgent = "LobosJrBot";
+ 
+        //        try
+        //        {
+        //            using (var response = request.GetResponse())
+        //            {
+        //                using (var stream = response.GetResponseStream())
+        //                {
+        //                    using (var reader = new StreamReader(stream))
+        //                    {
+        //                        var data = reader.ReadToEnd();
+        //                        var subList = JsonConvert.DeserializeObject<SubscriberData.RootObject>(data);
+        //                        if (subList.subscriptions.Count > 0)
+        //                        {
+        //                            nextLink = subList._links.next;
+        //                            subsList.AddRange(subList.subscriptions);
+        //                        }
+        //                        else
+        //                        {
+        //                            nextLink = "";
+        //                        }
+        //                    }
+        //                }
+        //            }
+        //        }
+        //        catch(Exception e)
+        //        {
+        //            Console.WriteLine("Unable to retrieve full sub list.");
+        //            Console.WriteLine(e);
+        //        }
+        //    } while (!string.IsNullOrWhiteSpace(nextLink));
+ 
+        //    foreach (var sub in subsList)
+        //    {
+        //        subSet.Add(sub.user.name);
+        //    }
+        //    Console.WriteLine("Subscriber list may or may not have been updated!");
+        //}
+
         public void UpdateSubs()
         {
-            var nextLink = "https://api.twitch.tv/kraken/channels/lobosjr/subscriptions?limit=100&offset=0";
+            var origLink = "https://api.twitch.tv/helix/subscriptions?broadcaster_id=28640725";
+            var nextLink = origLink;
+
+            string responseInString = "";
+            string myToken = "";
+            using (var wb = new WebClient())
+            {
+                var data = new NameValueCollection();
+                data["client_id"] = "c95v57t6nfrpts7dqk2urruyc8d0ln1";
+                data["client_secret"] = "cgaqp610iloshay3iar1tv55dbpnog";
+                data["grant_type"] = "client_credentials";
+
+                var response = wb.UploadValues("https://id.twitch.tv/oauth2/token", "POST", data);
+                
+                responseInString = Encoding.UTF8.GetString(response);
+                var jo = JObject.Parse(responseInString);
+
+                myToken = jo["access_token"].ToString();
+  
+            }
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             do
             {
-                var request = (HttpWebRequest) WebRequest.Create(nextLink);
-                request.Accept = "application/vnd.twitchtv.v3+json";
+                var request = (HttpWebRequest)WebRequest.Create(nextLink);
+                //request.Accept = "application/vnd.twitchtv.v3+json";
                 request.Headers.Add("Client-ID", "c95v57t6nfrpts7dqk2urruyc8d0ln1");
-                request.Headers.Add("Authorization", string.Format("OAuth {0}", subsAuth));
-                request.UserAgent = "LobosJrBot";
- 
+                //request.Headers.Add("OAuth token", "oauth:lmaj6pwj3qwolch7h0m5dm716e9kd6");
+                request.Headers.Add("Authorization", string.Format("Bearer " + myToken));
+
+                //request.UserAgent = "LobosJrBot";
+
+
                 try
                 {
                     using (var response = request.GetResponse())
@@ -542,28 +650,28 @@ namespace Wolfcoins
                             {
                                 var data = reader.ReadToEnd();
                                 var subList = JsonConvert.DeserializeObject<SubscriberData.RootObject>(data);
-                                if (subList.subscriptions.Count > 0)
+                                if (!String.IsNullOrEmpty(subList.data.ToString()))
                                 {
-                                    nextLink = subList._links.next;
-                                    subsList.AddRange(subList.subscriptions);
+                                    nextLink = origLink + "?after=" + subList.pagination.cursor;
                                 }
                                 else
                                 {
                                     nextLink = "";
                                 }
+                                subsList.AddRange(subList.data);
                             }
                         }
                     }
                 }
-                catch(Exception)
+                catch (Exception e)
                 {
                     Console.WriteLine("Unable to retrieve full sub list.");
+                    Console.WriteLine(e);
                 }
             } while (!string.IsNullOrWhiteSpace(nextLink));
- 
             foreach (var sub in subsList)
             {
-                subSet.Add(sub.user.name);
+                subSet.Add(sub.user_name);
             }
             Console.WriteLine("Subscriber list may or may not have been updated!");
         }
@@ -583,6 +691,11 @@ namespace Wolfcoins
                     var json = w.DownloadString(string.Format(url));
                     viewers = JsonConvert.DeserializeObject<Data>(json);
 
+                for (int i = 0; i < viewers.chatters.vips.Count; i++)
+                {
+                    if (!viewerList.Contains(viewers.chatters.vips[i]))
+                        viewerList.Add(viewers.chatters.vips[i]);
+                }
                 for (int i = 0; i < viewers.chatters.admins.Count; i++)
                 {
                     if (!viewerList.Contains(viewers.chatters.admins[i]))
@@ -626,6 +739,16 @@ namespace Wolfcoins
         public bool Exists(Dictionary<string, int> dic, string user)
         {
             if(dic != null)
+            {
+                return dic.Keys.Contains(user);
+            }
+
+            return false;
+        }
+
+        public bool Exists(Dictionary<string, Fisherman> dic, string user)
+        {
+            if (dic != null)
             {
                 return dic.Keys.Contains(user);
             }
@@ -878,15 +1001,25 @@ namespace Wolfcoins
             var json3 = JsonConvert.SerializeObject(coinList);
             var bytes3 = Encoding.UTF8.GetBytes(json3);
             string backupPath3 = "backup/Coins";
+            var json4 = JsonConvert.SerializeObject(fishingList);
+            var bytes4 = Encoding.UTF8.GetBytes(json4);
+            string backupPath4 = "backup/Fishing";
+            var json5 = JsonConvert.SerializeObject(fishingLeaderboard);
+            var bytes5 = Encoding.UTF8.GetBytes(json4);
+            string backupPath5 = "backup/FishingLeaderboard";
             DateTime now = DateTime.Now;
             backupPath = backupPath + now.Day + now.Month + now.Year + now.Hour + now.Minute + now.Second;
             backupPath2 = backupPath2 + now.Day + now.Month + now.Year + now.Hour + now.Minute + now.Second;
             backupPath3 = backupPath3 + now.Day + now.Month + now.Year + now.Hour + now.Minute + now.Second;
+            backupPath4 = backupPath4 + now.Day + now.Month + now.Year + now.Hour + now.Minute + now.Second;
+            backupPath5 = backupPath5 + now.Day + now.Month + now.Year + now.Hour + now.Minute + now.Second;
             try
             {
                 File.WriteAllBytes(backupPath, bytes);
                 File.WriteAllBytes(backupPath2, bytes2);
                 File.WriteAllBytes(backupPath3, bytes3);
+                File.WriteAllBytes(backupPath4, bytes4);
+                File.WriteAllBytes(backupPath5, bytes5);
                 return true;
             }
             catch (Exception e)
@@ -909,6 +1042,27 @@ namespace Wolfcoins
             catch (Exception e)
             {
                 Console.WriteLine("Error saving XP file: ");
+                Console.WriteLine(e);
+                return false;
+            }
+
+        }
+
+        public bool SaveFishingList()
+        {
+            var json = JsonConvert.SerializeObject(fishingList);
+            var json2 = JsonConvert.SerializeObject(fishingLeaderboard);
+            var bytes = Encoding.UTF8.GetBytes(json);
+            var bytes2 = Encoding.UTF8.GetBytes(json2);
+            try
+            {
+                File.WriteAllBytes(fishingPath, bytes);
+                File.WriteAllBytes(fishingLeaderboardPath, bytes2);
+                return true;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Error saving Fishing file: ");
                 Console.WriteLine(e);
                 return false;
             }
@@ -955,6 +1109,27 @@ namespace Wolfcoins
             {
                 xpList = new Dictionary<string, int>();
                 Console.WriteLine("Path not found. XP file initialized to default.");
+            }
+
+            if (File.Exists(fishingPath))
+            {
+                fishingList = JsonConvert.DeserializeObject<Dictionary<string, Fisherman>>(File.ReadAllText(fishingPath));
+                foreach (var player in fishingList)
+                {
+                    player.Value.isFishing = false;
+                    player.Value.fishHooked = false;
+                }
+                Console.WriteLine("Fishing data loaded.");
+            }
+            if (File.Exists(fishingLeaderboardPath))
+            {
+                fishingLeaderboard = JsonConvert.DeserializeObject<List<Fish>>(File.ReadAllText(fishingLeaderboardPath));
+                Console.WriteLine("Fishing data loaded.");
+            }
+            else
+            {
+                fishingLeaderboard = new List<Fish>();
+                Console.WriteLine("Path not found. Fishing Leaderboard data initialized to default.");
             }
 
             if (File.Exists(classPath))

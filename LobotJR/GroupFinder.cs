@@ -120,7 +120,7 @@ namespace GroupFinder
                     {
                         foreach (var dude in newParty.members)
                         {
-                            dude.queueDungeons = new List<int>() { matchedDungeons.ElementAt(0) };
+                            dude.queueDungeons = matchedDungeons;
                         }
                         partyFilled = true;
                         lastFormed = DateTime.Now;

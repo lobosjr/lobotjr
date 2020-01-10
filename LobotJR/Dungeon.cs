@@ -102,9 +102,17 @@ namespace Adventures
 
             if (msgType == MSG_INSTANT || ((DateTime.Now - lastMessage).TotalMilliseconds > cooldown))
             {
-                string toSend = temp.ElementAt(1);
+                //fix this
+                string toSend = "";
+                if (temp.Count > 1)
+                    toSend = temp.ElementAt(1);
+                else
+                    toSend = temp.ElementAt(0);
+
                 if (toSend == DUNGEON_COMPLETE)
                     return 1;
+                if(!(temp.Count > 1))
+                    return 0;
 
                 temp.RemoveRange(0, 2);
                 int i = 0;
@@ -120,7 +128,7 @@ namespace Adventures
                     }
                     catch (Exception e)
                     {
-                        Console.WriteLine("Error occured: " + e);
+                        Console.WriteLine(DateTime.Now.ToString() + ": Error occured: " + e);
                         return 0;
                     }
                     if (numReceivers > i)
@@ -203,7 +211,7 @@ namespace Adventures
             textIter++;
             string[] enemies = fileText.ElementAt(textIter).Split(',');
             if ((enemies.Count() / 2) != numEncounters)
-                Console.WriteLine("Dungeon at " + path + " has a mismatch for # of encounters & encounter data.");
+                Console.WriteLine(DateTime.Now.ToString() + ": Dungeon at " + path + " has a mismatch for # of encounters & encounter data.");
 
             for (int i = 0; i < enemies.Count(); i += 2)
             {
@@ -253,7 +261,7 @@ namespace Adventures
             textIter++;
             string[] enemies = fileText.ElementAt(textIter).Split(',');
             if ((enemies.Count() / 2) != numEncounters)
-                Console.WriteLine("Dungeon at " + path + " has a mismatch for # of encounters & encounter data.");
+                Console.WriteLine(DateTime.Now.ToString() + ": Dungeon at " + path + " has a mismatch for # of encounters & encounter data.");
 
             for(int i = 0; i < enemies.Count(); i+= 2)
             {
@@ -456,7 +464,7 @@ namespace Adventures
                                 messenger.sendChatMessage("In the chaos, " + player.name + " lost their life. Seek vengeance in their honor!", member.name);
                             }
 
-                            Console.WriteLine(player.name + " has died in a dungeon.");
+                            Console.WriteLine(DateTime.Now.ToString() + ": " + player.name + " has died in a dungeon.");
                             defeatLogText += player.name + ", " + player.className + " (Died. -" + xp + " xp, -" + coins + " coins.) ";
                         }
                         else
@@ -512,15 +520,17 @@ namespace Adventures
                 members += member.name + ", " + member.className + " (" + xp + " xp, " + coins + " coins.) ";
                 
                 int myLoot = awardLoot(member);
-                if(myLoot == -1)
+                int petLoot = awardPet(member);
+                if(myLoot == -1 && petLoot == -1)
                 {
-                    Console.WriteLine(member.name + " completed a dungeon and earned " + xp + " xp and " + coins + " Wolfcoins.", whisper);
+                    Console.WriteLine(DateTime.Now.ToString() + ": " + member.name + " completed a dungeon and earned " + xp + " xp and " + coins + " Wolfcoins.", whisper);
                     continue;
                 }
                 else
                 {
-                    
+                    Console.WriteLine(DateTime.Now.ToString() + ": " + member.name + " completed a dungeon and earned " + xp + " xp and " + coins + " Wolfcoins.", whisper);
                     member.itemEarned = myLoot;
+                    member.petEarned = petLoot;
                 }
                 
             }
@@ -680,7 +690,52 @@ namespace Adventures
             }
             return -1;
         }
-            //returns true if party succeeds
+
+        public int awardPet(CharClass player)
+        {
+            // default at 0
+            int chanceForLoot = 150;
+
+
+            //QUALITY_COMMON = 1;   | 150 out of 2000
+            //QUALITY_UNCOMMON = 2; | 50 out of 2000
+            //QUALITY_RARE = 3;     | 25 out of 2000
+            //QUALITY_EPIC = 4;     | 10 out of 2000
+            //QUALITY_ARTIFACT = 5; | 1 out of 2000
+
+            float roll = (float)this.RNG.Next(1, 2000);
+            // if player wins, send the rarity of pet to award
+            if (chanceForLoot > roll)
+            {
+                if (roll > 50)
+                {
+                    // award a Common pet
+                    return 1;
+                }
+                else if (roll > 25)
+                {
+                    // award an Uncommon pet
+                    return 2;
+                }
+                else if (roll > 10)
+                {
+                    // award a Rare pet
+                    return 3;
+                }
+                else if (roll > 1)
+                {
+                    // award an Epic pet
+                    return 4;
+                }
+                else if (roll == 1)
+                {
+                    // award a Legendary pet
+                    return 5;
+                }
+            }
+            return -1;
+        }
+        //returns true if party succeeds
         public bool CalculateEncounterOutcome(float successChance)
         {
             float roll = (float)this.RNG.Next(0, 100);

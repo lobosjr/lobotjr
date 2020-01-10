@@ -24,6 +24,12 @@ namespace Companions
         public const int QUALITY_ARTIFACT = 5;
 
         public const int LEVEL_MAX = 10;
+        public const int FEEDING_COST = 5;
+        public const int HUNGER_MAX = 100;
+        public const int XP_TO_LEVEL = 150;
+        public const int FEEDING_AFFECTION = 5;
+        public const int DUNGEON_HUNGER = 5;
+        public const int DUNGEON_AFFECTION = 1;
 
         public int petRarity = -1;
         public string type = "Missing No";
@@ -33,9 +39,12 @@ namespace Companions
         public string emote = "Kappa";
         public int ID = -1;
         public int stableID = -1;
+        public bool isActive = false;
+        public bool isSparkly = false;
 
         public int affection = 0;
         public int hunger = 100;
+        public int xp = 0;
         public int level = 1;
 
         public float successChance = 0;
@@ -49,5 +58,30 @@ namespace Companions
         {
 
         }
+
+        public Pet(Pet copyPet)
+        {
+            petRarity = copyPet.petRarity;
+            type = copyPet.type;
+            name = copyPet.name;
+            size = copyPet.size;
+            description = copyPet.description;
+            emote = copyPet.emote;
+            ID = copyPet.ID;
+            stableID = copyPet.stableID;
+            isActive = copyPet.isActive;
+            isSparkly = copyPet.isSparkly;
+            affection = copyPet.affection;
+            hunger = copyPet.hunger;
+            xp = copyPet.xp;
+            level = copyPet.level;
+            successChance = copyPet.successChance;
+            itemFind = copyPet.itemFind;
+            coinBonus = copyPet.coinBonus;
+            xpBonus = copyPet.xpBonus;
+            preventDeathBonus = copyPet.preventDeathBonus;
+
+        }
+
     }
 }
