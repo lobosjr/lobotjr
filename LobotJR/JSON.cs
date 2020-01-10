@@ -13,6 +13,7 @@ class Data
 
     public class Chatters
     {
+        public List<string> vips { get; set; }
         public List<string> moderators { get; set; }
         public List<string> staff { get; set; }
         public List<string> viewers { get; set; }

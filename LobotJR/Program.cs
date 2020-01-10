@@ -556,6 +556,7 @@ namespace TwitchBot
 
             if (connected)
             {
+                UpdateTokens(tokenData, clientData);
                 Console.WriteLine($"Logged in as {tokenData.ChatUser}");
                 irc.sendIrcMessage("twitch.tv/membership");
             }
@@ -595,10 +596,11 @@ namespace TwitchBot
                 {
                     if (!irc.connected)
                     {
+                        UpdateTokens(tokenData, clientData);
                         if ((DateTime.Now - lastConnectAttempt).TotalSeconds > 5)
                         {
-                            irc = new IrcClient("irc.chat.twitch.tv", 80, "lobotjr", oAuthToken);
-                            group = new IrcClient("irc.chat.twitch.tv", 80, "lobotjr", oAuthToken);
+                            irc = new IrcClient("irc.chat.twitch.tv", 80, tokenData.ChatUser, tokenData.ChatToken.AccessToken);
+                            group = new IrcClient("irc.chat.twitch.tv", 80, tokenData.ChatUser, tokenData.ChatToken.AccessToken);
 
                             lastConnectAttempt = DateTime.Now;
                             if (!connected)
