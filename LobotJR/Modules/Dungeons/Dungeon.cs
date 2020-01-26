@@ -1,177 +1,24 @@
-﻿using System;
+﻿using LobotJR.Client;
+using LobotJR.Modules.Classes;
+using LobotJR.Modules.Items;
+using LobotJR.Modules.Wolfcoins;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using System.Threading;
-using System.IO;
-using System.Net;
-using System.Web;
-using Newtonsoft.Json;
-using TwitchBot;
-using Classes;
-using Wolfcoins;
-using Equipment;
 
-namespace Adventures
+namespace LobotJR.Modules.Dungeons
 {
-    class DungeonMessager
-    {
-        public static string DUNGEON_COMPLETE = "doneguid74293847562934";
-        public static int MSG_INSTANT = 0;
-        public static int MSG_QUEUED = 1;
-        public static int MSG_DUNGEON_COMPLETE = 2;
-
-        DateTime lastMessage;
-        HashSet<string> receivers;
-        IrcClient ircMessenger;
-        public Queue<List<string>> messageQueue;
-        static int cooldown = 9000;
-        string myChannel = "";
-
-        public void sendIrcMessage(string message)
-        {
-            ircMessenger.sendIrcMessage(message);
-        }
-
-        public DungeonMessager(ref IrcClient whisperClient, string channel, Party myParty)
-        {
-            HashSet<string> temp = new HashSet<string>();
-            foreach (var member in myParty.members)
-            {
-                temp.Add(member.name);
-            }
-            receivers = temp;
-            ircMessenger = whisperClient;
-            lastMessage = DateTime.Now;
-            messageQueue = new Queue<List<string>>();
-            myChannel = channel;
-        }
-
-        public void RemoveMember(string player)
-        {
-            foreach (var member in receivers)
-            {
-                if(member == player)
-                {
-                    receivers.Remove(player);
-                    continue;
-                }
-            }
-        }
-
-        public void sendChatMessage(int msgType, string message, string user)
-        {
-            List<string> temp = new List<string>();
-            temp.Add(msgType.ToString());
-            temp.Add(message);
-            temp.Add(user);
-            messageQueue.Enqueue(temp);
-        }
-
-        public void sendChatMessage(string message, string user)
-        {
-            List<string> temp = new List<string>();
-            temp.Add(MSG_INSTANT.ToString());
-            temp.Add(message);
-            temp.Add(user);
-            messageQueue.Enqueue(temp);
-        }
-
-        public void sendChatMessage(string message, Party myParty)
-        {
-            List<string> temp = new List<string>();
-            temp.Add(MSG_QUEUED.ToString());
-            temp.Add(message);
-            foreach(var member in myParty.members)
-            {
-                temp.Add(member.name);
-            }
-            messageQueue.Enqueue(temp);
-        }
-
-        // if there's no chat cooldown, lobot tries to send a message from the queue and then remove it. otherwise, do nothing
-        // to determine dungeon complete, if msg = DUNGEON_COMPLETE, return 1, otherwise return 0
-        public int processQueue()
-        {
-            List<string> temp = messageQueue.Peek();
-            int msgType = -1;
-            int.TryParse(temp.ElementAt(0), out msgType);
-            if (msgType == MSG_DUNGEON_COMPLETE)
-                return 1;
-
-            if (msgType == MSG_INSTANT || ((DateTime.Now - lastMessage).TotalMilliseconds > cooldown))
-            {
-                //fix this
-                string toSend = "";
-                if (temp.Count > 1)
-                    toSend = temp.ElementAt(1);
-                else
-                    toSend = temp.ElementAt(0);
-
-                if (toSend == DUNGEON_COMPLETE)
-                    return 1;
-                if(!(temp.Count > 1))
-                    return 0;
-
-                temp.RemoveRange(0, 2);
-                int i = 0;
-                int numReceivers = temp.Count();
-                foreach (var receiver in temp)
-                {
-                    string tempMsg = ".w " + receiver + " " + toSend;
-                    string msg = ":" + "lobotjr" + "!" + "lobotjr" + "@" + "lobotjr" + "tmi.twitch.tv PRIVMSG #" + myChannel + " :" + tempMsg;
-
-                    try
-                    {
-                        sendIrcMessage(msg);
-                    }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine(DateTime.Now.ToString() + ": Error occured: " + e);
-                        return 0;
-                    }
-                    if (numReceivers > i)
-                    {
-                        Thread.Sleep(600);
-                        i++;
-                    }
-                }
-                messageQueue.Dequeue();
-                lastMessage = DateTime.Now;
-                return 0;
-            }
-            else
-            {
-                return 0;
-            }
-        }
-    }
-
-    class Rewards
-    {
-        public int xpReward = 0;
-        public int coinReward = 0;
-        public string name = "";
-
-        public Rewards(string myName, int myXP, int myCoins)
-        {
-            xpReward = myXP;
-            name = myName;
-            coinReward = myCoins;
-        }
-    }
-
-    class Dungeon
+    public class Dungeon
     {
         public int dungeonID = -1;
         public int adventureType = -1;
         public string adventureTitle = "";
         public DungeonMessager messenger;
-        Random RNG = new Random();
+        private readonly Random RNG = new Random();
         public int maxPlayers = 3;
         public List<string> dungeonText = new List<string>();
-        public Dictionary<string,int> encounters = new Dictionary<string,int>();
+        public Dictionary<string, int> encounters = new Dictionary<string, int>();
         public int numEncounters = -1;
         public string dungeonName = "";
         public string description = "";
@@ -180,7 +27,7 @@ namespace Adventures
         public float deathChance = 25.0f;
         public int minLevel = -1;
         public int maxLevel = -1;
-        DateTime lastMessage = DateTime.Now;
+        private readonly DateTime lastMessage = DateTime.Now;
         public string myChannel = "";
         public const int numDungeonsPerLevel = 50;
         public const int baseDungeonCost = 50;
@@ -215,8 +62,7 @@ namespace Adventures
 
             for (int i = 0; i < enemies.Count(); i += 2)
             {
-                int difficulty = 0;
-                int.TryParse(enemies[i + 1], out difficulty);
+                int.TryParse(enemies[i + 1], out int difficulty);
                 encounters.Add(enemies[i], difficulty);
             }
             textIter++;
@@ -246,7 +92,7 @@ namespace Adventures
             }
         }
 
-        public Dungeon(string path, string channel, Dictionary<int,Item> itemDatabase)
+        public Dungeon(string path, string channel, Dictionary<int, Item> itemDatabase)
         {
             this.itemDB = itemDatabase;
             IEnumerable<string> fileText = System.IO.File.ReadLines(path, UTF8Encoding.Default);
@@ -263,10 +109,9 @@ namespace Adventures
             if ((enemies.Count() / 2) != numEncounters)
                 Console.WriteLine(DateTime.Now.ToString() + ": Dungeon at " + path + " has a mismatch for # of encounters & encounter data.");
 
-            for(int i = 0; i < enemies.Count(); i+= 2)
+            for (int i = 0; i < enemies.Count(); i += 2)
             {
-                int difficulty = 0;
-                int.TryParse(enemies[i + 1], out difficulty);
+                int.TryParse(enemies[i + 1], out int difficulty);
                 encounters.Add(enemies[i], difficulty);
             }
             textIter++;
@@ -276,7 +121,7 @@ namespace Adventures
             textIter++;
             defeatText = fileText.ElementAt(textIter);
             textIter++;
-            if(fileText.ElementAt(textIter).StartsWith("Loot="))
+            if (fileText.ElementAt(textIter).StartsWith("Loot="))
             {
                 string[] temp = fileText.ElementAt(textIter).Split('=');
                 string[] ids = temp[1].Split(',');
@@ -286,10 +131,10 @@ namespace Adventures
                     int.TryParse(ids[i], out toAdd);
                     loot.Add(toAdd);
                 }
-                    textIter++;
+                textIter++;
             }
             int iter = 0;
-            foreach(var line in fileText.Skip(textIter))
+            foreach (var line in fileText.Skip(textIter))
             {
                 dungeonText.Add(line);
                 iter++;
@@ -301,7 +146,7 @@ namespace Adventures
         {
             this.messenger = new DungeonMessager(ref whisper, this.myChannel, myParty);
             List<Rewards> partyRewards = new List<Rewards>();
-            messenger.sendChatMessage("Loading Dungeon Information (" + this.dungeonName + ")...", myParty);
+            messenger.SendChatMessage("Loading Dungeon Information (" + this.dungeonName + ")...", myParty);
             float percentPartyFull = (float)myParty.NumMembers() / maxPlayers;
             List<CharClass> partyMembers = new List<CharClass>();
             for (int i = 0; i < myParty.NumMembers(); i++)
@@ -335,27 +180,32 @@ namespace Adventures
                     case CharClass.WARRIOR:
                         {
                             numWarriors++;
-                        } break;
+                        }
+                        break;
 
                     case CharClass.MAGE:
                         {
                             numMages++;
-                        } break;
+                        }
+                        break;
 
                     case CharClass.ROGUE:
                         {
                             numRogues++;
-                        } break;
+                        }
+                        break;
 
                     case CharClass.RANGER:
                         {
                             numRangers++;
-                        } break;
+                        }
+                        break;
 
                     case CharClass.CLERIC:
                         {
                             numClerics++;
-                        } break;
+                        }
+                        break;
 
                     default: break;
                 }
@@ -380,27 +230,32 @@ namespace Adventures
                     case CharClass.WARRIOR:
                         {
                             UpdateDungeonStats(numWarriors, player);
-                        } break;
+                        }
+                        break;
 
                     case CharClass.MAGE:
                         {
                             UpdateDungeonStats(numMages, player);
-                        } break;
+                        }
+                        break;
 
                     case CharClass.ROGUE:
                         {
                             UpdateDungeonStats(numRogues, player);
-                        } break;
+                        }
+                        break;
 
                     case CharClass.RANGER:
                         {
                             UpdateDungeonStats(numRangers, player);
-                        } break;
+                        }
+                        break;
 
                     case CharClass.CLERIC:
                         {
                             UpdateDungeonStats(numClerics, player);
-                        } break;
+                        }
+                        break;
 
                     default: break;
                 }
@@ -421,16 +276,16 @@ namespace Adventures
             int doubleI = 0;
             for (int i = 0; i < this.numEncounters; i++)
             {
-                messenger.sendChatMessage(this.dungeonText.ElementAt(doubleI), myParty);
+                messenger.SendChatMessage(this.dungeonText.ElementAt(doubleI), myParty);
                 doubleI++;
-                messenger.sendChatMessage(this.dungeonText.ElementAt(doubleI), myParty);
+                messenger.SendChatMessage(this.dungeonText.ElementAt(doubleI), myParty);
                 float encounterSuccess = this.partySuccessRate - (float)encounters.ElementAt(i).Value;
                 doubleI++;
                 //if encounter fails, people can die and the dungeon ends
-                if(!CalculateEncounterOutcome(encounterSuccess))
+                if (!CalculateEncounterOutcome(encounterSuccess))
                 {
                     string defeatLogText = dungeonName + " failed by ";
-                    messenger.sendChatMessage(this.defeatText, myParty);
+                    messenger.SendChatMessage(this.defeatText, myParty);
                     int partyIter = 0;
                     foreach (var player in myParty.members)
                     {
@@ -456,12 +311,12 @@ namespace Adventures
                             player.coinsEarned = (coins * -1);
                             player.xpEarned = (xp * -1);
 
-                            messenger.sendChatMessage("Sadly, you have died. You lost " + xp + " XP and " + coins + " Coins.", player.name);
+                            messenger.SendChatMessage("Sadly, you have died. You lost " + xp + " XP and " + coins + " Coins.", player.name);
                             foreach (var member in partyMembers)
                             {
                                 if (member.name == player.name)
                                     continue;
-                                messenger.sendChatMessage("In the chaos, " + player.name + " lost their life. Seek vengeance in their honor!", member.name);
+                                messenger.SendChatMessage("In the chaos, " + player.name + " lost their life. Seek vengeance in their honor!", member.name);
                             }
 
                             Console.WriteLine(DateTime.Now.ToString() + ": " + player.name + " has died in a dungeon.");
@@ -475,9 +330,9 @@ namespace Adventures
                     }
 
                     System.IO.File.AppendAllText(logPath, defeatLogText + Environment.NewLine);
-                    messenger.sendChatMessage("It's a sad thing your adventure has ended here. No XP or Coins have been awarded.", myParty);
-                    messenger.sendChatMessage(DungeonMessager.MSG_DUNGEON_COMPLETE, DungeonMessager.DUNGEON_COMPLETE, "");
-                    foreach(var member in partyMembers)
+                    messenger.SendChatMessage("It's a sad thing your adventure has ended here. No XP or Coins have been awarded.", myParty);
+                    messenger.SendChatMessage(DungeonMessager.MSG_DUNGEON_COMPLETE, DungeonMessager.DUNGEON_COMPLETE, "");
+                    foreach (var member in partyMembers)
                     {
                         if (member.myItems.Count > 0)
                         {
@@ -489,10 +344,10 @@ namespace Adventures
                 }
                 else
                 {
-                    messenger.sendChatMessage("Your party successfully defeated the " + encounters.ElementAt(i).Key + "!", myParty);
+                    messenger.SendChatMessage("Your party successfully defeated the " + encounters.ElementAt(i).Key + "!", myParty);
                 }
             }
-            messenger.sendChatMessage(victoryText, myParty);
+            messenger.SendChatMessage(victoryText, myParty);
             string members = "";
             foreach (var member in myParty.members)
             {
@@ -507,7 +362,7 @@ namespace Adventures
                 if (xp < 5)
                     xp = 5;
 
-                
+
                 randomAmount = this.RNG.Next((randomRewardMod * -1), randomRewardMod);
                 coins += randomAmount;
                 if (coins < 5)
@@ -516,12 +371,12 @@ namespace Adventures
                 member.coinsEarned = coins;
                 member.xpEarned = xp;
 
-                
+
                 members += member.name + ", " + member.className + " (" + xp + " xp, " + coins + " coins.) ";
-                
-                int myLoot = awardLoot(member);
-                int petLoot = awardPet(member);
-                if(myLoot == -1 && petLoot == -1)
+
+                int myLoot = AwardLoot(member);
+                int petLoot = AwardPet(member);
+                if (myLoot == -1 && petLoot == -1)
                 {
                     Console.WriteLine(DateTime.Now.ToString() + ": " + member.name + " completed a dungeon and earned " + xp + " xp and " + coins + " Wolfcoins.", whisper);
                     continue;
@@ -532,12 +387,12 @@ namespace Adventures
                     member.itemEarned = myLoot;
                     member.petEarned = petLoot;
                 }
-                
+
             }
 
-            messenger.sendChatMessage("Dungeon complete. Your party remains intact.", myParty);
+            messenger.SendChatMessage("Dungeon complete. Your party remains intact.", myParty);
 
-            messenger.sendChatMessage(DungeonMessager.MSG_DUNGEON_COMPLETE, DungeonMessager.DUNGEON_COMPLETE, "");
+            messenger.SendChatMessage(DungeonMessager.MSG_DUNGEON_COMPLETE, DungeonMessager.DUNGEON_COMPLETE, "");
             //Whisper(myParty, "You've earned " + reward.xpReward + " XP and " + reward.coinReward + " Wolfcoins!", whisper);
             string writeToLog = dungeonName + " completed by " + members;
             System.IO.File.AppendAllText(logPath, dungeonName + " victory by " + members + Environment.NewLine);
@@ -555,7 +410,7 @@ namespace Adventures
 
         public void ApplyItemBuffs(CharClass player)
         {
-            foreach(var itm in player.myItems)
+            foreach (var itm in player.myItems)
             {
                 if (!itm.isActive)
                     continue;
@@ -572,7 +427,7 @@ namespace Adventures
         {
             foreach (var member in partyMembers)
             {
-                switch(member.classType)
+                switch (member.classType)
                 {
                     case CharClass.WARRIOR:
                         {
@@ -582,7 +437,8 @@ namespace Adventures
                             member.coinBonus = freshClass.coinBonus;
                             member.preventDeathBonus = freshClass.preventDeathBonus;
                             member.successChance = freshClass.successChance;
-                        } break;
+                        }
+                        break;
 
                     case CharClass.MAGE:
                         {
@@ -592,7 +448,8 @@ namespace Adventures
                             member.coinBonus = freshClass.coinBonus;
                             member.preventDeathBonus = freshClass.preventDeathBonus;
                             member.successChance = freshClass.successChance;
-                        } break;
+                        }
+                        break;
 
                     case CharClass.ROGUE:
                         {
@@ -602,7 +459,8 @@ namespace Adventures
                             member.coinBonus = freshClass.coinBonus;
                             member.preventDeathBonus = freshClass.preventDeathBonus;
                             member.successChance = freshClass.successChance;
-                        } break;
+                        }
+                        break;
 
                     case CharClass.RANGER:
                         {
@@ -612,7 +470,8 @@ namespace Adventures
                             member.coinBonus = freshClass.coinBonus;
                             member.preventDeathBonus = freshClass.preventDeathBonus;
                             member.successChance = freshClass.successChance;
-                        } break;
+                        }
+                        break;
 
                     case CharClass.CLERIC:
                         {
@@ -622,7 +481,8 @@ namespace Adventures
                             member.coinBonus = freshClass.coinBonus;
                             member.preventDeathBonus = freshClass.preventDeathBonus;
                             member.successChance = freshClass.successChance;
-                        } break;
+                        }
+                        break;
 
                     default: break;
                 }
@@ -653,7 +513,7 @@ namespace Adventures
 
         }
 
-        public int awardLoot(CharClass player)
+        public int AwardLoot(CharClass player)
         {
             // default at 0
             int chanceForLoot = 0;
@@ -664,7 +524,7 @@ namespace Adventures
             if (chanceForLoot > roll)
             {
 
-                foreach(var myLoot in loot)
+                foreach (var myLoot in loot)
                 {
                     if (itemDB[myLoot - 1].forClass != player.classType)
                     {
@@ -672,7 +532,7 @@ namespace Adventures
                     }
 
                     bool hasItem = false;
-                    foreach(var item in player.myItems)
+                    foreach (var item in player.myItems)
                     {
                         if (item.itemID == itemDB[myLoot - 1].itemID)
                         {
@@ -682,7 +542,7 @@ namespace Adventures
 
                     if (!hasItem)
                     {
-                        if(chanceForLoot > (roll + (itemDB[myLoot - 1].itemRarity * Item.QUALITY_MOD)))
+                        if (chanceForLoot > (roll + (itemDB[myLoot - 1].itemRarity * Item.QUALITY_MOD)))
                             return myLoot;
                     }
                     continue;
@@ -691,7 +551,7 @@ namespace Adventures
             return -1;
         }
 
-        public int awardPet(CharClass player)
+        public int AwardPet(CharClass player)
         {
             // default at 0
             int chanceForLoot = 150;
@@ -744,8 +604,8 @@ namespace Adventures
             else
                 return false;
         }
-        
-            //returns true if player dies
+
+        //returns true if player dies
         public bool CalculateDeath(CharClass player, float partyPreventBonus)
         {
             this.deathChance -= (player.preventDeathBonus + partyPreventBonus);

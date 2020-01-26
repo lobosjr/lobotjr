@@ -1,52 +1,10 @@
-﻿using System;
+﻿using LobotJR.Client;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using TwitchBot;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Fishing
+namespace LobotJR.Modules.Fishing
 {
-    class Fish
-    {
-        public const int SIZE_TINY = 1;
-        public const int SIZE_SMALL = 2;
-        public const int SIZE_MEDIUM = 3;
-        public const int SIZE_LARGE = 4;
-        public const int SIZE_HUGE = 5;
-
-        public int sizeCategory = -1;
-        public int ID = -1;
-        public int rarity = -1;
-        public string name = "";
-        public float[] lengthRange = {-1, -1};
-        public float[] weightRange = {-1, -1};
-        public float length = -1;
-        public float weight = -1;
-        public string flavorText = "";
-        public string caughtBy = "";
-
-        public Fish()
-        {
-
-        }
-
-        public Fish (Fish toCopy)
-        {
-            sizeCategory = toCopy.sizeCategory;
-            ID = toCopy.ID;
-            name = toCopy.name;
-            lengthRange = toCopy.lengthRange;
-            weightRange = toCopy.weightRange;
-            length = toCopy.length;
-            weight = toCopy.weight;
-            flavorText = toCopy.flavorText;
-            rarity = toCopy.rarity;
-            caughtBy = toCopy.caughtBy;
-        }
-    }
-
-    class Fisherman
+    public class Fisherman
     {
         // category based on random rolling lower than the value
         public const int TINY_CHANCE = 40;
@@ -75,9 +33,10 @@ namespace Fishing
         public Fish Catch(Fish tempFish, IrcClient whisperClient)
         {
             // get fish data out of table
-            Fish myCatch = new Fish(tempFish);
-
-            myCatch.caughtBy = username;
+            Fish myCatch = new Fish(tempFish)
+            {
+                caughtBy = username
+            };
             // determine weight & length range, then segment it equally. Weighted RNG will roll one of 5 categories
             float weightRange = myCatch.weightRange[1] - myCatch.weightRange[0];
             float weightFactor = weightRange / 5;
@@ -92,7 +51,7 @@ namespace Fishing
             float minLength = myCatch.lengthRange[0];
             float minWeight = myCatch.weightRange[0];
             // dependant on size category, set up lengthFactor & roll between the adjusted ranges for weight/length 
-            if ( size <= TINY_CHANCE)
+            if (size <= TINY_CHANCE)
             {
                 myCatch.length = minLength + (lengthFactor * (float)rng.NextDouble());
                 myCatch.weight = minWeight + (weightFactor * (float)rng.NextDouble());
@@ -119,7 +78,7 @@ namespace Fishing
                 myCatch.length = minLength + (lengthFactor * (float)rng.NextDouble());
                 myCatch.weight = minWeight + (weightFactor * (float)rng.NextDouble());
             }
-            else if(size ==  HUGE_CHANCE)
+            else if (size == HUGE_CHANCE)
             {
                 minLength += (lengthFactor * 4);
                 minWeight += (weightFactor * 4);
@@ -133,27 +92,27 @@ namespace Fishing
             bool matchFound = false;
             for (int i = 0; i < biggestFish.Count; i++)
             {
-                if(biggestFish[i].ID == myCatch.ID)
+                if (biggestFish[i].ID == myCatch.ID)
                 {
                     matchFound = true;
-                    if(myCatch.weight > biggestFish[i].weight)
+                    if (myCatch.weight > biggestFish[i].weight)
                     {
                         biggestFish[i] = new Fish(myCatch);
-                        whisperClient.sendChatMessage(".w " + username + " This is the biggest " + myCatch.name + " you've ever caught!");
+                        whisperClient.SendChatMessage(".w " + username + " This is the biggest " + myCatch.name + " you've ever caught!");
                         break;
                     }
                 }
             }
 
-            if(!matchFound)
+            if (!matchFound)
             {
                 biggestFish.Add(myCatch);
-                whisperClient.sendChatMessage(".w " + username + " This is the biggest " + myCatch.name + " you've ever caught!");
+                whisperClient.SendChatMessage(".w " + username + " This is the biggest " + myCatch.name + " you've ever caught!");
             }
             Console.WriteLine(username + " caught a " + myCatch.weight + " pound, " + myCatch.length + " inch " + myCatch.name + "!");
 
             myCatch.caughtBy = username;
-            
+
             return myCatch;
         }
     }

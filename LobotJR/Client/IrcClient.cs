@@ -1,32 +1,28 @@
-﻿using System;
+﻿using LobotJR.Modules.Wolfcoins;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Net;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
-using System.IO;
-using Wolfcoins;
-using Adventures;
 
-namespace TwitchBot
+namespace LobotJR.Client
 {
-    class IrcClient
+    public class IrcClient : IDisposable
     {
         public DateTime timeLast;
         public DateTime dungeonTimeLast;
         public DateTime lastReconnect;
         public bool connected;
         public Queue<string> messageQueue = new Queue<string>();
-        public Queue<Dictionary<Party,string>> dungeonQueue = new Queue<Dictionary<Party,string>>();
+        public Queue<Dictionary<Party, string>> dungeonQueue = new Queue<Dictionary<Party, string>>();
         //private int dungeonCooldown = 7500;
-        private int cooldown = 65;
-        private string username;
+        private readonly int cooldown = 65;
+        private readonly string username;
+        private readonly string myIp;
+        private readonly int myPort;
+        private readonly string myPassword;
         private string channel;
-        private string myIp;
-        private int myPort;
-        private string myPassword;
 
         private TcpClient tcpClient;
         private StreamReader inputStream;
@@ -66,7 +62,7 @@ namespace TwitchBot
         static void Whisper(string user, string message, IrcClient whisperClient)
         {
             string toSend = ".w " + user + " " + message;
-            whisperClient.sendChatMessage(toSend);
+            whisperClient.SendChatMessage(toSend);
         }
 
         static void Whisper(Party party, string message, IrcClient whisperClient)
@@ -74,11 +70,11 @@ namespace TwitchBot
             for (int i = 0; i < party.NumMembers(); i++)
             {
                 string toSend = ".w " + party.members.ElementAt(i).name + " " + message;
-                whisperClient.sendChatMessage(toSend);
+                whisperClient.SendChatMessage(toSend);
             }
         }
 
-        public void joinRoom(string channel)
+        public void JoinRoom(string channel)
         {
             this.channel = channel;
             outputStream.WriteLine("JOIN #" + channel);
@@ -86,19 +82,19 @@ namespace TwitchBot
             Console.WriteLine("Joined channel: " + channel);
         }
 
-        public void sendIrcMessage(string message)
+        public void SendIrcMessage(string message)
         {
             outputStream.WriteLine(message);
             outputStream.Flush();
         }
 
-        public void sendChatMessage(string message)
+        public void SendChatMessage(string message)
         {
             messageQueue.Enqueue(message);
         }
 
         // if there's no chat cooldown, lobot tries to send a message from the queue and then remove it. otherwise, do nothing
-        public void processQueue()
+        public void ProcessQueue()
         {
             if (!IsConnected())
             {
@@ -109,20 +105,20 @@ namespace TwitchBot
             {
                 string temp = messageQueue.Dequeue();
                 string msg = ":" + username + "!" + username + "@" + username + ".tmi.twitch.tv PRIVMSG #" + channel + " :" + temp;
-                
+
                 try
-                    {
-                        sendIrcMessage(msg);
-                    }
-                    catch(Exception e)
-                    {
-                        messageQueue.Enqueue(temp);
-                        //Console.WriteLine("Error occured: " + e);
-                        Reconnect();
-                    }
+                {
+                    SendIrcMessage(msg);
+                }
+                catch
+                {
+                    messageQueue.Enqueue(temp);
+                    //Console.WriteLine("Error occured: " + e);
+                    Reconnect();
+                }
                 timeLast = DateTime.Now;
             }
-            
+
         }
 
         public bool IsConnected()
@@ -203,7 +199,7 @@ namespace TwitchBot
             }
         }
 
-        public string[] readMessage(Currency userList, string channel)
+        public string[] ReadMessage(Currency userList, string channel)
         {
             if (!IsConnected())
             {
@@ -215,7 +211,7 @@ namespace TwitchBot
                 if (tcpClient.GetStream().DataAvailable)
                 {
                     string message = inputStream.ReadLine();
-                    string[] temp = parseMessage(message);
+                    string[] temp = ParseMessage(message);
                     if (temp[0] != null)
                     {
                         Match match = Regex.Match(temp[1], @"([A-Za-z0-9])\.([A-Za-z])([A-Za-z0-9])", RegexOptions.IgnoreCase);
@@ -224,34 +220,34 @@ namespace TwitchBot
                         {
                             if (check.Contains("d.va") || userList.subSet.Contains(temp[0]))
                             {
-                                
+
                             }
-                            else if( check.Contains("OCEAN MAN 🌊  😍"))
+                            else if (check.Contains("OCEAN MAN 🌊  😍"))
                             {
                                 string timeout = "/timeout " + temp[0] + " 1";
-                                sendChatMessage(timeout);
-                                sendChatMessage("NOCEAN MAN");
+                                SendChatMessage(timeout);
+                                SendChatMessage("NOCEAN MAN");
                                 string[] noMsg = { "" };
                                 return noMsg;
                             }
                             else
-                            { 
+                            {
                                 userList.UpdateViewers(channel);
                                 if (userList.xpList != null)
                                 {
-                                    if (userList.xpList.ContainsKey(temp[0]) && (userList.determineLevel(temp[0]) < 2))
+                                    if (userList.xpList.ContainsKey(temp[0]) && (userList.DetermineLevel(temp[0]) < 2))
                                     {
                                         string timeout = "/timeout " + temp[0] + " 1";
-                                        sendChatMessage(timeout);
-                                        sendChatMessage("Links may only be posted by viewers of Level 2 or above. (Message me '?' for more details)");
+                                        SendChatMessage(timeout);
+                                        SendChatMessage("Links may only be posted by viewers of Level 2 or above. (Message me '?' for more details)");
                                         string[] noMsg = { "" };
                                         return noMsg;
                                     }
                                     else if (!userList.xpList.ContainsKey(temp[0]))
                                     {
                                         string timeout = "/timeout " + temp[0] + " 1";
-                                        sendChatMessage(timeout);
-                                        sendChatMessage("Links may only be posted by viewers of Level 2 or above. (Message me '?' for more details)");
+                                        SendChatMessage(timeout);
+                                        SendChatMessage("Links may only be posted by viewers of Level 2 or above. (Message me '?' for more details)");
                                         string[] noMsg = { "" };
                                         return noMsg;
                                     }
@@ -282,7 +278,7 @@ namespace TwitchBot
 
         }
 
-        public string[] readMessage()
+        public string[] ReadMessage()
         {
             if (!IsConnected())
             {
@@ -292,7 +288,7 @@ namespace TwitchBot
             if (tcpClient.GetStream().DataAvailable)
             {
                 string message = inputStream.ReadLine();
-                string[] temp = parseMessage(message);
+                string[] temp = ParseMessage(message);
                 if (temp[0] != null)
                 {
                     message = temp[0] + " says: " + temp[1];
@@ -311,7 +307,7 @@ namespace TwitchBot
 
         }
 
-        public string[] parseMessage(string message)
+        public string[] ParseMessage(string message)
         {
             if (!IsConnected())
             {
@@ -321,9 +317,9 @@ namespace TwitchBot
             if (message.StartsWith("PING"))
             {
                 //PONG
-                sendIrcMessage("PONG tmi.twitch.tv\r\n");
+                SendIrcMessage("PONG tmi.twitch.tv\r\n");
             }
-            if(message.Contains("•"))
+            if (message.Contains("•"))
             {
                 string[] temp = { "Someone", "I sent a beep noise :(" };
                 return temp;
@@ -340,13 +336,13 @@ namespace TwitchBot
                     buf += message[i];
                     charPos++;
                 }
-                else if(message[i] == ':')
+                else if (message[i] == ':')
                 {
                     count++;
                 }
                 else if (!serverParsed)
                 {
-                    if(message[i] == ' ')
+                    if (message[i] == ' ')
                     {
                         serverParsed = true;
                     }
@@ -361,18 +357,18 @@ namespace TwitchBot
                 if (message.Contains("PRIVMSG"))
                 {
                     string name = message.Substring(1, message.IndexOf("!") - 1);
-                    string[] output = {name, buf};
+                    string[] output = { name, buf };
                     return output;
                 }
                 else if (message.Contains("WHISPER"))
                 {
-                    string[] temp = message.Split(new char[]{' '},5);
+                    string[] temp = message.Split(new char[] { ' ' }, 5);
                     int size = temp.Length;
                     int myColon = temp[size - 1].IndexOf(':');
                     int length = temp[1].IndexOf("!") - 1;
                     string name = temp[1].Substring(1, length);
                     string msg = temp[size - 1].Substring(1);
-                    
+
                     string[] output = { name, msg };
                     return output;
                 }
@@ -387,6 +383,22 @@ namespace TwitchBot
                 string[] temp = { null, buf };
                 return temp;
             }
+        }
+
+        protected virtual void Dispose(bool includeManaged)
+        {
+            if (includeManaged)
+            {
+                tcpClient.Dispose();
+                inputStream.Dispose();
+                outputStream.Dispose();
+            }
+        }
+
+        public void Dispose()
+        {
+            this.Dispose(true);
+            GC.SuppressFinalize(this);
         }
     };
 }

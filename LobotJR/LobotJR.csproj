@@ -65,14 +65,27 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Fishing.cs" />
-    <Compile Include="Dungeon.cs" />
-    <Compile Include="Classes.cs" />
-    <Compile Include="GroupFinder.cs" />
-    <Compile Include="IrcClient.cs" />
-    <Compile Include="Items.cs" />
-    <Compile Include="JSON.cs" />
-    <Compile Include="Pets.cs" />
+    <Compile Include="Client\Data.cs" />
+    <Compile Include="Client\SubscriberData.cs" />
+    <Compile Include="Modules\Betting\Better.cs" />
+    <Compile Include="Modules\Classes\CharClass.cs" />
+    <Compile Include="Modules\Classes\Cleric.cs" />
+    <Compile Include="Modules\Classes\Mage.cs" />
+    <Compile Include="Modules\Classes\Ranger.cs" />
+    <Compile Include="Modules\Classes\Rogue.cs" />
+    <Compile Include="Modules\Classes\Warrior.cs" />
+    <Compile Include="Modules\Dungeons\Dungeon.cs" />
+    <Compile Include="Modules\Dungeons\DungeonMessager.cs" />
+    <Compile Include="Modules\Dungeons\Rewards.cs" />
+    <Compile Include="Modules\Fishing\Fish.cs" />
+    <Compile Include="Modules\Fishing\Fisherman.cs" />
+    <Compile Include="Client\IrcClient.cs" />
+    <Compile Include="Modules\GroupFinder\GroupFinderQueue.cs" />
+    <Compile Include="Modules\Items\Item.cs" />
+    <Compile Include="Modules\Pets\Pets.cs" />
+    <Compile Include="Modules\Wolfcoins\Currency.cs" />
+    <Compile Include="Modules\Wolfcoins\Party.cs" />
+    <Compile Include="Native\NativeMethods.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Settings.Designer.cs">
@@ -80,7 +93,6 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
-    <Compile Include="Wolfcoins.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

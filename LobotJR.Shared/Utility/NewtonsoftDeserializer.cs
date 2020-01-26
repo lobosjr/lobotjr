@@ -9,12 +9,16 @@ namespace LobotJR.Shared.Utility
     {
         public static NewtonsoftDeserializer Default { get; private set; } = new NewtonsoftDeserializer();
 
-        T IDeserializer.Deserialize<T>(IRestResponse response)
+        public T Deserialize<T>(IRestResponse response)
         {
-            var resolver = new DefaultContractResolver();
-            resolver.NamingStrategy = new SnakeCaseNamingStrategy(true, false, true);
-            var settings = new JsonSerializerSettings();
-            settings.ContractResolver = resolver;
+            var resolver = new DefaultContractResolver
+            {
+                NamingStrategy = new SnakeCaseNamingStrategy(true, false, true)
+            };
+            var settings = new JsonSerializerSettings
+            {
+                ContractResolver = resolver
+            };
             return JsonConvert.DeserializeObject<T>(response.Content, settings);
         }
     }

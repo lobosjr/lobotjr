@@ -1,17 +1,12 @@
-﻿using System;
+﻿using LobotJR.Modules.Pets;
+using LobotJR.Modules.Items;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading;
-using System.IO;
-using System.Windows.Forms;
-using Equipment;
-using Companions;
 
-namespace Classes
+namespace LobotJR.Modules.Classes
 {
-
-    class CharClass
+    public class CharClass
     {
         public const int WARRIOR = 1;
         public const int MAGE = 2;
@@ -60,15 +55,10 @@ namespace Classes
 
         public DateTime lastDailyGroupFinder = DateTime.MinValue;
 
-        public CharClass()
-        {
-
-        }
-
         public string PrintItems()
         {
             string itemList = "";
-            foreach(var itm in myItems)
+            foreach (var itm in myItems)
             {
                 string isActive = "No";
                 if (itm.isActive)
@@ -79,9 +69,9 @@ namespace Classes
             return itemList;
         }
 
-        public bool releasePet(int stableID)
+        public bool ReleasePet(int stableID)
         {
-            
+
             if (myPets.Remove(myPets.ElementAt(stableID - 1)))
             {
 
@@ -113,7 +103,7 @@ namespace Classes
             foreach (var itm in myItems)
             {
 
-                if(itm.inventoryID != i)
+                if (itm.inventoryID != i)
                 {
                     itm.inventoryID = i;
                     numErrors++;
@@ -194,7 +184,7 @@ namespace Classes
                         continue;
 
                     // if two items w/ matching ids exist
-                    if(itm.itemID == myItems[id].itemID)
+                    if (itm.itemID == myItems[id].itemID)
                     {
                         // duplicate found
                         RemoveItem(itm);
@@ -212,7 +202,7 @@ namespace Classes
             float chance = 0;
             foreach (var itm in myItems)
             {
-                if(itm.isActive)
+                if (itm.isActive)
                     chance += itm.successChance;
             }
 
@@ -221,7 +211,7 @@ namespace Classes
 
         public Item GetItem(int inventoryID)
         {
-            foreach(var itm in myItems)
+            foreach (var itm in myItems)
             {
                 if (itm.inventoryID == inventoryID)
                     return itm;
@@ -275,9 +265,9 @@ namespace Classes
 
         public void ActivateItem(Item itm)
         {
-            foreach(var iterItem in myItems)
+            foreach (var iterItem in myItems)
             {
-                if(itm.itemType == iterItem.itemType && iterItem != itm)
+                if (itm.itemType == iterItem.itemType && iterItem != itm)
                 {
                     iterItem.isActive = false;
                 }
@@ -289,14 +279,14 @@ namespace Classes
         {
             foreach (var iterItem in myItems)
             {
-                if(itm == iterItem)
+                if (itm == iterItem)
                 {
                     int tempType = itm.itemType;
                     myItems.Remove(itm);
                     int listPos = 0;
-                    foreach(var newActive in myItems)
+                    foreach (var newActive in myItems)
                     {
-                        if(tempType == newActive.itemType)
+                        if (tempType == newActive.itemType)
                         {
                             myItems.ElementAt(listPos).isActive = true;
                             break;
@@ -307,76 +297,4 @@ namespace Classes
             }
         }
     }
-
-    class Warrior : CharClass
-    {
-
-        public Warrior()
-        {
-            successChance = 10;
-            itemFind = 3;
-            coinBonus = 5;
-            xpBonus = 0;
-            classType = WARRIOR;
-            className = "Warrior";
-        }
-    }
-
-    class Mage : CharClass
-    {
-
-        public Mage()
-        {
-            successChance = 3;
-            itemFind = 10;
-            coinBonus = 0;
-            xpBonus = 5;
-            classType = MAGE;
-            className = "Mage";
-        }
-    }
-
-    class Rogue : CharClass
-    {
-
-        public Rogue()
-        {
-            successChance = 0;
-            itemFind = 5;
-            coinBonus = 10;
-            xpBonus = 3;
-            classType = ROGUE;
-            className = "Rogue";
-        }
-    }
-
-    class Ranger : CharClass
-    {
-
-        public Ranger()
-        {
-            successChance = 5;
-            itemFind = 0;
-            coinBonus = 3;
-            xpBonus = 10;
-            classType = RANGER;
-            className = "Ranger";
-        }
-    }
-
-    class Cleric : CharClass
-    {
-
-        public Cleric()
-        {
-            preventDeathBonus = 10.0f;
-            successChance = 3;
-            itemFind = 3;
-            coinBonus = 3;
-            xpBonus = 3;
-            classType = CLERIC;
-            className = "Cleric";
-        }
-    }
-
 }

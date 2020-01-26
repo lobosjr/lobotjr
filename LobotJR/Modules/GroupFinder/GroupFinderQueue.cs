@@ -1,21 +1,19 @@
-﻿using System;
+﻿using LobotJR.Modules.Classes;
+using LobotJR.Modules.Wolfcoins;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Classes;
-using Wolfcoins;
 
-namespace GroupFinder
+namespace LobotJR.Modules.GroupFinder
 {
-    class GroupFinderQueue
+    public class GroupFinderQueue
     {
         const int DUNGEON_MAX = 3;
         const int RAID_MAX = 5;
 
         public int priority = 0;
         public List<CharClass> queue;
-        Dictionary<int, string> dungeonList;
+        private readonly Dictionary<int, string> dungeonList;
         public DateTime lastFormed = DateTime.Now;
 
         public GroupFinderQueue(Dictionary<int, string> dungeonList)
@@ -40,12 +38,12 @@ namespace GroupFinder
             List<CharClass> eligibileMembers = new List<CharClass>();
             List<int> matchedDungeons = player.queueDungeons;
 
-            foreach(var member in queue)
+            foreach (var member in queue)
             {
                 if (member.name == player.name)
                     continue;
 
-                if(member.classType == player.classType)
+                if (member.classType == player.classType)
                 {
                     continue;
                 }
@@ -71,9 +69,9 @@ namespace GroupFinder
 
             for (int i = 0; i < membersByPriority.Count; i++)
             {
-                foreach(var member in queue)
+                foreach (var member in queue)
                 {
-                    if(member.queuePriority == membersByPriority.ElementAt(i))
+                    if (member.queuePriority == membersByPriority.ElementAt(i))
                     {
                         eligibileMembers.Add(member);
                         break;
@@ -81,53 +79,53 @@ namespace GroupFinder
                 }
             }
 
-                foreach (var member in eligibileMembers)
+            foreach (var member in eligibileMembers)
+            {
+                List<int> currentMatches = new List<int>();
+                foreach (var dungeonID in member.queueDungeons)
                 {
-                    List<int> currentMatches = new List<int>();
-                    foreach (var dungeonID in member.queueDungeons)
-                    {
-                        if (!matchedDungeons.Contains(dungeonID))
-                            continue;
-
-                        currentMatches.Add(dungeonID);
-                    }
-
-                    if (currentMatches.Count == 0)
+                    if (!matchedDungeons.Contains(dungeonID))
                         continue;
 
-                    for (int k = 0; k < matchedDungeons.Count; k++)
-                    {
-                        if (!currentMatches.Contains(matchedDungeons.ElementAt(k)))
-                        {
-                            matchedDungeons.Remove(matchedDungeons.ElementAt(k));
-                            k--;
-                        }
-                    }
-                    bool isDuplicateClass = false;
-                    foreach(var partyMember in newParty.members)
-                    {
-                        if (member.classType == partyMember.classType)
-                        {
-                            isDuplicateClass = true;
-                            break;
-                        }
-                    }
-                    if (isDuplicateClass)
-                        continue;
+                    currentMatches.Add(dungeonID);
+                }
 
-                    newParty.AddMember(member);
-                    if (newParty.NumMembers() == DUNGEON_MAX)
+                if (currentMatches.Count == 0)
+                    continue;
+
+                for (int k = 0; k < matchedDungeons.Count; k++)
+                {
+                    if (!currentMatches.Contains(matchedDungeons.ElementAt(k)))
                     {
-                        foreach (var dude in newParty.members)
-                        {
-                            dude.queueDungeons = matchedDungeons;
-                        }
-                        partyFilled = true;
-                        lastFormed = DateTime.Now;
+                        matchedDungeons.Remove(matchedDungeons.ElementAt(k));
+                        k--;
+                    }
+                }
+                bool isDuplicateClass = false;
+                foreach (var partyMember in newParty.members)
+                {
+                    if (member.classType == partyMember.classType)
+                    {
+                        isDuplicateClass = true;
                         break;
                     }
                 }
-            
+                if (isDuplicateClass)
+                    continue;
+
+                newParty.AddMember(member);
+                if (newParty.NumMembers() == DUNGEON_MAX)
+                {
+                    foreach (var dude in newParty.members)
+                    {
+                        dude.queueDungeons = matchedDungeons;
+                    }
+                    partyFilled = true;
+                    lastFormed = DateTime.Now;
+                    break;
+                }
+            }
+
 
             if (partyFilled)
                 RemoveMembers(newParty);
@@ -150,7 +148,7 @@ namespace GroupFinder
         public void RemoveMember(string user)
         {
             int iter = 0;
-            foreach(var member in queue)
+            foreach (var member in queue)
             {
                 if (member.name == user)
                 {
