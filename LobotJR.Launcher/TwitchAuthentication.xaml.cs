@@ -70,40 +70,55 @@ namespace LobotJR.Launcher
             }
             else if (e.Uri.ToString().StartsWith(_clientData.RedirectUri))
             {
-                if (_tokenData.ChatToken == null)
-                {
-                    _tokenData.ChatToken = HandleAuthResponse(e.Uri);
-                    var validationResponse = AuthToken.Validate(_tokenData.ChatToken.AccessToken);
-                    _tokenData.ChatUser = validationResponse.Login;
-                    if (_tokenData.ChatToken == null)
-                    {
-                        MessageBox.Show("Failed to re-obtain chat token, trying again.");
-                        LoadTwitchAuthPage(Browser, _chatScopes, "Bot Account");
-                    }
-                    else if (_tokenData.BroadcastToken == null)
-                    {
-                        LoadTwitchAuthPage(Browser, _broadcastScopes, "Streamer Account");
-                    }
-                    else
-                    {
-                        LaunchBot();
-                    }
-                }
-                else
-                {
-                    _tokenData.BroadcastToken = HandleAuthResponse(e.Uri);
-                    var validationResponse = AuthToken.Validate(_tokenData.BroadcastToken.AccessToken);
-                    _tokenData.BroadcastUser = validationResponse.Login;
-                    if (_tokenData.BroadcastToken == null)
-                    {
-                        MessageBox.Show("Failed to obtain broadcast token, trying again.");
-                        LoadTwitchAuthPage(Browser, _broadcastScopes, "Streamer Account");
-                    }
-                    else
-                    {
-                        LaunchBot();
-                    }
-                }
+                this.HandleRedirect(e.Uri);
+            }
+        }
+
+        private void HandleRedirect(Uri uri)
+        {
+            if (_tokenData.ChatToken == null)
+            {
+                this.RedirectWithToken(uri);
+            }
+            else
+            {
+                this.RedirectWithoutToken(uri);
+            }
+        }
+
+        private void RedirectWithToken(Uri uri)
+        {
+            _tokenData.ChatToken = HandleAuthResponse(uri);
+            var validationResponse = AuthToken.Validate(_tokenData.ChatToken.AccessToken);
+            _tokenData.ChatUser = validationResponse.Login;
+            if (_tokenData.ChatToken == null)
+            {
+                MessageBox.Show("Failed to re-obtain chat token, trying again.");
+                LoadTwitchAuthPage(Browser, _chatScopes, "Bot Account");
+            }
+            else if (_tokenData.BroadcastToken == null)
+            {
+                LoadTwitchAuthPage(Browser, _broadcastScopes, "Streamer Account");
+            }
+            else
+            {
+                LaunchBot();
+            }
+        }
+
+        private void RedirectWithoutToken(Uri uri)
+        {
+            _tokenData.BroadcastToken = HandleAuthResponse(uri);
+            var validationResponse = AuthToken.Validate(_tokenData.BroadcastToken.AccessToken);
+            _tokenData.BroadcastUser = validationResponse.Login;
+            if (_tokenData.BroadcastToken == null)
+            {
+                MessageBox.Show("Failed to obtain broadcast token, trying again.");
+                LoadTwitchAuthPage(Browser, _broadcastScopes, "Streamer Account");
+            }
+            else
+            {
+                LaunchBot();
             }
         }
 

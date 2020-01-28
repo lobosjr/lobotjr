@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace LobotJR.Native
 {
@@ -133,6 +134,46 @@ namespace LobotJR.Native
             public int dwFlags;
             public int time;
             public IntPtr dwExtraInfo;
+        }
+
+        public static void SendFor(char key, int ms)
+        {
+            // Send a keydown, leaving the key down indefinitely. It seems you have to do this for even
+            // single inputs with shorter times because putting the keyup right after the keydown in the
+            // buffer is too fast for Dark Souls
+            NativeMethods.SendInput(key);
+
+            // A timer is probably more suitable
+            Thread.Sleep(ms);
+
+            // After waiting, send the keyup
+            NativeMethods.SendInput(key, true);
+        }
+
+        public static void SendFor(short key, int ms)
+        {
+            // Send a keydown, leaving the key down indefinitely. It seems you have to do this for even
+            // single inputs with shorter times because putting the keyup right after the keydown in the
+            // buffer is too fast for Dark Souls
+            NativeMethods.SendInput(key);
+
+            // A timer is probably more suitable
+            Thread.Sleep(ms);
+
+            // After waiting, send the keyup
+            NativeMethods.SendInput(key, true);
+        }
+
+        // overloaded to handle more than one character send at a time
+        public static void SendFor(char[] key, int ms)
+        {
+            NativeMethods.SendInput(key);
+
+            // A timer is probably more suitable
+            Thread.Sleep(ms);
+
+            // After waiting, send the keyup
+            NativeMethods.SendInput(key, true);
         }
     }
 }

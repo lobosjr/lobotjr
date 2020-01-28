@@ -3,409 +3,24 @@ using LobotJR.Modules.Betting;
 using LobotJR.Modules.Classes;
 using LobotJR.Modules.Dungeons;
 using LobotJR.Modules.Fishing;
-using LobotJR.Modules.GroupFinder;
+using LobotJR.Modules.Group;
 using LobotJR.Modules.Items;
 using LobotJR.Modules.Pets;
+using LobotJR.Modules.TwitchPlays;
 using LobotJR.Modules.Wolfcoins;
-using LobotJR.Native;
 using LobotJR.Shared.Authentication;
 using LobotJR.Shared.Utility;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading;
 
 namespace LobotJR
 {
 
     public class Program
     {
-
-        static void Whisper(string user, string message, IrcClient whisperClient)
-        {
-            string toSend = "/w " + user + " " + message;
-            whisperClient.SendChatMessage(toSend);
-        }
-
-        static void Whisper(Party party, string message, IrcClient whisperClient)
-        {
-            for (int i = 0; i < party.NumMembers(); i++)
-            {
-                string toSend = ".w " + party.members.ElementAt(i).name + " " + message;
-                whisperClient.SendChatMessage(toSend);
-            }
-        }
-
-        static void UpdateDungeons(string dungeonListPath, ref Dictionary<int, string> dungeonList)
-        {
-            IEnumerable<string> fileText;
-            if (File.Exists(dungeonListPath))
-            {
-                fileText = File.ReadLines(dungeonListPath, UTF8Encoding.Default);
-            }
-            else
-            {
-                fileText = new List<string>();
-                Console.WriteLine($"Failed to load dungeon list file, {dungeonListPath} not found.");
-            }
-
-            dungeonList = new Dictionary<int, string>();
-            int dungeonIter = 1;
-            foreach (var line in fileText)
-            {
-                string[] temp = line.Split(',');
-                int id = -1;
-                int.TryParse(temp[0], out id);
-                if (id != -1)
-                    dungeonList.Add(id, temp[1]);
-                else
-                    Console.WriteLine("Invalid dungeon read on line " + dungeonIter);
-                dungeonIter++;
-            }
-        }
-
-        static void UpdateItems(string itemListPath, ref Dictionary<int, string> itemList, ref Dictionary<int, Item> itemDatabase)
-        {
-            IEnumerable<string> fileText;
-            if (File.Exists(itemListPath))
-            {
-                fileText = File.ReadLines(itemListPath, UTF8Encoding.Default);
-            }
-            else
-            {
-                fileText = new List<string>();
-                Console.WriteLine($"Failed to load item list file, {itemListPath} not found.");
-            }
-            itemDatabase = new Dictionary<int, Item>();
-            itemList = new Dictionary<int, string>();
-            int itemIter = 1;
-            // ALERT: Was there a reason you were loading this from the file twice?
-            // fileText = System.IO.File.ReadLines(itemListPath, UTF8Encoding.Default);
-            foreach (var line in fileText)
-            {
-                string[] temp = line.Split(',');
-                int id = -1;
-                int.TryParse(temp[0], out id);
-                if (id != -1)
-                    itemList.Add(id, "content/items/" + temp[1]);
-                else
-                    Console.WriteLine("Invalid item read on line " + itemIter);
-                itemIter++;
-            }
-
-            itemIter = 0;
-            foreach (var item in itemList)
-            {
-                Item myItem = new Item();
-                int parsedInt = -1;
-                int line = 0;
-                string[] temp = { "" };
-                fileText = System.IO.File.ReadLines(itemList.ElementAt(itemIter).Value, UTF8Encoding.Default);
-                // item ID
-                myItem.itemID = itemList.ElementAt(itemIter).Key;
-                // item name
-                temp = fileText.ElementAt(line).Split('=');
-                myItem.itemName = temp[1];
-                line++;
-                // item type (1=weapon, 2=armor, 3=other)
-                temp = fileText.ElementAt(line).Split('=');
-                int.TryParse(temp[1], out parsedInt);
-                myItem.itemType = parsedInt;
-                line++;
-                // Class designation (1=Warrior,2=Mage,3=Rogue,4=Ranger,5=Cleric)
-                temp = fileText.ElementAt(line).Split('=');
-                int.TryParse(temp[1], out parsedInt);
-                myItem.forClass = parsedInt;
-                line++;
-                // Item rarity (1=Uncommon,2=Rare,3=Epic,4=Artifact)
-                temp = fileText.ElementAt(line).Split('=');
-                int.TryParse(temp[1], out parsedInt);
-                myItem.itemRarity = parsedInt;
-                line++;
-                // success boost (%)
-                temp = fileText.ElementAt(line).Split('=');
-                int.TryParse(temp[1], out parsedInt);
-                myItem.successChance = parsedInt;
-                line++;
-                // item find (%)
-                temp = fileText.ElementAt(line).Split('=');
-                int.TryParse(temp[1], out parsedInt);
-                myItem.itemFind = parsedInt;
-                line++;
-                // coin boost (%)
-                temp = fileText.ElementAt(line).Split('=');
-                int.TryParse(temp[1], out parsedInt);
-                myItem.coinBonus = parsedInt;
-                line++;
-                // xp boost (%)
-                temp = fileText.ElementAt(line).Split('=');
-                int.TryParse(temp[1], out parsedInt);
-                myItem.xpBonus = parsedInt;
-                line++;
-                // prevent death boost (%)
-                temp = fileText.ElementAt(line).Split('=');
-                int.TryParse(temp[1], out parsedInt);
-                myItem.preventDeathBonus = parsedInt;
-                line++;
-                // item description
-                temp = fileText.ElementAt(line).Split('=');
-                myItem.description = temp[1];
-
-                itemDatabase.Add(itemIter, myItem);
-
-                itemIter++;
-            }
-
-        }
-
-        static void UpdateCoins(string user, int amount, Currency currency)
-        {
-
-        }
-
-        static void UpdatePets(string petListPath, ref Dictionary<int, string> petList, ref Dictionary<int, Pet> petDatabase)
-        {
-            IEnumerable<string> fileText;
-            if (File.Exists(petListPath))
-            {
-                fileText = File.ReadLines(petListPath, UTF8Encoding.Default);
-            }
-            else
-            {
-                fileText = new List<string>();
-                Console.WriteLine($"Failed to load item list file, {petListPath} not found.");
-            }
-            petDatabase = new Dictionary<int, Pet>();
-            petList = new Dictionary<int, string>();
-            int petIter = 1;
-            foreach (var line in fileText)
-            {
-                string[] temp = line.Split(',');
-                int id = -1;
-                int.TryParse(temp[0], out id);
-                if (id != -1)
-                    petList.Add(id, "content/pets/" + temp[1]);
-                else
-                    Console.WriteLine("Invalid pet read on line " + petIter);
-                petIter++;
-            }
-
-            petIter = 0;
-            foreach (var pet in petList)
-            {
-                Pet mypet = new Pet();
-                int parsedInt = -1;
-                int line = 0;
-                string[] temp = { "" };
-                fileText = System.IO.File.ReadLines(petList.ElementAt(petIter).Value, UTF8Encoding.Default);
-                // pet ID
-                mypet.ID = petList.ElementAt(petIter).Key;
-                // pet name
-                temp = fileText.ElementAt(line).Split('=');
-                mypet.name = temp[1];
-                line++;
-                // pet type (string ex: Fox, Cat, Dog)
-                temp = fileText.ElementAt(line).Split('=');
-                mypet.type = temp[1];
-                line++;
-                // pet size (string ex: tiny, small, large)
-                temp = fileText.ElementAt(line).Split('=');
-                mypet.size = temp[1];
-                line++;
-                // pet rarity (1=Common,2=Uncommon,3=Rare,4=Epic,5=Artifact)
-                temp = fileText.ElementAt(line).Split('=');
-                int.TryParse(temp[1], out parsedInt);
-                mypet.petRarity = parsedInt;
-                line++;
-                // pet description
-                temp = fileText.ElementAt(line).Split('=');
-                mypet.description = temp[1];
-                line++;
-                // pet emote
-                temp = fileText.ElementAt(line).Split('=');
-                mypet.emote = temp[1];
-                line++;
-                int numLines = fileText.Count();
-                if (numLines <= line)
-                {
-                    petDatabase.Add(petIter, mypet);
-                    petIter++;
-                    continue;
-                }
-                // success boost (%)
-                temp = fileText.ElementAt(line).Split('=');
-                int.TryParse(temp[1], out parsedInt);
-                mypet.successChance = parsedInt;
-                line++;
-                // item find (%)
-                temp = fileText.ElementAt(line).Split('=');
-                int.TryParse(temp[1], out parsedInt);
-                mypet.itemFind = parsedInt;
-                line++;
-                // coin boost (%)
-                temp = fileText.ElementAt(line).Split('=');
-                int.TryParse(temp[1], out parsedInt);
-                mypet.coinBonus = parsedInt;
-                line++;
-                // xp boost (%)
-                temp = fileText.ElementAt(line).Split('=');
-                int.TryParse(temp[1], out parsedInt);
-                mypet.xpBonus = parsedInt;
-                line++;
-                // prevent death boost (%)
-                temp = fileText.ElementAt(line).Split('=');
-                int.TryParse(temp[1], out parsedInt);
-                mypet.preventDeathBonus = parsedInt;
-                line++;
-
-
-                petDatabase.Add(petIter, mypet);
-
-                petIter++;
-            }
-
-        }
-
-
-        static void UpdateFish(string fishListPath, ref Dictionary<int, string> fishList, ref List<Fish> fishDatabase)
-        {
-            IEnumerable<string> fileText;
-            if (File.Exists(fishListPath))
-            {
-                fileText = File.ReadLines(fishListPath, UTF8Encoding.Default);
-            }
-            else
-            {
-                fileText = new List<string>();
-                Console.WriteLine($"Failed to load item list file, {fishListPath} not found.");
-            }
-            fishDatabase = new List<Fish>();
-            fishList = new Dictionary<int, string>();
-            int fishIter = 0;
-            foreach (var line in fileText)
-            {
-                fishIter++;
-                fishList.Add(fishIter, "content/fishing/" + line);
-            }
-
-            fishIter = 0;
-            foreach (var fish in fishList)
-            {
-                Fish myfish = new Fish();
-                int parsedInt = -1;
-                float parsedFloat = -1;
-                int line = 0;
-                string[] temp = { "" };
-                fileText = System.IO.File.ReadLines(fishList.ElementAt(fishIter).Value, UTF8Encoding.Default);
-                // fish ID
-                myfish.ID = fishList.ElementAt(fishIter).Key;
-                // fish name
-                temp = fileText.ElementAt(line).Split('=');
-                myfish.name = temp[1];
-                line++;
-                // fish size category
-                temp = fileText.ElementAt(line).Split('=');
-                int.TryParse(temp[1], out parsedInt);
-                myfish.sizeCategory = parsedInt;
-                line++;
-                // fish minimum length
-                temp = fileText.ElementAt(line).Split('=');
-                float.TryParse(temp[1], out parsedFloat);
-                myfish.lengthRange[0] = parsedFloat;
-                line++;
-                // fish maximum length
-                temp = fileText.ElementAt(line).Split('=');
-                float.TryParse(temp[1], out parsedFloat);
-                myfish.lengthRange[1] = parsedFloat;
-                line++;
-                // fish minimum weight
-                temp = fileText.ElementAt(line).Split('=');
-                float.TryParse(temp[1], out parsedFloat);
-                myfish.weightRange[0] = parsedFloat;
-                line++;
-                // fish maximum weight
-                temp = fileText.ElementAt(line).Split('=');
-                float.TryParse(temp[1], out parsedFloat);
-                myfish.weightRange[1] = parsedFloat;
-                line++;
-                // rarity
-                temp = fileText.ElementAt(line).Split('=');
-                int.TryParse(temp[1], out parsedInt);
-                myfish.rarity = parsedInt;
-                line++;
-                // fish description
-                temp = fileText.ElementAt(line).Split('=');
-                myfish.flavorText = temp[1];
-
-                fishDatabase.Add(myfish);
-
-                fishIter++;
-            }
-
-            fishDatabase.Sort((x, y) => x.rarity.CompareTo(y.rarity));
-        }
-
-        static Fish WeightedRandomFish(ref List<Fish> myFishDatabase)
-        {
-            if (myFishDatabase.Count <= 1)
-                return new Fish();
-
-            const float totalChance = 100;
-            int numRarities = myFishDatabase.Last().rarity;
-            float dividingFactor = totalChance / numRarities;
-            List<float> chances = new List<float>();
-            float updatedChance = totalChance;
-            // algorithm to generate rarity %'s for each rarity (i.e., if there are 3 rarities, common/uncommon/epic,
-            // assign each one a decreasing chance of it being picked ex: 66%/17%/8.5% based on this algorithm
-            while (numRarities > 0)
-            {
-                chances.Add(dividingFactor * 2);
-                updatedChance -= (dividingFactor * 2);
-                numRarities--;
-                if (numRarities == 2)
-                {
-                    // if last 2 rarities, assign 3/4 of remaining chance to 2nd to last and 1/4 to the last then break
-                    chances.Add((3 * dividingFactor) / 4);
-                    chances.Add(dividingFactor / 4);
-                    break;
-                }
-                dividingFactor = (updatedChance / numRarities);
-            }
-
-            Random rng = new Random();
-            // get a decimal rng value between 0 and 1.0 and scale it up to be 1 - 100
-            float roll = ((float)rng.NextDouble() * 100);
-
-            // using the assigned % for each rarity, equally distribute that % to each fish of that rarity
-            // first find out the rarity to choose from (result)
-            int result = 0;
-            foreach (var chance in chances)
-            {
-                float check = totalChance - chance;
-                result++;
-                if (roll < check)
-                    break;
-            }
-
-            // create a list of fish that have that rarity
-            List<Fish> fishToChooseFrom = new List<Fish>();
-
-            foreach (var fish in myFishDatabase)
-            {
-                if (fish.rarity == result)
-                    fishToChooseFrom.Add(new Fish(fish));
-            }
-
-            // now that we have a list of fish of that rarity, equally random roll one
-            int choice = rng.Next(0, fishToChooseFrom.Count);
-
-            return fishToChooseFrom.ElementAt(choice);
-        }
-
         [STAThread]
         static void Main(string[] args)
         {
@@ -414,13 +29,6 @@ namespace LobotJR
             bool broadcasting = false;
 
             // How often to award Wolfcoins in minutes
-            const int DUNGEON_MAX = 3;
-            const int PARTY_FORMING = 1;
-            const int PARTY_FULL = 2;
-            const int PARTY_STARTED = 3;
-            const int PARTY_COMPLETE = 4;
-            const int PARTY_READY = 2;
-
             const int SUCCEED = 0;
             const int FAIL = 1;
 
@@ -505,11 +113,11 @@ namespace LobotJR
                 wolfcoins.UpdateSubs(tokenData.BroadcastToken.AccessToken);
 
 
-                UpdateDungeons(dungeonListPath, ref dungeonList);
+                DungeonModule.UpdateDungeons(dungeonListPath, ref dungeonList);
 
-                UpdateItems(itemListPath, ref itemList, ref itemDatabase);
-                UpdatePets(petListPath, ref petList, ref petDatabase);
-                UpdateFish(fishingListPath, ref fishingList, ref fishDatabase);
+                ItemModule.UpdateItems(itemListPath, ref itemList, ref itemDatabase);
+                PetModule.UpdatePets(petListPath, ref petList, ref petDatabase);
+                FishingModule.UpdateFish(fishingListPath, ref fishingList, ref fishDatabase);
 
                 groupFinder = new GroupFinderQueue(dungeonList);
 
@@ -560,289 +168,9 @@ namespace LobotJR
                         group.ProcessQueue();
                     }
 
-                    // iterate through fishing players, see if anyone's got a bite
-                    foreach (var player in wolfcoins.fishingList)
-                    {
-                        if (player.Value.fishHooked)
-                        {
-                            if ((DateTime.Now - player.Value.timeSinceHook).Seconds > 30)
-                            {
-                                player.Value.fishHooked = false;
-                                player.Value.hookedFishID = -1;
-
-                                Whisper(player.Value.username, "Heck! The fish got away. Maybe next time...", group);
-                            }
-                        }
-                        if (player.Value.isFishing)
-                        {
-                            if (player.Value.timeOfCatch < DateTime.Now)
-                            {
-                                player.Value.isFishing = false;
-                                player.Value.fishHooked = true;
-
-                                // pick a fish to bite
-
-                                Random rng = new Random();
-                                int randFish = WeightedRandomFish(ref fishDatabase).ID;
-                                Fish temp = new Fish();
-                                foreach (var fish in fishDatabase)
-                                {
-                                    if (fish.ID == randFish)
-                                    {
-                                        temp = new Fish(fish);
-                                    }
-                                }
-                                player.Value.hookedFishID = randFish;
-                                string toSend = "";
-
-                                switch (temp.sizeCategory)
-                                {
-                                    case Fish.SIZE_TINY:
-                                        {
-                                            toSend = "You feel a light tug at your line! Type !catch to reel it in!";
-                                        }
-                                        break;
-
-                                    case Fish.SIZE_SMALL:
-                                        {
-                                            toSend = "Something nibbles at your bait! Type !catch to reel it in!";
-                                        }
-                                        break;
-
-                                    case Fish.SIZE_MEDIUM:
-                                        {
-                                            toSend = "A strong tug snags your bait! Type !catch to reel it in!";
-                                        }
-                                        break;
-
-                                    case Fish.SIZE_LARGE:
-                                        {
-                                            toSend = "Whoa! Something big grabs your line! Type !catch to reel it in!";
-                                        }
-                                        break;
-
-                                    case Fish.SIZE_HUGE:
-                                        {
-                                            toSend = "You're almost pulled into the water! Something HUGE is hooked! Type !catch to reel it in!";
-                                        }
-                                        break;
-
-                                    default: break;
-                                }
-
-                                Whisper(player.Value.username, toSend, group);
-                                player.Value.timeSinceHook = DateTime.Now;
-                            }
-                        }
-                    }
-                    List<int> partiesToRemove = new List<int>();
-
-                    foreach (var party in parties)
-                    {
-                        if (party.Value.status == PARTY_STARTED && party.Value.myDungeon.messenger.messageQueue.Count() > 0)
-                        {
-
-                            if (party.Value.myDungeon.messenger.ProcessQueue() == 1)
-                            {
-                                // grant rewards here
-                                foreach (var member in party.Value.members)
-                                {
-
-                                    // if player had an active pet, lower its hunger and affection
-                                    if (member.myPets.Count > 0)
-                                    {
-                                        bool petUpdated = false;
-                                        foreach (var pet in wolfcoins.classList[member.name].myPets)
-                                        {
-                                            // if we updated the active pet already (should only be one), we're done
-                                            if (petUpdated)
-                                                break;
-
-                                            // check for active pet
-                                            if (pet.isActive)
-                                            {
-                                                Random RNG = new Random();
-                                                int hungerToLose = RNG.Next(Pet.DUNGEON_HUNGER, Pet.DUNGEON_HUNGER + 6);
-
-                                                pet.affection -= Pet.DUNGEON_AFFECTION;
-
-                                                if (pet.hunger <= 0)
-                                                {
-                                                    // PET DIES HERE
-                                                    Whisper(member.name, pet.name + " starved to death.", group);
-                                                    wolfcoins.classList[member.name].ReleasePet(pet.stableID);
-                                                    wolfcoins.SaveClassData();
-                                                    break;
-                                                }
-                                                else if (pet.hunger <= 10)
-                                                {
-                                                    Whisper(member.name, pet.name + " is very hungry and will die if you don't feed it soon!", group);
-                                                }
-                                                else if (pet.hunger <= 25)
-                                                {
-                                                    Whisper(member.name, pet.name + " is hungry! Be sure to !feed them!", group);
-                                                }
-
-
-
-                                                if (pet.affection < 0)
-                                                    pet.affection = 0;
-
-                                                petUpdated = true;
-                                            }
-
-                                        }
-                                    }
-
-                                    if (member.xpEarned == 0 || member.coinsEarned == 0)
-                                        continue;
-
-                                    if ((member.xpEarned + member.coinsEarned) > 0 && member.usedGroupFinder && (DateTime.Now - member.lastDailyGroupFinder).TotalDays >= 1)
-                                    {
-                                        member.lastDailyGroupFinder = DateTime.Now;
-                                        member.xpEarned *= 2;
-                                        member.coinsEarned *= 2;
-                                        Whisper(member.name, "You earned double rewards for completing a daily Group Finder dungeon! Queue up again in 24 hours to receive the 2x bonus again! (You can whisper me '!daily' for a status.)", group);
-                                    }
-
-                                    wolfcoins.AwardXP(member.xpEarned, member.name, group);
-                                    wolfcoins.AwardCoins(member.coinsEarned, member.name);
-                                    if (member.xpEarned > 0 && member.coinsEarned > 0)
-                                        Whisper(member.name, member.name + ", you've earned " + member.xpEarned + " XP and " + member.coinsEarned + " Wolfcoins for completing the dungeon!", group);
-
-                                    if (wolfcoins.classList[member.name].itemEarned != -1)
-                                    {
-                                        int itemID = GrantItem(wolfcoins.classList[member.name].itemEarned, wolfcoins, member.name, itemDatabase);
-                                        Whisper(member.name, "You looted " + itemDatabase[(itemID - 1)].itemName + "!", group);
-                                    }
-                                    // if a pet is waiting to be awarded
-                                    if (wolfcoins.classList[member.name].petEarned != -1)
-                                    {
-
-                                        Dictionary<int, Pet> allPets = new Dictionary<int, Pet>(petDatabase);
-                                        Pet newPet = GrantPet(member.name, wolfcoins, allPets, irc, group);
-                                        if (newPet.stableID != -1)
-                                        {
-                                            string logPath = "petlog.txt";
-                                            string timestamp = DateTime.Now.ToString();
-                                            if (newPet.isSparkly)
-                                            {
-                                                System.IO.File.AppendAllText(logPath, timestamp + ": " + member.name + " found a SPARKLY pet " + newPet.name + "." + Environment.NewLine);
-                                            }
-                                            else
-                                            {
-                                                System.IO.File.AppendAllText(logPath, timestamp + ": " + member.name + " found a pet " + newPet.name + "." + Environment.NewLine);
-                                            }
-                                        }
-                                        //if (wolfcoins.classList[member.name].petEarned != -1)
-                                        //{
-                                        //    List<Pet> toAward = new List<Pet>();
-                                        //    bool hasActivePet = false;
-                                        //    // figure out the rarity of pet to give and build a list of non-duplicate pets to award
-                                        //    int rarity = wolfcoins.classList[member.name].petEarned;
-                                        //    foreach (var basePet in petDatabase)
-                                        //    {
-                                        //        if (basePet.Value.petRarity != rarity)
-                                        //            continue;
-
-                                        //        bool alreadyOwned = false;
-
-                                        //        foreach(var pet in wolfcoins.classList[member.name].myPets)
-                                        //        {
-                                        //            if (pet.isActive)
-                                        //                hasActivePet = true;
-
-                                        //            if (pet.ID == basePet.Value.ID)
-                                        //                alreadyOwned = true;
-                                        //        }
-
-                                        //        if(!alreadyOwned)
-                                        //        {
-                                        //            toAward.Add(basePet.Value);
-                                        //        }
-                                        //    }
-                                        //    // now that we have a list of eligible pets, randomly choose one from the list to award
-                                        //    Pet newPet = new Pet();
-
-                                        //    if(toAward.Count > 0)
-                                        //    {
-                                        //        string toSend = "";
-                                        //        Random RNG = new Random();
-                                        //        int petToAward = RNG.Next(1, toAward.Count);
-                                        //        newPet = toAward[petToAward - 1];
-                                        //        int sparklyCheck = RNG.Next(1, 100);
-
-                                        //        if (sparklyCheck == 1)
-                                        //            newPet.isSparkly = true;
-
-                                        //        newPet.stableID = wolfcoins.classList[member.name].myPets.Count;
-                                        //        wolfcoins.classList[member.name].myPets.Count = wolfcoins.classList[member.name].myPets.Count;
-
-                                        //        if (!hasActivePet)
-                                        //        {
-                                        //            newPet.isActive = true;
-                                        //            toSend = "You found your first pet! You now have a pet " + newPet.name + ". Whisper me !pethelp for more info.";
-                                        //        }
-                                        //        else
-                                        //        {
-                                        //            toSend = "You found a new pet buddy! You earned a " + newPet.name + " pet!";
-                                        //        }
-
-                                        //        if(newPet.isSparkly)
-                                        //        {
-                                        //            toSend += " WOW! And it's a sparkly version! Luck you!";
-                                        //        }
-
-                                        //        wolfcoins.classList[member.name].myPets.Add(newPet);
-
-                                        //        wolfcoins.classList[member.name].petEarned = -1;
-                                        //        Whisper(member.name, toSend, group);
-                                        //        if (newPet.isSparkly)
-                                        //        {
-                                        //            Console.WriteLine(DateTime.Now.ToString() + "WOW! " + ": " + member.name + " just found a SPARKLY pet " + newPet.name + "!");
-                                        //            irc.sendChatMessage("WOW! " + member.name + " just found a SPARKLY pet " + newPet.name + "! What luck!");
-                                        //        }
-                                        //        else
-                                        //        {
-                                        //            Console.WriteLine(DateTime.Now.ToString() + ": " + member.name + " just found a pet " + newPet.name + "!");
-                                        //            irc.sendChatMessage(member.name + " just found a pet " + newPet.name + "!");
-                                        //        }
-                                        //    }
-                                        //}
-                                    }
-
-                                    if (wolfcoins.classList[member.name].queueDungeons.Count > 0)
-                                        wolfcoins.classList[member.name].ClearQueue();
-
-                                }
-
-                                party.Value.PostDungeon(wolfcoins);
-                                wolfcoins.SaveClassData();
-                                wolfcoins.SaveXP();
-                                wolfcoins.SaveCoins();
-                                party.Value.status = PARTY_READY;
-
-                                if (party.Value.usedDungeonFinder)
-                                {
-                                    partiesToRemove.Add(party.Key);
-                                }
-                            }
-                        }
-                    }
-
-                    for (int i = 0; i < partiesToRemove.Count; i++)
-                    {
-                        int Key = partiesToRemove[i];
-                        foreach (var member in parties[Key].members)
-                        {
-                            Whisper(member.name, "You completed a group finder dungeon. Type !queue to join another group!", group);
-                            wolfcoins.classList[member.name].groupID = -1;
-                            wolfcoins.classList[member.name].numInvitesSent = 0;
-                            wolfcoins.classList[member.name].isPartyLeader = false;
-                            wolfcoins.classList[member.name].ClearQueue();
-                        }
-                        parties.Remove(Key);
-                    }
+                    FishingModule.Process(wolfcoins, group, fishDatabase);
+                    var toRemove = GroupModule.Process(parties, itemDatabase, petDatabase, wolfcoins, irc, group);
+                    GroupModule.RemoveParties(toRemove, parties, wolfcoins, group);                    
 
                     if (((DateTime.Now - awardLast).TotalMinutes > awardInterval))
                     {
@@ -884,21 +212,21 @@ namespace LobotJR
                             whisperSender = whispers[0];
                             whisperMessage = whispers[1];
 
-                            Whisper(whisperSender, "Ping!", group);
+                            group.Whisper(whisperSender, "Ping!");
                             if (wolfcoins.Exists(wolfcoins.classList, whisperSender))
                             {
                                 if (wolfcoins.DetermineLevel(whisperSender) >= 3 && wolfcoins.DetermineClass(whisperSender) == "INVALID CLASS" && !whisperMessage.StartsWith("c") && !whisperMessage.StartsWith("C"))
                                 {
-                                    Whisper(whisperSender, "ATTENTION! You are high enough level to pick a class, but have not picked one yet! Whisper me one of the following to choose your class: ", group);
-                                    Whisper(whisperSender, "'C1' (Warrior), 'C2' (Mage), 'C3' (Rogue), 'C4' (Ranger), or 'C5' (Cleric)", group);
+                                    group.Whisper(whisperSender, "ATTENTION! You are high enough level to pick a class, but have not picked one yet! Whisper me one of the following to choose your class: ");
+                                    group.Whisper(whisperSender, "'C1' (Warrior), 'C2' (Mage), 'C3' (Rogue), 'C4' (Ranger), or 'C5' (Cleric)");
                                 }
                             }
                             if (whisperMessage == "?" || whisperMessage == "help" || whisperMessage == "!help" || whisperMessage == "faq" || whisperMessage == "!faq")
                             {
                                 //Whisper(whisperSender, "Help command coming soon. For now, know that only viewers Level 2 & higher can post hyperlinks. This helps keep chat free of bots!");
 
-                                Whisper(whisperSender, "Hi I'm LobotJR! I'm a chat bot written by LobosJR to help out with things.  To ask me about a certain topic, whisper me the number next to what you want to know about! (Ex: Whisper me 1 for information on Wolfcoins)", group);
-                                Whisper(whisperSender, "Here's a list of things you can ask me about: Wolfcoins (1) - Leveling System (2)", group);
+                                group.Whisper(whisperSender, "Hi I'm LobotJR! I'm a chat bot written by LobosJR to help out with things.  To ask me about a certain topic, whisper me the number next to what you want to know about! (Ex: Whisper me 1 for information on Wolfcoins)");
+                                group.Whisper(whisperSender, "Here's a list of things you can ask me about: Wolfcoins (1) - Leveling System (2)");
 
                             }
                             else if (whisperMessage == "!cleartesters" && whisperSender == "lobosjr")
@@ -933,11 +261,11 @@ namespace LobotJR
                                         {
                                             string dungeonPath = "content/dungeons/" + dungeonList[dungeonID];
                                             Dungeon tempDungeon = new Dungeon(dungeonPath);
-                                            Whisper(whisperSender, tempDungeon.dungeonName + " (Levels " + tempDungeon.minLevel + " - " + tempDungeon.maxLevel + ") -- " + tempDungeon.description, group);
+                                            group.Whisper(whisperSender, tempDungeon.dungeonName + " (Levels " + tempDungeon.minLevel + " - " + tempDungeon.maxLevel + ") -- " + tempDungeon.description);
                                         }
                                         else
                                         {
-                                            Whisper(whisperSender, "Invalid Dungeon ID provided.", group);
+                                            group.Whisper(whisperSender, "Invalid Dungeon ID provided.");
                                         }
                                     }
                                 }
@@ -959,8 +287,8 @@ namespace LobotJR
                                         System.IO.File.AppendAllText(logPath, whisperSender + ": " + bugMessage + Environment.NewLine);
                                         System.IO.File.AppendAllText(logPath, "------------------------------------------" + Environment.NewLine);
 
-                                        Whisper(whisperSender, "Bug report submitted.", group);
-                                        Whisper("lobosjr", DateTime.Now + ": " + whisperSender + " submitted a bug report.", group);
+                                        group.Whisper(whisperSender, "Bug report submitted.");
+                                        group.Whisper("lobosjr", DateTime.Now + ": " + whisperSender + " submitted a bug report.");
                                         Console.WriteLine(DateTime.Now + ": " + whisperSender + " submitted a bug report.");
                                     }
                                 }
@@ -971,7 +299,7 @@ namespace LobotJR
                                 {
                                     if (wolfcoins.classList[whisperSender].myItems.Count == 0)
                                     {
-                                        Whisper(whisperSender, "You have no items.", group);
+                                        group.Whisper(whisperSender, "You have no items.");
                                         continue;
                                     }
 
@@ -989,19 +317,19 @@ namespace LobotJR
                                                 {
                                                     string desc = itemDatabase[item.itemID - 1].description;
                                                     string name = itemDatabase[item.itemID - 1].itemName;
-                                                    Whisper(whisperSender, name + " -- " + desc, group);
+                                                    group.Whisper(whisperSender, name + " -- " + desc);
                                                     itemFound = true;
                                                     break;
                                                 }
                                             }
                                             if (!itemFound)
                                             {
-                                                Whisper(whisperSender, "Invalid Inventory ID provided.", group);
+                                                group.Whisper(whisperSender, "Invalid Inventory ID provided.");
                                             }
                                         }
                                         else
                                         {
-                                            Whisper(whisperSender, "Invalid Inventory ID provided.", group);
+                                            group.Whisper(whisperSender, "Invalid Inventory ID provided.");
                                         }
                                     }
                                 }
@@ -1020,7 +348,7 @@ namespace LobotJR
                                 if (whisperSender != "lobosjr")
                                     continue;
 
-                                UpdateItems(itemListPath, ref itemList, ref itemDatabase);
+                                ItemModule.UpdateItems(itemListPath, ref itemList, ref itemDatabase);
 
 
                                 foreach (var player in wolfcoins.classList)
@@ -1078,7 +406,7 @@ namespace LobotJR
                                         toSend += "xp";
                                     }
 
-                                    Whisper("lobosjr", name + " added to the following lists: " + toSend, group);
+                                    group.Whisper("lobosjr", name + " added to the following lists: " + toSend);
                                 }
                             }
                             else if (whisperMessage.StartsWith("!transfer"))
@@ -1095,7 +423,7 @@ namespace LobotJR
 
                                     if (!wolfcoins.coinList.ContainsKey(prevName) || !wolfcoins.xpList.ContainsKey(prevName))
                                     {
-                                        Whisper(whisperSender, prevName + " has no stats to transfer.", group);
+                                        group.Whisper(whisperSender, prevName + " has no stats to transfer.");
                                         continue;
                                     }
 
@@ -1121,8 +449,8 @@ namespace LobotJR
                                         wolfcoins.classList.Add(newName.ToLower(), new CharClass());
                                     }
 
-                                    Whisper(whisperSender, "Transferred " + prevName + "'s xp/coins to " + newName + ".", group);
-                                    Whisper(newName, "Your xp/coin total has been updated by Lobos! Thanks for playing the RPG lobosHi", group);
+                                    group.Whisper(whisperSender, "Transferred " + prevName + "'s xp/coins to " + newName + ".");
+                                    group.Whisper(newName, "Your xp/coin total has been updated by Lobos! Thanks for playing the RPG lobosHi");
 
                                     wolfcoins.SaveCoins();
                                     wolfcoins.SaveXP();
@@ -1140,13 +468,13 @@ namespace LobotJR
                                     string toCheck = msgData[1];
                                     foreach (var pet in wolfcoins.classList[toCheck].myPets)
                                     {
-                                        WhisperPet(whisperSender, pet, group, LOW_DETAIL);
+                                        PetModule.WhisperPet(whisperSender, pet, group, LOW_DETAIL);
                                     }
 
                                 }
                                 else
                                 {
-                                    Whisper(whisperSender, "!checkpets <username>", group);
+                                    group.Whisper(whisperSender, "!checkpets <username>");
                                 }
                             }
                             else if (whisperMessage.StartsWith("!grantpet"))
@@ -1169,7 +497,7 @@ namespace LobotJR
                                     wolfcoins.classList[whisperSender].petEarned = rng.Next(1, 6);
                                 }
                                 Dictionary<int, Pet> allPets = petDatabase;
-                                GrantPet(whisperSender, wolfcoins, allPets, irc, group);
+                                PetModule.GrantPet(whisperSender, wolfcoins, allPets, irc, group);
                                 //Random RNG = new Random();
 
                                 //Pet newPet = new Pet();
@@ -1186,7 +514,7 @@ namespace LobotJR
 
                                 //wolfcoins.classList[whisperSender].myPets.Add(newPet);
 
-                                //Whisper(whisperSender, "Added a random pet.", group);
+                                //group.Whisper(whisperSender, "Added a random pet.");
 
                             }
                             else if (whisperMessage == "!clearpets")
@@ -1198,7 +526,7 @@ namespace LobotJR
                                 wolfcoins.classList[whisperSender].toRelease = new Pet();
                                 wolfcoins.classList[whisperSender].pendingPetRelease = false;
 
-                                Whisper(whisperSender, "Pets cleared.", group);
+                                group.Whisper(whisperSender, "Pets cleared.");
 
                             }
                             else if (whisperMessage == "!updatedungeons")
@@ -1206,7 +534,7 @@ namespace LobotJR
                                 if (whisperSender != "lobosjr")
                                     continue;
 
-                                UpdateDungeons(dungeonListPath, ref dungeonList);
+                                DungeonModule.UpdateDungeons(dungeonListPath, ref dungeonList);
                             }
                             else if (whisperMessage.StartsWith("/p") || whisperMessage.StartsWith("/party"))
                             {
@@ -1227,11 +555,11 @@ namespace LobotJR
                                             {
                                                 if (member.name == whisperSender)
                                                 {
-                                                    Whisper(member.name, "You whisper: \" " + partyMessage + "\" ", group);
+                                                    group.Whisper(member.name, "You whisper: \" " + partyMessage + "\" ");
                                                     continue;
                                                 }
 
-                                                Whisper(member.name, whisperSender + " says: \" " + partyMessage + "\" ", group);
+                                                group.Whisper(member.name, whisperSender + " says: \" " + partyMessage + "\" ");
                                             }
                                         }
                                     }
@@ -1254,22 +582,22 @@ namespace LobotJR
 
                                                 if (wolfcoins.coinList[whisperSender] <= respecCost)
                                                 {
-                                                    Whisper(whisperSender, "It costs " + respecCost + " Wolfcoins to respec at your level. You have " + wolfcoins.coinList[whisperSender] + " coins.", group);
+                                                    group.Whisper(whisperSender, "It costs " + respecCost + " Wolfcoins to respec at your level. You have " + wolfcoins.coinList[whisperSender] + " coins.");
                                                 }
                                                 int classNumber = wolfcoins.classList[whisperSender].classType * 10;
                                                 wolfcoins.classList[whisperSender].classType = classNumber;
 
-                                                Whisper(whisperSender, "You've chosen to respec your class! It will cost you " + respecCost + " coins to respec and you will lose all your items. Reply 'Nevermind' to cancel or one of the following codes to select your new class: ", group);
-                                                Whisper(whisperSender, "'C1' (Warrior), 'C2' (Mage), 'C3' (Rogue), 'C4' (Ranger), or 'C5' (Cleric)", group);
+                                                group.Whisper(whisperSender, "You've chosen to respec your class! It will cost you " + respecCost + " coins to respec and you will lose all your items. Reply 'Nevermind' to cancel or one of the following codes to select your new class: ");
+                                                group.Whisper(whisperSender, "'C1' (Warrior), 'C2' (Mage), 'C3' (Rogue), 'C4' (Ranger), or 'C5' (Cleric)");
                                             }
                                             else
                                             {
-                                                Whisper(whisperSender, "You have no coins to respec with.", group);
+                                                group.Whisper(whisperSender, "You have no coins to respec with.");
                                             }
                                         }
                                         else
                                         {
-                                            Whisper(whisperSender, "You can't respec while in a party!", group);
+                                            group.Whisper(whisperSender, "You can't respec while in a party!");
                                         }
                                     }
                                 }
@@ -1280,15 +608,15 @@ namespace LobotJR
                                 {
                                     if (wolfcoins.classList[whisperSender].myItems.Count > 0)
                                     {
-                                        Whisper(whisperSender, "You have " + wolfcoins.classList[whisperSender].myItems.Count + " items: ", group);
+                                        group.Whisper(whisperSender, "You have " + wolfcoins.classList[whisperSender].myItems.Count + " items: ");
                                         foreach (var item in wolfcoins.classList[whisperSender].myItems)
                                         {
-                                            WhisperItem(whisperSender, item, group, itemDatabase);
+                                            ItemModule.WhisperItem(whisperSender, item, group, itemDatabase);
                                         }
                                     }
                                     else
                                     {
-                                        Whisper(whisperSender, "You have no items.", group);
+                                        group.Whisper(whisperSender, "You have no items.");
                                     }
                                 }
                             }
@@ -1297,7 +625,7 @@ namespace LobotJR
 
                                 foreach (var fish in wolfcoins.fishingLeaderboard)
                                 {
-                                    Whisper(whisperSender, "Largest " + fish.name + " caught by " + fish.caughtBy + " at " + fish.weight + " lbs.", group);
+                                    group.Whisper(whisperSender, "Largest " + fish.name + " caught by " + fish.caughtBy + " at " + fish.weight + " lbs.");
                                 }
                             }
                             else if (whisperMessage == "!fish")
@@ -1306,13 +634,13 @@ namespace LobotJR
                                 {
                                     if (wolfcoins.fishingList[whisperSender].biggestFish.Count > 0)
                                     {
-                                        Whisper(whisperSender, "You've caught " + wolfcoins.fishingList[whisperSender].biggestFish.Count + " different types of fish: ", group);
-                                        WhisperFish(whisperSender, wolfcoins.fishingList[whisperSender].biggestFish, group);
+                                        group.Whisper(whisperSender, "You've caught " + wolfcoins.fishingList[whisperSender].biggestFish.Count + " different types of fish: ");
+                                        FishingModule.WhisperFish(whisperSender, wolfcoins.fishingList[whisperSender].biggestFish, group);
 
                                     }
                                     else
                                     {
-                                        Whisper(whisperSender, "You haven't caught any fish yet!", group);
+                                        group.Whisper(whisperSender, "You haven't caught any fish yet!");
                                     }
                                 }
                             }
@@ -1325,7 +653,7 @@ namespace LobotJR
                                         string[] msgData = whispers[1].Split(' ');
                                         if (msgData.Count() != 2)
                                         {
-                                            Whisper(whisperSender, "Invalid number of parameters. Syntax: !fish <Fish #>", group);
+                                            group.Whisper(whisperSender, "Invalid number of parameters. Syntax: !fish <Fish #>");
                                             continue;
                                         }
                                         int fishID = -1;
@@ -1333,13 +661,13 @@ namespace LobotJR
                                         {
                                             if (fishID <= wolfcoins.fishingList[whisperSender].biggestFish.Count && fishID > 0)
                                             {
-                                                WhisperFish(whisperSender, wolfcoins.fishingList, fishID, group);
+                                                FishingModule.WhisperFish(whisperSender, wolfcoins.fishingList, fishID, group);
                                             }
                                         }
                                     }
                                     else
                                     {
-                                        Whisper(whisperSender, "You don't have any fish! Type !cast to try and fish for some!", group);
+                                        group.Whisper(whisperSender, "You don't have any fish! Type !cast to try and fish for some!");
                                     }
                                 }
                             }
@@ -1352,7 +680,7 @@ namespace LobotJR
                                         string[] msgData = whispers[1].Split(' ');
                                         if (msgData.Count() != 2)
                                         {
-                                            Whisper(whisperSender, "Invalid number of parameters. Syntax: !fish <Fish #>", group);
+                                            group.Whisper(whisperSender, "Invalid number of parameters. Syntax: !fish <Fish #>");
                                             continue;
                                         }
                                         int fishID = -1;
@@ -1363,13 +691,13 @@ namespace LobotJR
                                                 string fishName = wolfcoins.fishingList[whisperSender].biggestFish[fishID - 1].name;
                                                 wolfcoins.fishingList[whisperSender].biggestFish.RemoveAt(fishID - 1);
 
-                                                Whisper(whisperSender, "You released your " + fishName + ". Bye bye!", group);
+                                                group.Whisper(whisperSender, "You released your " + fishName + ". Bye bye!");
                                             }
                                         }
                                     }
                                     else
                                     {
-                                        Whisper(whisperSender, "You don't have any fish! Type !cast to try and fish for some!", group);
+                                        group.Whisper(whisperSender, "You don't have any fish! Type !cast to try and fish for some!");
                                     }
                                 }
                             }
@@ -1379,25 +707,25 @@ namespace LobotJR
                                 {
                                     if (wolfcoins.classList[whisperSender].myPets.Count > 0)
                                     {
-                                        Whisper(whisperSender, "You have " + wolfcoins.classList[whisperSender].myPets.Count + " pets: ", group);
+                                        group.Whisper(whisperSender, "You have " + wolfcoins.classList[whisperSender].myPets.Count + " pets: ");
                                         foreach (var pet in wolfcoins.classList[whisperSender].myPets)
                                         {
-                                            WhisperPet(whisperSender, pet, group, LOW_DETAIL);
+                                            PetModule.WhisperPet(whisperSender, pet, group, LOW_DETAIL);
                                         }
                                     }
                                     else
                                     {
-                                        Whisper(whisperSender, "You have no pets.", group);
+                                        group.Whisper(whisperSender, "You have no pets.");
                                     }
                                 }
                             }
 
                             else if (whisperMessage == "!pethelp")
                             {
-                                Whisper(whisperSender, "View all your pets by whispering me '!pets'. View individual pet stats using '!pet <stable id>' where the id is the number next to your pet's name in brackets [].", group);
-                                Whisper(whisperSender, "A summoned/active pet will join you on dungeon runs and possibly even bring benefits! But this will drain its energy, which you can restore by feeding it.", group);
-                                Whisper(whisperSender, "You can !dismiss, !summon, !release, !feed, and !hug* your pets using their stable id (ex: !summon 2)", group);
-                                Whisper(whisperSender, "*: In development, available soon!", group);
+                                group.Whisper(whisperSender, "View all your pets by whispering me '!pets'. View individual pet stats using '!pet <stable id>' where the id is the number next to your pet's name in brackets [].");
+                                group.Whisper(whisperSender, "A summoned/active pet will join you on dungeon runs and possibly even bring benefits! But this will drain its energy, which you can restore by feeding it.");
+                                group.Whisper(whisperSender, "You can !dismiss, !summon, !release, !feed, and !hug* your pets using their stable id (ex: !summon 2)");
+                                group.Whisper(whisperSender, "*: In development, available soon!");
                             }
                             else if (whisperMessage.StartsWith("!fixpets"))
                             {
@@ -1407,7 +735,7 @@ namespace LobotJR
                                 //string[] msgData = whispers[1].Split(' ');
                                 //if (msgData.Count() != 2)
                                 //{
-                                //    Whisper(whisperSender, "Invalid number of parameters. Syntax: !feed <stable ID>", group);
+                                //    group.Whisper(whisperSender, "Invalid number of parameters. Syntax: !feed <stable ID>");
                                 //    continue;
                                 //}
 
@@ -1424,7 +752,7 @@ namespace LobotJR
                                         pet.stableID = stableIDFix;
                                         stableIDFix++;
                                     }
-                                    Whisper(whisperSender, "Fixed " + player.Value.name + "'s pet IDs.", group);
+                                    group.Whisper(whisperSender, "Fixed " + player.Value.name + "'s pet IDs.");
                                 }
                             }
                             else if (whisperMessage.StartsWith("!feed"))
@@ -1436,7 +764,7 @@ namespace LobotJR
                                         string[] msgData = whispers[1].Split(' ');
                                         if (msgData.Count() != 2)
                                         {
-                                            Whisper(whisperSender, "Invalid number of parameters. Syntax: !feed <stable ID>", group);
+                                            group.Whisper(whisperSender, "Invalid number of parameters. Syntax: !feed <stable ID>");
                                             continue;
                                         }
                                         int petToFeed = -1;
@@ -1445,13 +773,13 @@ namespace LobotJR
 
                                             if (petToFeed > wolfcoins.classList[whisperSender].myPets.Count || petToFeed < 1)
                                             {
-                                                Whisper(whisperSender, "Invalid Stable ID given. Check !pets for each pet's stable ID!", group);
+                                                group.Whisper(whisperSender, "Invalid Stable ID given. Check !pets for each pet's stable ID!");
                                                 continue;
                                             }
 
                                             if (wolfcoins.coinList[whisperSender] < 5)
                                             {
-                                                Whisper(whisperSender, "You lack the 5 wolfcoins to feed your pet! Hop in a Lobos stream soon!", group);
+                                                group.Whisper(whisperSender, "You lack the 5 wolfcoins to feed your pet! Hop in a Lobos stream soon!");
                                                 continue;
                                             }
 
@@ -1460,7 +788,7 @@ namespace LobotJR
 
                                             if (tempPet.hunger >= Pet.HUNGER_MAX)
                                             {
-                                                Whisper(whisperSender, tempPet.name + " is full and doesn't need to eat!", group);
+                                                group.Whisper(whisperSender, tempPet.name + " is full and doesn't need to eat!");
                                                 continue;
                                             }
 
@@ -1472,7 +800,7 @@ namespace LobotJR
                                             // Charge the player for pet food
                                             wolfcoins.coinList[whisperSender] = wolfcoins.coinList[whisperSender] - Pet.FEEDING_COST;
 
-                                            Whisper(whisperSender, "You were charged " + Pet.FEEDING_COST + " wolfcoins to feed " + tempPet.name + ". They feel refreshed!", group);
+                                            group.Whisper(whisperSender, "You were charged " + Pet.FEEDING_COST + " wolfcoins to feed " + tempPet.name + ". They feel refreshed!");
                                             // earn xp equal to amount of hunger 'fed'
                                             currentXP += (Pet.HUNGER_MAX - currentHunger);
 
@@ -1481,7 +809,7 @@ namespace LobotJR
                                             {
                                                 currentLevel++;
                                                 currentXP = currentXP - Pet.XP_TO_LEVEL;
-                                                Whisper(whisperSender, tempPet.name + " leveled up! They are now level " + currentLevel + ".", group);
+                                                group.Whisper(whisperSender, tempPet.name + " leveled up! They are now level " + currentLevel + ".");
                                             }
                                             // refill hunger value
                                             currentHunger = Pet.HUNGER_MAX;
@@ -1513,7 +841,7 @@ namespace LobotJR
                                 string[] msgData = whispers[1].Split(' ');
                                 if (msgData.Count() > 3)
                                 {
-                                    Whisper(whisperSender, "Too many parameters. Syntax: !sethunger <stable ID>", group);
+                                    group.Whisper(whisperSender, "Too many parameters. Syntax: !sethunger <stable ID>");
                                     continue;
                                 }
                                 int petToSet = -1;
@@ -1521,11 +849,11 @@ namespace LobotJR
                                 if (int.TryParse(msgData[1], out petToSet) && int.TryParse(msgData[2], out amount))
                                 {
                                     wolfcoins.classList[whisperSender].myPets.ElementAt(petToSet - 1).hunger = amount;
-                                    Whisper(whisperSender, wolfcoins.classList[whisperSender].myPets.ElementAt(petToSet - 1).name + "'s energy set to " + amount + ".", group);
+                                    group.Whisper(whisperSender, wolfcoins.classList[whisperSender].myPets.ElementAt(petToSet - 1).name + "'s energy set to " + amount + ".");
                                 }
                                 else
                                 {
-                                    Whisper(whisperSender, "Ya dun fucked somethin' up.", group);
+                                    group.Whisper(whisperSender, "Ya dun fucked somethin' up.");
                                 }
                             }
                             else if (whisperMessage.StartsWith("!release"))
@@ -1537,7 +865,7 @@ namespace LobotJR
                                         string[] msgData = whispers[1].Split(' ');
                                         if (msgData.Count() != 2)
                                         {
-                                            Whisper(whisperSender, "Invalid number of parameters. Syntax: !release <stable ID>", group);
+                                            group.Whisper(whisperSender, "Invalid number of parameters. Syntax: !release <stable ID>");
                                             continue;
                                         }
                                         int petToRelease = -1;
@@ -1546,7 +874,7 @@ namespace LobotJR
 
                                             if (petToRelease > wolfcoins.classList[whisperSender].myPets.Count || petToRelease < 1)
                                             {
-                                                Whisper(whisperSender, "Invalid Stable ID given. Check !pets for each pet's stable ID!", group);
+                                                group.Whisper(whisperSender, "Invalid Stable ID given. Check !pets for each pet's stable ID!");
                                                 continue;
                                             }
                                             string petName = wolfcoins.classList[whisperSender].myPets.ElementAt(petToRelease - 1).name;
@@ -1556,12 +884,12 @@ namespace LobotJR
                                             {
                                                 stableID = wolfcoins.classList[whisperSender].myPets.ElementAt(petToRelease - 1).stableID
                                             };
-                                            Whisper(whisperSender, "If you release " + petName + ", they will be gone forever. Are you sure you want to release them? (y/n)", group);
+                                            group.Whisper(whisperSender, "If you release " + petName + ", they will be gone forever. Are you sure you want to release them? (y/n)");
                                         }
                                     }
                                     else
                                     {
-                                        Whisper(whisperSender, "You don't have a pet.", group);
+                                        group.Whisper(whisperSender, "You don't have a pet.");
                                     }
                                 }
                             }
@@ -1574,7 +902,7 @@ namespace LobotJR
                                         string[] msgData = whispers[1].Split(' ');
                                         if (msgData.Count() != 2)
                                         {
-                                            Whisper(whisperSender, "Invalid number of parameters. Syntax: !dismiss <stable ID>", group);
+                                            group.Whisper(whisperSender, "Invalid number of parameters. Syntax: !dismiss <stable ID>");
                                             continue;
                                         }
                                         int petToDismiss = -1;
@@ -1582,25 +910,25 @@ namespace LobotJR
                                         {
                                             if (petToDismiss > wolfcoins.classList[whisperSender].myPets.Count || petToDismiss < 1)
                                             {
-                                                Whisper(whisperSender, "Invalid Stable ID given. Check !pets for each pet's stable ID!", group);
+                                                group.Whisper(whisperSender, "Invalid Stable ID given. Check !pets for each pet's stable ID!");
                                                 continue;
                                             }
                                             if (wolfcoins.classList[whisperSender].myPets.ElementAt(petToDismiss - 1).isActive)
                                             {
                                                 wolfcoins.classList[whisperSender].myPets.ElementAt(petToDismiss - 1).isActive = false;
-                                                Whisper(whisperSender, "You dismissed " + wolfcoins.classList[whisperSender].myPets.ElementAt(petToDismiss - 1).name + ".", group);
+                                                group.Whisper(whisperSender, "You dismissed " + wolfcoins.classList[whisperSender].myPets.ElementAt(petToDismiss - 1).name + ".");
                                                 wolfcoins.SaveClassData();
                                             }
                                             else
                                             {
-                                                Whisper(whisperSender, "That pet is not currently summoned.", group);
+                                                group.Whisper(whisperSender, "That pet is not currently summoned.");
                                                 continue;
                                             }
                                         }
                                     }
                                     else
                                     {
-                                        Whisper(whisperSender, "You don't have a pet.", group);
+                                        group.Whisper(whisperSender, "You don't have a pet.");
                                     }
                                 }
                             }
@@ -1613,7 +941,7 @@ namespace LobotJR
                                         string[] msgData = whispers[1].Split(' ');
                                         if (msgData.Count() != 2)
                                         {
-                                            Whisper(whisperSender, "Invalid number of parameters. Syntax: !summon <stable ID>", group);
+                                            group.Whisper(whisperSender, "Invalid number of parameters. Syntax: !summon <stable ID>");
                                             continue;
                                         }
                                         int petToSummon = -1;
@@ -1622,7 +950,7 @@ namespace LobotJR
                                         {
                                             if (petToSummon > wolfcoins.classList[whisperSender].myPets.Count || petToSummon < 1)
                                             {
-                                                Whisper(whisperSender, "Invalid Stable ID given. Check !pets for each pet's stable ID!", group);
+                                                group.Whisper(whisperSender, "Invalid Stable ID given. Check !pets for each pet's stable ID!");
                                                 continue;
                                             }
                                             foreach (var pet in wolfcoins.classList[whisperSender].myPets)
@@ -1634,28 +962,28 @@ namespace LobotJR
                                             }
                                             if (currentlyActivePet > wolfcoins.classList[whisperSender].myPets.Count)
                                             {
-                                                Whisper(whisperSender, "Sorry, your stableID is corrupt. Lobos is working on this issue :(", group);
+                                                group.Whisper(whisperSender, "Sorry, your stableID is corrupt. Lobos is working on this issue :(");
                                                 continue;
                                             }
                                             if (!wolfcoins.classList[whisperSender].myPets.ElementAt(petToSummon - 1).isActive)
                                             {
                                                 wolfcoins.classList[whisperSender].myPets.ElementAt(petToSummon - 1).isActive = true;
-                                                Whisper(whisperSender, "You summoned " + wolfcoins.classList[whisperSender].myPets.ElementAt(petToSummon - 1).name + ".", group);
+                                                group.Whisper(whisperSender, "You summoned " + wolfcoins.classList[whisperSender].myPets.ElementAt(petToSummon - 1).name + ".");
                                                 if (currentlyActivePet != -1)
                                                 {
                                                     wolfcoins.classList[whisperSender].myPets.ElementAt(currentlyActivePet - 1).isActive = false;
-                                                    Whisper(whisperSender, wolfcoins.classList[whisperSender].myPets.ElementAt(currentlyActivePet - 1).name + " was dismissed.", group);
+                                                    group.Whisper(whisperSender, wolfcoins.classList[whisperSender].myPets.ElementAt(currentlyActivePet - 1).name + " was dismissed.");
                                                 }
                                             }
                                             else
                                             {
-                                                Whisper(whisperSender, wolfcoins.classList[whisperSender].myPets.ElementAt(petToSummon - 1).name + " is already summoned!", group);
+                                                group.Whisper(whisperSender, wolfcoins.classList[whisperSender].myPets.ElementAt(petToSummon - 1).name + " is already summoned!");
                                             }
                                         }
                                     }
                                     else
                                     {
-                                        Whisper(whisperSender, "You don't have a pet.", group);
+                                        group.Whisper(whisperSender, "You don't have a pet.");
                                     }
                                 }
                             }
@@ -1668,7 +996,7 @@ namespace LobotJR
                                         string[] msgData = whispers[1].Split(' ');
                                         if (msgData.Count() != 2)
                                         {
-                                            Whisper(whisperSender, "Invalid number of parameters. Syntax: !pet <stable ID>", group);
+                                            group.Whisper(whisperSender, "Invalid number of parameters. Syntax: !pet <stable ID>");
                                             continue;
                                         }
                                         int petToSend = -1;
@@ -1676,15 +1004,15 @@ namespace LobotJR
                                         {
                                             if (petToSend > wolfcoins.classList[whisperSender].myPets.Count || petToSend < 1)
                                             {
-                                                Whisper(whisperSender, "Invalid Stable ID given. Check !pets for each pet's stable ID!", group);
+                                                group.Whisper(whisperSender, "Invalid Stable ID given. Check !pets for each pet's stable ID!");
                                                 continue;
                                             }
-                                            WhisperPet(whisperSender, wolfcoins.classList[whisperSender].myPets.ElementAt(petToSend - 1), group, HIGH_DETAIL);
+                                            PetModule.WhisperPet(whisperSender, wolfcoins.classList[whisperSender].myPets.ElementAt(petToSend - 1), group, HIGH_DETAIL);
                                         }
                                     }
                                     else
                                     {
-                                        Whisper(whisperSender, "You don't have any pets.", group);
+                                        group.Whisper(whisperSender, "You don't have any pets.");
                                     }
                                 }
                             }
@@ -1697,7 +1025,7 @@ namespace LobotJR
                                         string[] msgData = whispers[1].Split(' ');
                                         if (msgData.Count() != 3)
                                         {
-                                            Whisper(whisperSender, "Invalid number of parameters. Note: names cannot contain spaces.", group);
+                                            group.Whisper(whisperSender, "Invalid number of parameters. Note: names cannot contain spaces.");
                                             continue;
                                         }
                                         else if (msgData.Count() == 3)
@@ -1707,28 +1035,28 @@ namespace LobotJR
                                             {
                                                 if (petToRename > (wolfcoins.classList[whisperSender].myPets.Count) || petToRename < 1)
                                                 {
-                                                    Whisper(whisperSender, "Sorry, the Stable ID given was invalid. Please try again.", group);
+                                                    group.Whisper(whisperSender, "Sorry, the Stable ID given was invalid. Please try again.");
                                                     continue;
                                                 }
                                                 string newName = msgData[2];
                                                 if (newName.Length > 16)
                                                 {
-                                                    Whisper(whisperSender, "Name can only be 16 characters max.", group);
+                                                    group.Whisper(whisperSender, "Name can only be 16 characters max.");
                                                     continue;
                                                 }
                                                 string prevName = wolfcoins.classList[whisperSender].myPets.ElementAt(petToRename - 1).name;
                                                 wolfcoins.classList[whisperSender].myPets.ElementAt(petToRename - 1).name = newName;
-                                                Whisper(whisperSender, prevName + " was renamed to " + newName + "!", group);
+                                                group.Whisper(whisperSender, prevName + " was renamed to " + newName + "!");
                                             }
                                         }
                                         else
                                         {
-                                            Whisper(whisperSender, "Sorry, the data you provided didn't work. Syntax: !rename <stable id> <new name>", group);
+                                            group.Whisper(whisperSender, "Sorry, the data you provided didn't work. Syntax: !rename <stable id> <new name>");
                                         }
                                     }
                                     else
                                     {
-                                        Whisper(whisperSender, "You don't have any pets to rename. :(", group);
+                                        group.Whisper(whisperSender, "You don't have any pets to rename. :(");
                                     }
                                 }
                             }
@@ -1772,8 +1100,8 @@ namespace LobotJR
 
                                         wolfcoins.SaveFishingList();
 
-                                        Whisper(whisperSender, "Congratulations! You caught a " + myCatch.length + " inch, " +
-                                            myCatch.weight + " pound " + myCatch.name + "!", group);
+                                        group.Whisper(whisperSender, "Congratulations! You caught a " + myCatch.length + " inch, " +
+                                            myCatch.weight + " pound " + myCatch.name + "!");
 
                                         wolfcoins.fishingList[whisperSender].fishHooked = false;
                                         wolfcoins.fishingList[whisperSender].hookedFishID = -1;
@@ -1803,13 +1131,13 @@ namespace LobotJR
                                 }
                                 if (wolfcoins.fishingList[whisperSender].isFishing)
                                 {
-                                    Whisper(whisperSender, "Your line is already cast! I'm sure a fish'll be along soon...", group);
+                                    group.Whisper(whisperSender, "Your line is already cast! I'm sure a fish'll be along soon...");
                                     continue;
                                 }
 
                                 if (wolfcoins.fishingList[whisperSender].fishHooked)
                                 {
-                                    Whisper(whisperSender, "Something's already bit your line! Quick, type !catch to snag it!", group);
+                                    group.Whisper(whisperSender, "Something's already bit your line! Quick, type !catch to snag it!");
                                     continue;
                                 }
 
@@ -1823,7 +1151,7 @@ namespace LobotJR
                                 wolfcoins.fishingList[whisperSender].timeOfCatch = DateTime.Now.AddSeconds(elapsedTime);
                                 wolfcoins.fishingList[whisperSender].isFishing = true;
 
-                                Whisper(whisperSender, "You cast your line out into the water.", group);
+                                group.Whisper(whisperSender, "You cast your line out into the water.");
                             }
                             else if (whisperMessage == "!debugcast")
                             {
@@ -1833,7 +1161,7 @@ namespace LobotJR
                                     wolfcoins.fishingList[whisperSender].timeOfCatch = DateTime.Now.AddSeconds(2);
                                     wolfcoins.fishingList[whisperSender].isFishing = true;
 
-                                    Whisper(whisperSender, "You cast your line out into the water.", group);
+                                    group.Whisper(whisperSender, "You cast your line out into the water.");
                                 }
                             }
                             else if (whisperMessage.StartsWith("!start"))
@@ -1843,11 +1171,11 @@ namespace LobotJR
                                     int partyID = wolfcoins.classList[whisperSender].groupID;
                                     if (parties.Count() > 0 && partyID != -1 && parties.ContainsKey(partyID))
                                     {
-                                        if (parties[partyID].status == PARTY_READY)
+                                        if (parties[partyID].status == GroupModule.PARTY_READY)
                                         {
                                             if (!(parties[partyID].partyLeader == whisperSender))
                                             {
-                                                Whisper(whisperSender, "You are not the party leader!", group);
+                                                group.Whisper(whisperSender, "You are not the party leader!");
                                                 continue;
                                             }
                                             string[] msgData = whispers[1].Split(' ');
@@ -1867,7 +1195,7 @@ namespace LobotJR
                                             //}
                                             else
                                             {
-                                                Whisper(whisperSender, "Invalid Dungeon ID provided.", group);
+                                                group.Whisper(whisperSender, "Invalid Dungeon ID provided.");
                                                 continue;
                                             }
                                             if (dungeonList.Count() >= dungeonID && dungeonID > 0)
@@ -1877,7 +1205,7 @@ namespace LobotJR
                                                 string[] type = fileText.ElementAt(0).Split('=');
                                                 if (type[1] == "Dungeon" && parties[partyID].NumMembers() > 3)
                                                 {
-                                                    Whisper(whisperSender, "You can't have more than 3 party members for a Dungeon.", group);
+                                                    group.Whisper(whisperSender, "You can't have more than 3 party members for a Dungeon.");
                                                     continue;
                                                 }
 
@@ -1896,7 +1224,7 @@ namespace LobotJR
                                                     member.level = wolfcoins.DetermineLevel(member.name);
                                                     //if (member.level < newDungeon.minLevel)
                                                     //{
-                                                    //    Whisper(parties[partyID], member.name + " is not high enough level for the requested dungeon. (Min Level: " + newDungeon.minLevel + ")", group);
+                                                    //    group.Whisper(parties[partyID], member.name + " is not high enough level for the requested dungeon. (Min Level: " + newDungeon.minLevel + ")");
                                                     //    outOfLevelRange = true;
                                                     //}
                                                 }
@@ -1923,7 +1251,7 @@ namespace LobotJR
                                                     {
                                                         names += bitch + " ";
                                                     }
-                                                    Whisper(parties[partyID], "The following party members do not have enough money to run " + newDungeon.dungeonName + ": " + names, group);
+                                                    group.WhisperParty(parties[partyID], "The following party members do not have enough money to run " + newDungeon.dungeonName + ": " + names);
                                                 }
 
                                                 if (!outOfLevelRange && enoughMoney)
@@ -1932,15 +1260,15 @@ namespace LobotJR
                                                     {
                                                         wolfcoins.coinList[member.name] -= (baseDungeonCost + ((member.level - minLevel) * 10));
                                                     }
-                                                    Whisper(parties[partyID], "Successfully initiated " + newDungeon.dungeonName + "! Wolfcoins deducted.", group);
+                                                    group.WhisperParty(parties[partyID], "Successfully initiated " + newDungeon.dungeonName + "! Wolfcoins deducted.");
                                                     string memberInfo = "";
                                                     foreach (var member in parties[partyID].members)
                                                     {
                                                         memberInfo += member.name + " (Level " + member.level + " " + member.className + ") ";
                                                     }
 
-                                                    Whisper(parties[partyID], "Your party consists of: " + memberInfo, group);
-                                                    parties[partyID].status = PARTY_STARTED;
+                                                    group.WhisperParty(parties[partyID], "Your party consists of: " + memberInfo);
+                                                    parties[partyID].status = GroupModule.PARTY_STARTED;
                                                     parties[partyID].myDungeon = newDungeon;
                                                     parties[partyID] = parties[partyID].myDungeon.RunDungeon(parties[partyID], ref group);
 
@@ -1959,18 +1287,18 @@ namespace LobotJR
                                         int toRelease = wolfcoins.classList[whisperSender].toRelease.stableID;
                                         if (toRelease > wolfcoins.classList[whisperSender].myPets.Count)
                                         {
-                                            Whisper(whisperSender, "Stable ID mismatch. Try !release again.", group);
+                                            group.Whisper(whisperSender, "Stable ID mismatch. Try !release again.");
                                             continue;
                                         }
                                         string petName = wolfcoins.classList[whisperSender].myPets.ElementAt(toRelease - 1).name;
                                         if (wolfcoins.classList[whisperSender].ReleasePet(toRelease))
                                         {
-                                            Whisper(whisperSender, "You released " + petName + ". Goodbye, " + petName + "!", group);
+                                            group.Whisper(whisperSender, "You released " + petName + ". Goodbye, " + petName + "!");
                                             wolfcoins.SaveClassData();
                                         }
                                         else
                                         {
-                                            Whisper(whisperSender, "Something went wrong. " + petName + " is still with you!", group);
+                                            group.Whisper(whisperSender, "Something went wrong. " + petName + " is still with you!");
                                         }
                                         wolfcoins.classList[whisperSender].pendingPetRelease = false;
                                         wolfcoins.classList[whisperSender].toRelease = new Pet();
@@ -1989,7 +1317,7 @@ namespace LobotJR
                                         {
                                             myMembers += member.name + " ";
                                         }
-                                        Whisper(whisperSender, "You successfully joined a party with the following members: " + myMembers, group);
+                                        group.Whisper(whisperSender, "You successfully joined a party with the following members: " + myMembers);
                                         foreach (var member in parties[partyID].members)
                                         {
                                             if (member.name == whisperSender)
@@ -1998,19 +1326,19 @@ namespace LobotJR
                                             if (member.pendingInvite)
                                                 continue;
 
-                                            Whisper(member.name, whisperSender + ", Level " + myLevel + " " + myClass + " has joined your party! (" + partySize + "/" + DUNGEON_MAX + ")", group);
+                                            group.Whisper(member.name, whisperSender + ", Level " + myLevel + " " + myClass + " has joined your party! (" + partySize + "/" + GroupModule.DUNGEON_MAX + ")");
                                         }
 
-                                        if (partySize == DUNGEON_MAX)
+                                        if (partySize == GroupModule.DUNGEON_MAX)
                                         {
-                                            Whisper(partyLeader, "Your party is now full.", group);
-                                            parties[partyID].status = PARTY_FULL;
+                                            group.Whisper(partyLeader, "Your party is now full.");
+                                            parties[partyID].status = GroupModule.PARTY_FULL;
                                         }
 
                                         if (partySize == 3)
                                         {
-                                            Whisper(partyLeader, "You've reached 3 party members! You're ready to dungeon!", group);
-                                            parties[partyID].status = PARTY_READY;
+                                            group.Whisper(partyLeader, "You've reached 3 party members! You're ready to dungeon!");
+                                            parties[partyID].status = GroupModule.PARTY_READY;
                                         }
                                         Console.WriteLine(DateTime.Now.ToString() + ": " + whisperSender + " added to Group " + partyID);
                                         string temp = "Updated Member List: ";
@@ -2029,10 +1357,10 @@ namespace LobotJR
                                     CharClass myClass = wolfcoins.classList[whisperSender];
                                     if (myClass.isPartyLeader)
                                     {
-                                        if (parties[myClass.groupID].status == PARTY_READY && parties[myClass.groupID].members.Count <= DUNGEON_MAX)
+                                        if (parties[myClass.groupID].status == GroupModule.PARTY_READY && parties[myClass.groupID].members.Count <= GroupModule.DUNGEON_MAX)
                                         {
-                                            parties[myClass.groupID].status = PARTY_FORMING;
-                                            Whisper(parties[myClass.groupID], "Party 'Ready' status has been revoked.", group);
+                                            parties[myClass.groupID].status = GroupModule.PARTY_FORMING;
+                                            group.WhisperParty(parties[myClass.groupID], "Party 'Ready' status has been revoked.");
                                         }
                                     }
                                 }
@@ -2044,10 +1372,10 @@ namespace LobotJR
                                     CharClass myClass = wolfcoins.classList[whisperSender];
                                     if (myClass.isPartyLeader)
                                     {
-                                        if (parties.ContainsKey(myClass.groupID) && parties[myClass.groupID].status == PARTY_FORMING)
+                                        if (parties.ContainsKey(myClass.groupID) && parties[myClass.groupID].status == GroupModule.PARTY_FORMING)
                                         {
-                                            parties[myClass.groupID].status = PARTY_READY;
-                                            Whisper(parties[myClass.groupID], "Party set to 'Ready'. Be careful adventuring without a full party!", group);
+                                            parties[myClass.groupID].status = GroupModule.PARTY_READY;
+                                            group.WhisperParty(parties[myClass.groupID], "Party set to 'Ready'. Be careful adventuring without a full party!");
                                         }
                                     }
                                 }
@@ -2062,7 +1390,7 @@ namespace LobotJR
                                         wolfcoins.classList[whisperSender].pendingPetRelease = false;
                                         wolfcoins.classList[whisperSender].toRelease = new Pet();
 
-                                        Whisper(whisperSender, "You decided to keep " + petName + ".", group);
+                                        group.Whisper(whisperSender, "You decided to keep " + petName + ".");
                                     }
 
                                     if (wolfcoins.classList[whisperSender].pendingInvite)
@@ -2071,8 +1399,8 @@ namespace LobotJR
                                         string partyLeader = parties[wolfcoins.classList[whisperSender].groupID].partyLeader;
                                         parties[wolfcoins.classList[whisperSender].groupID].RemoveMember(whisperSender);
                                         wolfcoins.classList[whisperSender].groupID = -1;
-                                        Whisper(whisperSender, "You declined " + partyLeader + "'s invite.", group);
-                                        Whisper(partyLeader, whisperSender + " has declined your party invite.", group);
+                                        group.Whisper(whisperSender, "You declined " + partyLeader + "'s invite.");
+                                        group.Whisper(partyLeader, whisperSender + " has declined your party invite.");
                                         wolfcoins.classList[partyLeader].numInvitesSent--;
                                     }
                                 }
@@ -2083,9 +1411,9 @@ namespace LobotJR
                                 {
                                     if (wolfcoins.classList[whisperSender].groupID != -1)
                                     {
-                                        if (parties[wolfcoins.classList[whisperSender].groupID].status == PARTY_STARTED)
+                                        if (parties[wolfcoins.classList[whisperSender].groupID].status == GroupModule.PARTY_STARTED)
                                         {
-                                            Whisper(whisperSender, "You can't kick a party member in the middle of a dungoen!", group);
+                                            group.Whisper(whisperSender, "You can't kick a party member in the middle of a dungoen!");
                                             continue;
                                         }
                                         if (whispers[1] != null)
@@ -2097,7 +1425,7 @@ namespace LobotJR
                                                 string toKick = msgData[1];
                                                 if (whisperSender == toKick)
                                                 {
-                                                    Whisper(whisperSender, "You can't kick yourself from a group! Do !leaveparty instead.", group);
+                                                    group.Whisper(whisperSender, "You can't kick yourself from a group! Do !leaveparty instead.");
                                                     continue;
                                                 }
                                                 toKick = toKick.ToLower();
@@ -2115,19 +1443,19 @@ namespace LobotJR
                                                                 wolfcoins.classList[toKick].pendingInvite = false;
                                                                 wolfcoins.classList[toKick].numInvitesSent = 0;
                                                                 wolfcoins.classList[whisperSender].numInvitesSent--;
-                                                                Whisper(toKick, "You were removed from " + whisperSender + "'s party.", group);
-                                                                Whisper(parties[myID], toKick + " was removed from the party.", group);
+                                                                group.Whisper(toKick, "You were removed from " + whisperSender + "'s party.");
+                                                                group.WhisperParty(parties[myID], toKick + " was removed from the party.");
                                                             }
                                                         }
                                                     }
                                                     else
                                                     {
-                                                        Whisper(whisperSender, "You are not the party leader.", group);
+                                                        group.Whisper(whisperSender, "You are not the party leader.");
                                                     }
                                                 }
                                                 else
                                                 {
-                                                    Whisper(whisperSender, "Couldn't find that party member to remove.", group);
+                                                    group.Whisper(whisperSender, "Couldn't find that party member to remove.");
                                                 }
                                             }
                                         }
@@ -2141,12 +1469,12 @@ namespace LobotJR
                                 {
                                     if (wolfcoins.classList[whisperSender].groupID != -1)
                                     {
-                                        if (parties[wolfcoins.classList[whisperSender].groupID].status == PARTY_STARTED)
+                                        if (parties[wolfcoins.classList[whisperSender].groupID].status == GroupModule.PARTY_STARTED)
                                             continue;
 
                                         if (wolfcoins.classList[whisperSender].usedGroupFinder && parties[wolfcoins.classList[whisperSender].groupID].NumMembers() == 3)
                                         {
-                                            Whisper(whisperSender, "You can't have more than 3 party members for a Group Finder dungeon.", group);
+                                            group.Whisper(whisperSender, "You can't have more than 3 party members for a Group Finder dungeon.");
                                             continue;
                                         }
 
@@ -2159,13 +1487,13 @@ namespace LobotJR
                                                 string invitee = msgData[1];
                                                 if (whisperSender == invitee)
                                                 {
-                                                    Whisper(whisperSender, "You can't invite yourself to a group!", group);
+                                                    group.Whisper(whisperSender, "You can't invite yourself to a group!");
                                                     continue;
                                                 }
                                                 if (wolfcoins.Exists(wolfcoins.classList, invitee) && wolfcoins.classList[invitee].queueDungeons.Count > 0)
                                                 {
-                                                    Whisper(whisperSender, invitee + " is currently queued for Group Finder and cannot be added to the group.", group);
-                                                    Whisper(invitee, whisperSender + " tried to invite you to a group, but you are queued in the Group Finder. Type '!leavequeue' to leave the queue.", group);
+                                                    group.Whisper(whisperSender, invitee + " is currently queued for Group Finder and cannot be added to the group.");
+                                                    group.Whisper(invitee, whisperSender + " tried to invite you to a group, but you are queued in the Group Finder. Type '!leavequeue' to leave the queue.");
                                                     continue;
                                                 }
 
@@ -2174,10 +1502,10 @@ namespace LobotJR
                                                 {
                                                     int myID = wolfcoins.classList[whisperSender].groupID;
                                                     if (wolfcoins.classList[invitee].classType != -1 && wolfcoins.classList[invitee].groupID == -1
-                                                        && !wolfcoins.classList[invitee].pendingInvite && wolfcoins.classList[whisperSender].numInvitesSent < DUNGEON_MAX
+                                                        && !wolfcoins.classList[invitee].pendingInvite && wolfcoins.classList[whisperSender].numInvitesSent < GroupModule.DUNGEON_MAX
                                                         && parties.ContainsKey(myID))
                                                     {
-                                                        if (parties[myID].status != PARTY_FORMING && parties[myID].status != PARTY_READY)
+                                                        if (parties[myID].status != GroupModule.PARTY_FORMING && parties[myID].status != GroupModule.PARTY_READY)
                                                         {
                                                             continue;
                                                         }
@@ -2190,17 +1518,17 @@ namespace LobotJR
                                                         int myLevel = wolfcoins.classList[whisperSender].level;
                                                         parties[myID].AddMember(wolfcoins.classList[invitee]);
                                                         string msg = whisperSender + ", Level " + myLevel + " " + myClass + ", has invited you to join a party. Accept? (y/n)";
-                                                        Whisper(whisperSender, "You invited " + invitee + " to a group.", group);
-                                                        Whisper(invitee, msg, group);
+                                                        group.Whisper(whisperSender, "You invited " + invitee + " to a group.");
+                                                        group.Whisper(invitee, msg);
                                                     }
-                                                    else if (wolfcoins.classList[whisperSender].numInvitesSent >= DUNGEON_MAX)
+                                                    else if (wolfcoins.classList[whisperSender].numInvitesSent >= GroupModule.DUNGEON_MAX)
                                                     {
-                                                        Whisper(whisperSender, "You have the max number of invites already pending.", group);
+                                                        group.Whisper(whisperSender, "You have the max number of invites already pending.");
                                                     }
                                                     else if (wolfcoins.classList[invitee].groupID != -1)
                                                     {
-                                                        Whisper(whisperSender, invitee + " is already in a group.", group);
-                                                        Whisper(invitee, whisperSender + " tried to invite you to a group, but you are already in one! Type '!leaveparty' to abandon your current group.", group);
+                                                        group.Whisper(whisperSender, invitee + " is already in a group.");
+                                                        group.Whisper(invitee, whisperSender + " tried to invite you to a group, but you are already in one! Type '!leaveparty' to abandon your current group.");
                                                     }
                                                 }
                                                 else
@@ -2210,11 +1538,11 @@ namespace LobotJR
                                                         int level = wolfcoins.DetermineLevel(invitee);
                                                         if (level < 3)
                                                         {
-                                                            //Whisper(whisperSender, invitee + " is not high enough level. (" + level + ")", group);
+                                                            //group.Whisper(whisperSender, invitee + " is not high enough level. (" + level + ")");
                                                         }
                                                         else
                                                         {
-                                                            Whisper(whisperSender, invitee + " is high enough level, but has not picked a class!", group);
+                                                            group.Whisper(whisperSender, invitee + " is high enough level, but has not picked a class!");
                                                         }
                                                     }
 
@@ -2236,7 +1564,7 @@ namespace LobotJR
 
                                     if (!wolfcoins.classList[whisperSender].isPartyLeader)
                                     {
-                                        Whisper(whisperSender, "You must be the party leader to promote.", group);
+                                        group.Whisper(whisperSender, "You must be the party leader to promote.");
                                         continue;
                                     }
 
@@ -2275,15 +1603,15 @@ namespace LobotJR
                                                 {
                                                     if (member.name != newLeader && member.name != whisperSender)
                                                     {
-                                                        Whisper(member.name, whisperSender + " has promoted " + newLeader + " to Party Leader.", group);
+                                                        group.Whisper(member.name, whisperSender + " has promoted " + newLeader + " to Party Leader.");
                                                     }
                                                 }
-                                                Whisper(newLeader, whisperSender + " has promoted you to Party Leader.", group);
-                                                Whisper(whisperSender, "You have promoted " + newLeader + " to Party Leader.", group);
+                                                group.Whisper(newLeader, whisperSender + " has promoted you to Party Leader.");
+                                                group.Whisper(whisperSender, "You have promoted " + newLeader + " to Party Leader.");
                                             }
                                             else
                                             {
-                                                Whisper(whisperSender, "Party member '" + newLeader + "' not found. You are still party leader.", group);
+                                                group.Whisper(whisperSender, "Party member '" + newLeader + "' not found. You are still party leader.");
                                             }
                                         }
                                     }
@@ -2294,9 +1622,9 @@ namespace LobotJR
                                 if (parties.Count() > 0 && wolfcoins.Exists(wolfcoins.classList, whisperSender))
                                 {
                                     int myID = wolfcoins.classList[whisperSender].groupID;
-                                    if (myID != -1 && parties[myID].status == PARTY_STARTED)
+                                    if (myID != -1 && parties[myID].status == GroupModule.PARTY_STARTED)
                                     {
-                                        Whisper(whisperSender, "You can't leave your party while a dungeon is in progress!", group);
+                                        group.Whisper(whisperSender, "You can't leave your party while a dungeon is in progress!");
                                         continue;
                                     }
                                     if (myID != -1 && !wolfcoins.classList[whisperSender].pendingInvite)
@@ -2318,7 +1646,7 @@ namespace LobotJR
                                                     myMembers += member.name + " ";
                                                 }
                                                 Console.WriteLine(DateTime.Now.ToString() + ": Remaining members: " + myMembers);
-                                                Whisper(parties[myID], "The party leader (" + whisperSender + ") has left. Your party has been disbanded.", group);
+                                                group.WhisperParty(parties[myID], "The party leader (" + whisperSender + ") has left. Your party has been disbanded.");
                                                 for (int i = 0; i < parties[myID].members.Count(); i++)
                                                 {
                                                     string dude = parties[myID].members.ElementAt(i).name;
@@ -2329,25 +1657,25 @@ namespace LobotJR
 
                                                 }
                                                 parties.Remove(myID);
-                                                Whisper(whisperSender, "Your party has been disbanded.", group);
+                                                group.Whisper(whisperSender, "Your party has been disbanded.");
 
                                             }
                                             else if (parties.ContainsKey(myID) && (parties[myID].RemoveMember(whisperSender)))
                                             {
-                                                if (parties[myID].status == PARTY_FORMING)
+                                                if (parties[myID].status == GroupModule.PARTY_FORMING)
                                                 {
                                                     string partyleader = parties[myID].partyLeader;
                                                     wolfcoins.classList[partyleader].numInvitesSent--;
                                                 }
-                                                else if (parties[myID].status == PARTY_FULL)
+                                                else if (parties[myID].status == GroupModule.PARTY_FULL)
                                                 {
                                                     string partyleader = parties[myID].partyLeader;
-                                                    parties[myID].status = PARTY_FORMING;
+                                                    parties[myID].status = GroupModule.PARTY_FORMING;
                                                     wolfcoins.classList[partyleader].numInvitesSent--;
                                                 }
 
-                                                Whisper(parties[myID], whisperSender + " has left the party.", group);
-                                                Whisper(whisperSender, "You left the party.", group);
+                                                group.WhisperParty(parties[myID], whisperSender + " has left the party.");
+                                                group.Whisper(whisperSender, "You left the party.");
                                                 wolfcoins.classList[whisperSender].groupID = -1;
                                                 wolfcoins.classList[whisperSender].ClearQueue();
                                                 Console.WriteLine(DateTime.Now.ToString() + ": " + whisperSender + " left group with ID " + myID);
@@ -2371,14 +1699,14 @@ namespace LobotJR
                                     double totalDays = (DateTime.Now - wolfcoins.classList[whisperSender].lastDailyGroupFinder).TotalDays;
                                     if (totalDays >= 1)
                                     {
-                                        Whisper(whisperSender, "You are eligible for daily Group Finder rewards! Go queue up!", group);
+                                        group.Whisper(whisperSender, "You are eligible for daily Group Finder rewards! Go queue up!");
                                         continue;
                                     }
                                     else
                                     {
                                         double minutesLeft = Math.Truncate(60 - (minutes % 60));
                                         double hoursLeft = Math.Truncate(24 - (totalHours));
-                                        Whisper(whisperSender, "Your daily Group Finder reward resets in " + hoursLeft + " hours and " + minutesLeft + " minutes.", group);
+                                        group.Whisper(whisperSender, "Your daily Group Finder reward resets in " + hoursLeft + " hours and " + minutesLeft + " minutes.");
                                     }
                                 }
                             }
@@ -2445,19 +1773,19 @@ namespace LobotJR
 
                                         lastFormed += seconds + " seconds ago.";
 
-                                        Whisper(whisperSender, myQueuedDungeons, group);
-                                        Whisper(whisperSender, timeMessage, group);
-                                        Whisper(whisperSender, lastFormed, group);
+                                        group.Whisper(whisperSender, myQueuedDungeons);
+                                        group.Whisper(whisperSender, timeMessage);
+                                        group.Whisper(whisperSender, lastFormed);
                                         continue;
                                     }
                                     if (whisperMessage == "!queuestatus" && whisperSender == "lobosjr")
                                     {
                                         if (groupFinder.queue.Count == 0)
                                         {
-                                            Whisper(whisperSender, "No players in queue.", group);
+                                            group.Whisper(whisperSender, "No players in queue.");
                                         }
 
-                                        Whisper(whisperSender, groupFinder.queue.Count + " players in queue.", group);
+                                        group.Whisper(whisperSender, groupFinder.queue.Count + " players in queue.");
                                         Dictionary<int, int> queueData = new Dictionary<int, int>();
                                         foreach (var player in groupFinder.queue)
                                         {
@@ -2476,7 +1804,7 @@ namespace LobotJR
 
                                         foreach (var dataPoint in queueData)
                                         {
-                                            Whisper(whisperSender, "Dungeon ID <" + dataPoint.Key + ">: " + dataPoint.Value + " players", group);
+                                            group.Whisper(whisperSender, "Dungeon ID <" + dataPoint.Key + ">: " + dataPoint.Value + " players");
                                         }
 
                                         continue;
@@ -2484,7 +1812,7 @@ namespace LobotJR
 
                                     if (wolfcoins.classList[whisperSender].queueDungeons.Count > 0)
                                     {
-                                        Whisper(whisperSender, "You are already queued in the Group Finder! Type !queuetime for more information.", group);
+                                        group.Whisper(whisperSender, "You are already queued in the Group Finder! Type !queuetime for more information.");
                                         continue;
                                     }
 
@@ -2501,7 +1829,7 @@ namespace LobotJR
                                         }
                                         else
                                         {
-                                            tempDungeonData = GetEligibleDungeons(whisperSender, wolfcoins, dungeonList).Split(',');
+                                            tempDungeonData = DungeonModule.GetEligibleDungeons(whisperSender, wolfcoins, dungeonList).Split(',');
                                         }
                                         List<int> requestedDungeons = new List<int>();
                                         //string[] tempDungeonData = msgData[1].Split(',');
@@ -2511,7 +1839,7 @@ namespace LobotJR
                                         {
                                             int tempInt = -1;
                                             int.TryParse(tempDungeonData[i], out tempInt);
-                                            int eligibility = DetermineEligibility(whisperSender, tempInt, dungeonList, baseDungeonCost, wolfcoins);
+                                            int eligibility = DungeonModule.DetermineEligibility(whisperSender, tempInt, dungeonList, baseDungeonCost, wolfcoins);
                                             switch (eligibility)
                                             {
                                                 case 0: // player not high enough level
@@ -2558,7 +1886,7 @@ namespace LobotJR
 
                                         if (!eligible)
                                         {
-                                            Whisper(whisperSender, errorMessage, group);
+                                            group.Whisper(whisperSender, errorMessage);
                                             continue;
                                         }
 
@@ -2571,13 +1899,13 @@ namespace LobotJR
                                         if (myParty.members.Count != 3)
                                         {
                                             wolfcoins.classList[whisperSender].queueTime = DateTime.Now;
-                                            Whisper(whisperSender, "You have been placed in the Group Finder queue.", group);
+                                            group.Whisper(whisperSender, "You have been placed in the Group Finder queue.");
                                             continue;
                                         }
 
                                         myParty.members.ElementAt(0).isPartyLeader = true;
                                         myParty.partyLeader = myParty.members.ElementAt(0).name;
-                                        myParty.status = PARTY_FULL;
+                                        myParty.status = GroupModule.PARTY_FULL;
                                         myParty.members.ElementAt(0).numInvitesSent = 3;
                                         myParty.myID = maxPartyID;
                                         myParty.usedDungeonFinder = true;
@@ -2590,7 +1918,7 @@ namespace LobotJR
                                         int dungeonID = myParty.members.ElementAt(0).queueDungeons.ElementAt(randDungeon);
                                         dungeonID++;
                                         myParty.members.ElementAt(0).groupFinderDungeon = dungeonID;
-                                        string dungeonName = GetDungeonName(dungeonID, dungeonList);
+                                        string dungeonName = DungeonModule.GetDungeonName(dungeonID, dungeonList);
                                         string members = "Group Finder group created for " + dungeonName + ": ";
                                         foreach (var member in myParty.members)
                                         {
@@ -2606,9 +1934,9 @@ namespace LobotJR
                                                 otherMembers += player.name + " (" + player.className + ") ";
                                             }
 
-                                            Whisper(member.name, "You've been matched for " + dungeonName + " with: " + otherMembers + ".", group);
+                                            group.Whisper(member.name, "You've been matched for " + dungeonName + " with: " + otherMembers + ".");
                                             if (member.isPartyLeader)
-                                                Whisper(member.name, "You are the party leader. Whisper me '!start' to begin!", group);
+                                                group.Whisper(member.name, "You are the party leader. Whisper me '!start' to begin!");
                                         }
                                         parties.Add(maxPartyID, myParty);
                                         Console.WriteLine(DateTime.Now.ToString() + ": " + members);
@@ -2622,25 +1950,25 @@ namespace LobotJR
                                         {
                                             switch (parties[wolfcoins.classList[whisperSender].groupID].status)
                                             {
-                                                case PARTY_FORMING:
+                                                case GroupModule.PARTY_FORMING:
                                                     {
                                                         reason = "Party is currently forming. Add members with '!add <username>'";
                                                     }
                                                     break;
 
-                                                case PARTY_READY:
+                                                case GroupModule.PARTY_READY:
                                                     {
                                                         reason = "Party is filled and ready to adventure! Type '!start' to begin!";
                                                     }
                                                     break;
 
-                                                case PARTY_STARTED:
+                                                case GroupModule.PARTY_STARTED:
                                                     {
                                                         reason = "Your party is currently on an adventure!";
                                                     }
                                                     break;
 
-                                                case PARTY_COMPLETE:
+                                                case GroupModule.PARTY_COMPLETE:
                                                     {
                                                         reason = "Your party just finished an adventure!";
                                                     }
@@ -2653,11 +1981,11 @@ namespace LobotJR
                                                     break;
                                             }
                                         }
-                                        Whisper(whisperSender, "You already have a party created! " + reason, group);
+                                        group.Whisper(whisperSender, "You already have a party created! " + reason);
                                     }
                                     else
                                     {
-                                        Whisper(whisperSender, "You currently have an outstanding invite to another party. Couldn't create new party!", group);
+                                        group.Whisper(whisperSender, "You currently have an outstanding invite to another party. Couldn't create new party!");
                                     }
                                 }
                             }
@@ -2723,12 +2051,12 @@ namespace LobotJR
                                     double percentClerics = (numClerics / numClasses) * 100;
                                     percentClerics = Math.Round(percentClerics, 1);
 
-                                    Whisper(whisperSender, "Class distribution for the Wolfpack RPG: ", group);
-                                    Whisper(whisperSender, "Warriors: " + percentWarriors + "%", group);
-                                    Whisper(whisperSender, "Mages: " + percentMages + "%", group);
-                                    Whisper(whisperSender, "Rogues: " + percentRogues + "%", group);
-                                    Whisper(whisperSender, "Rangers: " + percentRangers + "%", group);
-                                    Whisper(whisperSender, "Clerics " + percentClerics + "%", group);
+                                    group.Whisper(whisperSender, "Class distribution for the Wolfpack RPG: ");
+                                    group.Whisper(whisperSender, "Warriors: " + percentWarriors + "%");
+                                    group.Whisper(whisperSender, "Mages: " + percentMages + "%");
+                                    group.Whisper(whisperSender, "Rogues: " + percentRogues + "%");
+                                    group.Whisper(whisperSender, "Rangers: " + percentRangers + "%");
+                                    group.Whisper(whisperSender, "Clerics " + percentClerics + "%");
                                 }
                             }
                             else if (whisperMessage == "!leavequeue")
@@ -2740,7 +2068,7 @@ namespace LobotJR
                                         groupFinder.RemoveMember(whisperSender);
                                         wolfcoins.classList[whisperSender].ClearQueue();
 
-                                        Whisper(whisperSender, "You were removed from the Group Finder.", group);
+                                        group.Whisper(whisperSender, "You were removed from the Group Finder.");
                                     }
                                 }
                             }
@@ -2752,14 +2080,14 @@ namespace LobotJR
                                     {
                                         if (wolfcoins.classList[whisperSender].queueDungeons.Count > 0)
                                         {
-                                            Whisper(whisperSender, "Can't create a party while queued with the Group Finder. Message me '!leavequeue' to exit.", group);
+                                            group.Whisper(whisperSender, "Can't create a party while queued with the Group Finder. Message me '!leavequeue' to exit.");
                                             continue;
                                         }
                                         wolfcoins.classList[whisperSender].isPartyLeader = true;
                                         wolfcoins.classList[whisperSender].numInvitesSent = 1;
                                         Party myParty = new Party
                                         {
-                                            status = PARTY_FORMING,
+                                            status = GroupModule.PARTY_FORMING,
                                             partyLeader = whisperSender
                                         };
                                         int myLevel = wolfcoins.DetermineLevel(whisperSender);
@@ -2768,7 +2096,7 @@ namespace LobotJR
                                         myParty.myID = maxPartyID;
                                         parties.Add(maxPartyID, myParty);
 
-                                        Whisper(whisperSender, "Party created! Use '!add <username>' to invite party members.", group);
+                                        group.Whisper(whisperSender, "Party created! Use '!add <username>' to invite party members.");
                                         Console.WriteLine(DateTime.Now.ToString() + ": Party created: ");
                                         Console.WriteLine(DateTime.Now.ToString() + ": ID: " + maxPartyID);
                                         Console.WriteLine(DateTime.Now.ToString() + ": Total number of parties: " + parties.Count());
@@ -2781,25 +2109,25 @@ namespace LobotJR
                                         {
                                             switch (parties[wolfcoins.classList[whisperSender].groupID].status)
                                             {
-                                                case PARTY_FORMING:
+                                                case GroupModule.PARTY_FORMING:
                                                     {
                                                         reason = "Party is currently forming. Add members with '!add <username>'";
                                                     }
                                                     break;
 
-                                                case PARTY_READY:
+                                                case GroupModule.PARTY_READY:
                                                     {
                                                         reason = "Party is filled and ready to adventure! Type '!start' to begin!";
                                                     }
                                                     break;
 
-                                                case PARTY_STARTED:
+                                                case GroupModule.PARTY_STARTED:
                                                     {
                                                         reason = "Your party is currently on an adventure!";
                                                     }
                                                     break;
 
-                                                case PARTY_COMPLETE:
+                                                case GroupModule.PARTY_COMPLETE:
                                                     {
                                                         reason = "Your party just finished an adventure!";
                                                     }
@@ -2812,11 +2140,11 @@ namespace LobotJR
                                                     break;
                                             }
                                         }
-                                        Whisper(whisperSender, "You already have a party created! " + reason, group);
+                                        group.Whisper(whisperSender, "You already have a party created! " + reason);
                                     }
                                     else
                                     {
-                                        Whisper(whisperSender, "You currently have an outstanding invite to another party. Couldn't create new party!", group);
+                                        group.Whisper(whisperSender, "You currently have an outstanding invite to another party. Couldn't create new party!");
                                     }
                                 }
                             }
@@ -2830,7 +2158,7 @@ namespace LobotJR
 
                                         int oldClass = wolfcoins.classList[whisperSender].classType / 10;
                                         wolfcoins.classList[whisperSender].classType = oldClass;
-                                        Whisper(whisperSender, "Respec cancelled. No Wolfcoins deducted from your balance.", group);
+                                        group.Whisper(whisperSender, "Respec cancelled. No Wolfcoins deducted from your balance.");
                                     }
 
                                 }
@@ -2855,27 +2183,27 @@ namespace LobotJR
                                                 string status = "";
                                                 switch (parties[myID].status)
                                                 {
-                                                    case PARTY_FORMING:
+                                                    case GroupModule.PARTY_FORMING:
                                                         {
-                                                            status = "PARTY_FORMING";
+                                                            status = "GroupModule.PARTY_FORMING";
                                                         }
                                                         break;
 
-                                                    case PARTY_READY:
+                                                    case GroupModule.PARTY_READY:
                                                         {
-                                                            status = "PARTY_READY";
+                                                            status = "GroupModule.PARTY_READY";
                                                         }
                                                         break;
 
-                                                    case PARTY_STARTED:
+                                                    case GroupModule.PARTY_STARTED:
                                                         {
-                                                            status = "PARTY_STARTED";
+                                                            status = "GroupModule.PARTY_STARTED";
                                                         }
                                                         break;
 
-                                                    case PARTY_COMPLETE:
+                                                    case GroupModule.PARTY_COMPLETE:
                                                         {
-                                                            status = "PARTY_COMPLETE";
+                                                            status = "GroupModule.PARTY_COMPLETE";
                                                         }
                                                         break;
 
@@ -2905,7 +2233,7 @@ namespace LobotJR
                                         wolfcoins.classList[target].totalItemCount = 0;
                                         wolfcoins.classList[target].myItems = new List<Item>();
                                         wolfcoins.SaveClassData();
-                                        Whisper(whisperSender, "Cleared " + target + "'s item list.", group);
+                                        group.Whisper(whisperSender, "Cleared " + target + "'s item list.");
                                     }
                                 }
                             }
@@ -2972,7 +2300,7 @@ namespace LobotJR
 
                                     }
                                     wolfcoins.SaveClassData();
-                                    Whisper(whisperSender, "Reset all user's stats to default.", group);
+                                    group.Whisper(whisperSender, "Reset all user's stats to default.");
                                 }
 
                             }
@@ -2989,7 +2317,7 @@ namespace LobotJR
                                     int.TryParse(temp, out id);
                                     if (id < 1 || id > itemDatabase.Count())
                                     {
-                                        Whisper(whisperSender, "Invalid ID was attempted to be given.", group);
+                                        group.Whisper(whisperSender, "Invalid ID was attempted to be given.");
                                     }
 
                                     string user = whisperMSG[1];
@@ -3004,14 +2332,14 @@ namespace LobotJR
                                                 if (item.itemID == id)
                                                 {
                                                     hasItem = true;
-                                                    Whisper(whisperSender, user + " already has " + itemDatabase[id - 1].itemName + ".", group);
+                                                    group.Whisper(whisperSender, user + " already has " + itemDatabase[id - 1].itemName + ".");
                                                 }
                                             }
 
                                         }
                                         if (!hasItem && itemDatabase.ContainsKey(id))
                                         {
-                                            GrantItem(id, wolfcoins, user, itemDatabase);
+                                            ItemModule.GrantItem(id, wolfcoins, user, itemDatabase);
                                             wolfcoins.SaveClassData();
                                             //if(wolfcoins.classList[user].totalItemCount != -1)
                                             //{
@@ -3022,7 +2350,7 @@ namespace LobotJR
                                             //    wolfcoins.classList[user].totalItemCount = 1;
                                             //}
                                             //wolfcoins.classList[user].myItems.Add(itemDatabase[id]);
-                                            Whisper(whisperSender, "Gave " + user + " a " + itemDatabase[id - 1].itemName + ".", group);
+                                            group.Whisper(whisperSender, "Gave " + user + " a " + itemDatabase[id - 1].itemName + ".");
                                         }
 
                                     }
@@ -3052,7 +2380,7 @@ namespace LobotJR
                                             {
                                                 if (toActivate.isActive)
                                                 {
-                                                    Whisper(whisperSender, toActivate.itemName + " is already equipped.", group);
+                                                    group.Whisper(whisperSender, toActivate.itemName + " is already equipped.");
                                                     continue;
                                                 }
                                                 wolfcoins.classList[whisperSender].myItems.ElementAt(itemPos).isActive = true;
@@ -3067,15 +2395,15 @@ namespace LobotJR
                                                     if (itm.isActive)
                                                     {
                                                         itm.isActive = false;
-                                                        Whisper(whisperSender, "Unequipped " + itm.itemName + ".", group);
+                                                        group.Whisper(whisperSender, "Unequipped " + itm.itemName + ".");
                                                     }
                                                 }
-                                                Whisper(whisperSender, "Equipped " + toActivate.itemName + ".", group);
+                                                group.Whisper(whisperSender, "Equipped " + toActivate.itemName + ".");
                                             }
                                         }
                                         else
                                         {
-                                            Whisper(whisperSender, "You have no items.", group);
+                                            group.Whisper(whisperSender, "You have no items.");
                                         }
                                     }
                                 }
@@ -3104,14 +2432,14 @@ namespace LobotJR
                                                 if (toDeactivate.isActive)
                                                 {
                                                     wolfcoins.classList[whisperSender].myItems.ElementAt(itemPos).isActive = false;
-                                                    Whisper(whisperSender, "Unequipped " + toDeactivate.itemName + ".", group);
+                                                    group.Whisper(whisperSender, "Unequipped " + toDeactivate.itemName + ".");
                                                 }
 
                                             }
                                         }
                                         else
                                         {
-                                            Whisper(whisperSender, "You have no items.", group);
+                                            group.Whisper(whisperSender, "You have no items.");
                                         }
                                     }
                                 }
@@ -3161,21 +2489,21 @@ namespace LobotJR
                                         int newXp = wolfcoins.SetXP(value, whisperMSG[1], group);
                                         if (newXp != -1)
                                         {
-                                            Whisper(whisperSender, "Set " + whisperMSG[1] + "'s XP to " + newXp + ".", group);
+                                            group.Whisper(whisperSender, "Set " + whisperMSG[1] + "'s XP to " + newXp + ".");
                                         }
                                         else
                                         {
-                                            Whisper(whisperSender, "Error updating XP amount.", group);
+                                            group.Whisper(whisperSender, "Error updating XP amount.");
                                         }
                                     }
                                     else
                                     {
-                                        Whisper(whisperSender, "Invalid data provided for !setxp command.", group);
+                                        group.Whisper(whisperSender, "Invalid data provided for !setxp command.");
                                     }
                                 }
                                 else
                                 {
-                                    Whisper(whisperSender, "Not enough data provided for !setxp command.", group);
+                                    group.Whisper(whisperSender, "Not enough data provided for !setxp command.");
                                 }
                             }
                             else if (whisperMessage.StartsWith("!setprestige"))
@@ -3193,21 +2521,21 @@ namespace LobotJR
                                         if (value != -1 && wolfcoins.classList.ContainsKey(whisperMSG[1]))
                                         {
                                             wolfcoins.classList[whisperMSG[1].ToString()].prestige = value;
-                                            Whisper(whisperSender, "Set " + whisperMSG[1] + "'s Prestige to " + value + ".", group);
+                                            group.Whisper(whisperSender, "Set " + whisperMSG[1] + "'s Prestige to " + value + ".");
                                         }
                                         else
                                         {
-                                            Whisper(whisperSender, "Error updating Prestige Level.", group);
+                                            group.Whisper(whisperSender, "Error updating Prestige Level.");
                                         }
                                     }
                                     else
                                     {
-                                        Whisper(whisperSender, "Invalid data provided for !setprestige command.", group);
+                                        group.Whisper(whisperSender, "Invalid data provided for !setprestige command.");
                                     }
                                 }
                                 else
                                 {
-                                    Whisper(whisperSender, "Not enough data provided for !setprestige command.", group);
+                                    group.Whisper(whisperSender, "Not enough data provided for !setprestige command.");
                                 }
                             }
                             else if (whisperMessage.StartsWith("C") || whisperMessage.StartsWith("c"))
@@ -3282,22 +2610,22 @@ namespace LobotJR
 
                             else if (whisperMessage == "1")
                             {
-                                Whisper(whisperSender, "Wolfcoins are a currency you earn by watching the stream! You can check your coins by whispering me '!coins' or '!stats'. To find out what you can spend coins on, message me '!shop'.", group);
+                                group.Whisper(whisperSender, "Wolfcoins are a currency you earn by watching the stream! You can check your coins by whispering me '!coins' or '!stats'. To find out what you can spend coins on, message me '!shop'.");
                             }
 
                             else if (whisperMessage == "2")
                             {
-                                Whisper(whisperSender, "Did you know you gain experience by watching the stream? You can level up as you get more XP! Max level is 20. To check your level & xp, message me '!xp' '!level' or '!stats'. Only Level 2+ viewers can post links. This helps prevent bot spam!", group);
+                                group.Whisper(whisperSender, "Did you know you gain experience by watching the stream? You can level up as you get more XP! Max level is 20. To check your level & xp, message me '!xp' '!level' or '!stats'. Only Level 2+ viewers can post links. This helps prevent bot spam!");
                             }
 
                             else if (whisperMessage == "!shop")
                             {
-                                Whisper(whisperSender, "Whisper me '!stats <username>' to check another users stats! (Cost: 1 coin)   Whisper me '!gloat' to spend 10 coins and show off your level! (Cost: 10 coins)", group);
+                                group.Whisper(whisperSender, "Whisper me '!stats <username>' to check another users stats! (Cost: 1 coin)   Whisper me '!gloat' to spend 10 coins and show off your level! (Cost: 10 coins)");
                             }
 
                             else if (whisperMessage == "!dungeonlist")
                             {
-                                Whisper(whisperSender, "List of Wolfpack RPG Adventures: http://tinyurl.com/WolfpackAdventureList", group);
+                                group.Whisper(whisperSender, "List of Wolfpack RPG Adventures: http://tinyurl.com/WolfpackAdventureList");
                             }
                             else if (whisperMessage == "!debugcatch")
                             {
@@ -3305,7 +2633,7 @@ namespace LobotJR
                                 {
                                     for (int i = 0; i < 50; i++)
                                     {
-                                        Fish randomFish = new Fish(WeightedRandomFish(ref fishDatabase));
+                                        Fish randomFish = new Fish(FishingModule.WeightedRandomFish(ref fishDatabase));
                                         Console.WriteLine(randomFish.name + " (Rarity " + randomFish.rarity + ") caught.");
                                     }
                                 }
@@ -3347,11 +2675,11 @@ namespace LobotJR
                                             {
                                                 wolfcoins.classList.Remove(user);
                                                 wolfcoins.SaveClassData();
-                                                Whisper(whisperSender, "Cleared " + user + "'s class.", group);
+                                                group.Whisper(whisperSender, "Cleared " + user + "'s class.");
                                             }
                                             else
                                             {
-                                                Whisper(whisperSender, "Couldn't find you in the class table.", group);
+                                                group.Whisper(whisperSender, "Couldn't find you in the class table.");
                                             }
                                         }
                                     }
@@ -3374,21 +2702,21 @@ namespace LobotJR
                                         int newCoins = wolfcoins.SetCoins(value, whisperMSG[1]);
                                         if (newCoins != -1)
                                         {
-                                            Whisper(whisperSender, "Set " + whisperMSG[1] + "'s coins to " + newCoins + ".", group);
+                                            group.Whisper(whisperSender, "Set " + whisperMSG[1] + "'s coins to " + newCoins + ".");
                                         }
                                         else
                                         {
-                                            Whisper(whisperSender, "Error updating Coin amount.", group);
+                                            group.Whisper(whisperSender, "Error updating Coin amount.");
                                         }
                                     }
                                     else
                                     {
-                                        Whisper(whisperSender, "Invalid data provided for !setcoins command.", group);
+                                        group.Whisper(whisperSender, "Invalid data provided for !setcoins command.");
                                     }
                                 }
                                 else
                                 {
-                                    Whisper(whisperSender, "Not enough data provided for !setcoins command.", group);
+                                    group.Whisper(whisperSender, "Not enough data provided for !setcoins command.");
                                 }
                             }
 
@@ -3399,11 +2727,11 @@ namespace LobotJR
                                     if (wolfcoins.coinList.ContainsKey(whisperSender))
                                     {
 
-                                        Whisper(whisperSender, "You have: " + wolfcoins.coinList[whisperSender] + " coins.", group);
+                                        group.Whisper(whisperSender, "You have: " + wolfcoins.coinList[whisperSender] + " coins.");
                                     }
                                     else
                                     {
-                                        Whisper(whisperSender, "You don't have any coins yet! Stick around during the livestream to earn coins.", group);
+                                        group.Whisper(whisperSender, "You don't have any coins yet! Stick around during the livestream to earn coins.");
                                     }
                                 }
                             }
@@ -3413,7 +2741,7 @@ namespace LobotJR
                                 {
                                     if (wolfcoins.coinList[whisperSender] < gloatCost)
                                     {
-                                        Whisper(whisperSender, "You don't have enough coins to gloat!", group);
+                                        group.Whisper(whisperSender, "You don't have enough coins to gloat!");
                                         continue;
                                     }
 
@@ -3433,7 +2761,7 @@ namespace LobotJR
 
                                         if (!hasActive)
                                         {
-                                            Whisper(whisperSender, "You don't have an active pet to show off! Activate one with !summon <id>", group);
+                                            group.Whisper(whisperSender, "You don't have an active pet to show off! Activate one with !summon <id>");
                                             continue;
                                         }
 
@@ -3448,7 +2776,7 @@ namespace LobotJR
                                             petType = toGloat.type;
 
                                         irc.SendChatMessage(whisperSender + " watches proudly as their level " + toGloat.level + " " + petType + " named " + toGloat.name + " struts around!");
-                                        Whisper(whisperSender, "You spent " + temp + " wolfcoins to brag about " + toGloat.name + ".", group);
+                                        group.Whisper(whisperSender, "You spent " + temp + " wolfcoins to brag about " + toGloat.name + ".");
                                     }
                                 }
 
@@ -3459,7 +2787,7 @@ namespace LobotJR
                                 {
                                     if (wolfcoins.coinList[whisperSender] < gloatCost)
                                     {
-                                        Whisper(whisperSender, "You don't have enough coins to gloat!", group);
+                                        group.Whisper(whisperSender, "You don't have enough coins to gloat!");
                                         continue;
                                     }
 
@@ -3469,7 +2797,7 @@ namespace LobotJR
                                         string[] msgData = whispers[1].Split(' ');
                                         if (msgData.Count() != 2)
                                         {
-                                            Whisper(whisperSender, "Invalid number of parameters. Syntax: !fish <Fish #>", group);
+                                            group.Whisper(whisperSender, "Invalid number of parameters. Syntax: !fish <Fish #>");
                                             continue;
                                         }
                                         int fishID = -1;
@@ -3483,13 +2811,13 @@ namespace LobotJR
                                                 Fish tempFish = new Fish(wolfcoins.fishingList[whisperSender].biggestFish.ElementAt(fishID - 1));
 
                                                 irc.SendChatMessage(whisperSender + " gloats about the time they caught a  " + tempFish.length + " in. long, " + tempFish.weight + " pound " + tempFish.name + " lobosSmug");
-                                                Whisper(whisperSender, "You spent " + temp + " wolfcoins to brag about your biggest" + tempFish.name + ".", group);
+                                                group.Whisper(whisperSender, "You spent " + temp + " wolfcoins to brag about your biggest" + tempFish.name + ".");
                                             }
                                         }
                                     }
                                     else
                                     {
-                                        Whisper(whisperSender, "You don't have any fish! Type !cast to try and fish for some!", group);
+                                        group.Whisper(whisperSender, "You don't have any fish! Type !cast to try and fish for some!");
                                     }
 
 
@@ -3640,12 +2968,12 @@ namespace LobotJR
                                         }
                                         else
                                         {
-                                            Whisper(whisperSender, "You don't have enough coins to gloat (Cost: " + gloatCost + " Wolfcoins)", group);
+                                            group.Whisper(whisperSender, "You don't have enough coins to gloat (Cost: " + gloatCost + " Wolfcoins)");
                                         }
                                     }
                                     else
                                     {
-                                        Whisper(whisperSender, "You don't have coins and/or xp yet!", group);
+                                        group.Whisper(whisperSender, "You don't have coins and/or xp yet!");
                                     }
                                 }
                             }
@@ -3662,7 +2990,7 @@ namespace LobotJR
                                     {
                                         if (!wolfcoins.CheckCoins(user, betAmount))
                                         {
-                                            Whisper(user, "There was an error placing your bet. (not enough coins?)", group);
+                                            group.Whisper(user, "There was an error placing your bet. (not enough coins?)");
                                             continue;
                                         }
                                         betInfo.betAmount = betAmount;
@@ -3702,7 +3030,7 @@ namespace LobotJR
                                     wolfcoins.AwardXP(value, user, group);
                                     wolfcoins.SaveClassData();
                                     wolfcoins.SaveXP();
-                                    Whisper(whisperSender, "Gave " + user + " " + value + " XP.", group);
+                                    group.Whisper(whisperSender, "Gave " + user + " " + value + " XP.");
                                 }
                                 else
                                 {
@@ -3726,28 +3054,28 @@ namespace LobotJR
                                         }
                                         //if(!wolfcoins.Exists(wolfcoins.classList, whisperSender))
                                         //{
-                                        //    Whisper(whisperSender, "You are Level " + myLevel + " (Total XP: " + wolfcoins.xpList[whisperSender] + ")", group);
+                                        //    group.Whisper(whisperSender, "You are Level " + myLevel + " (Total XP: " + wolfcoins.xpList[whisperSender] + ")");
                                         //}
                                         //else
                                         //{
                                         //    string myClass = wolfcoins.determineClass(whisperSender);
-                                        //    Whisper(whisperSender, "You are a Level " + myLevel + " " + myClass + " (Total XP: " + wolfcoins.xpList[whisperSender] + ")", group);
+                                        //    group.Whisper(whisperSender, "You are a Level " + myLevel + " " + myClass + " (Total XP: " + wolfcoins.xpList[whisperSender] + ")");
                                         //}
 
                                         if (wolfcoins.classList.Keys.Contains(whisperSender.ToLower()))
                                         {
                                             string myClass = wolfcoins.DetermineClass(whisperSender);
-                                            Whisper(whisperSender, "You are a Level " + myLevel + " " + myClass + ", and you are Prestige Level " + myPrestige + ". (Total XP: " + wolfcoins.xpList[whisperSender] + " | XP To Next Level: " + xpToNextLevel + ")", group);
+                                            group.Whisper(whisperSender, "You are a Level " + myLevel + " " + myClass + ", and you are Prestige Level " + myPrestige + ". (Total XP: " + wolfcoins.xpList[whisperSender] + " | XP To Next Level: " + xpToNextLevel + ")");
                                         }
                                         else
                                         {
-                                            Whisper(whisperSender, "You are Level " + myLevel + " (Total XP: " + wolfcoins.xpList[whisperSender] + " | XP To Next Level: " + xpToNextLevel + ")", group);
+                                            group.Whisper(whisperSender, "You are Level " + myLevel + " (Total XP: " + wolfcoins.xpList[whisperSender] + " | XP To Next Level: " + xpToNextLevel + ")");
                                         }
 
                                     }
                                     else
                                     {
-                                        Whisper(whisperSender, "You don't have any XP yet! Hang out in chat during the livestream to earn XP & coins.", group);
+                                        group.Whisper(whisperSender, "You don't have any XP yet! Hang out in chat during the livestream to earn XP & coins.");
                                     }
                                 }
                             }
@@ -3764,7 +3092,7 @@ namespace LobotJR
                                     {
                                         foreach (var player in groupFinder.queue)
                                         {
-                                            Whisper(player.name, "Attention! Wolfpack RPG will be coming down for maintenance in about " + numMinutes + " minutes. If you are dungeoning while the bot shuts down, your progress may not be saved.", group);
+                                            group.Whisper(player.name, "Attention! Wolfpack RPG will be coming down for maintenance in about " + numMinutes + " minutes. If you are dungeoning while the bot shuts down, your progress may not be saved.");
                                         }
                                     }
 
@@ -3784,19 +3112,19 @@ namespace LobotJR
                                             wolfcoins.RemoveCoins(whisperSender, pryCost.ToString());
                                             if (wolfcoins.Exists(wolfcoins.classList, desiredUser))
                                             {
-                                                Whisper(whisperSender, "" + desiredUser + " is a Level " + wolfcoins.DetermineLevel(desiredUser) + " " + wolfcoins.DetermineClass(desiredUser) + " (" + wolfcoins.xpList[desiredUser] + " XP), Prestige Level " + wolfcoins.classList[desiredUser].prestige + ", and has " +
-                                                    wolfcoins.coinList[desiredUser] + " Wolfcoins.", group);
+                                                group.Whisper(whisperSender, "" + desiredUser + " is a Level " + wolfcoins.DetermineLevel(desiredUser) + " " + wolfcoins.DetermineClass(desiredUser) + " (" + wolfcoins.xpList[desiredUser] + " XP), Prestige Level " + wolfcoins.classList[desiredUser].prestige + ", and has " +
+                                                    wolfcoins.coinList[desiredUser] + " Wolfcoins.");
                                             }
                                             else
                                             {
-                                                Whisper(whisperSender, "" + desiredUser + " is Level " + " " + wolfcoins.DetermineLevel(desiredUser) + " (" + wolfcoins.xpList[desiredUser] + " XP) and has " +
-                                                    wolfcoins.coinList[desiredUser] + " Wolfcoins.", group);
+                                                group.Whisper(whisperSender, "" + desiredUser + " is Level " + " " + wolfcoins.DetermineLevel(desiredUser) + " (" + wolfcoins.xpList[desiredUser] + " XP) and has " +
+                                                    wolfcoins.coinList[desiredUser] + " Wolfcoins.");
                                             }
-                                            Whisper(whisperSender, "It cost you " + pryCost + " Wolfcoins to discover this information.", group);
+                                            group.Whisper(whisperSender, "It cost you " + pryCost + " Wolfcoins to discover this information.");
                                         }
                                         else
                                         {
-                                            Whisper(whisperSender, "User does not exist in database. You were charged no coins.", group);
+                                            group.Whisper(whisperSender, "User does not exist in database. You were charged no coins.");
                                         }
                                     }
                                     else if (wolfcoins.coinList.ContainsKey(whisperSender) && wolfcoins.xpList.ContainsKey(whisperSender))
@@ -3811,20 +3139,20 @@ namespace LobotJR
                                         }
 
                                         int xpToNextLevel = wolfcoins.XpToNextLevel(whisperSender);
-                                        Whisper(whisperSender, "You have: " + wolfcoins.coinList[whisperSender] + " coins.", group);
+                                        group.Whisper(whisperSender, "You have: " + wolfcoins.coinList[whisperSender] + " coins.");
                                         if (wolfcoins.classList.Keys.Contains(whisperSender.ToLower()))
                                         {
                                             string myClass = wolfcoins.DetermineClass(whisperSender);
-                                            Whisper(whisperSender, "You are a Level " + myLevel + " " + myClass + ", and you are Prestige Level " + myPrestige + ". (Total XP: " + wolfcoins.xpList[whisperSender] + " | XP To Next Level: " + xpToNextLevel + ")", group);
+                                            group.Whisper(whisperSender, "You are a Level " + myLevel + " " + myClass + ", and you are Prestige Level " + myPrestige + ". (Total XP: " + wolfcoins.xpList[whisperSender] + " | XP To Next Level: " + xpToNextLevel + ")");
                                         }
                                         else
                                         {
-                                            Whisper(whisperSender, "You are Level " + myLevel + " (Total XP: " + wolfcoins.xpList[whisperSender] + " | XP To Next Level: " + xpToNextLevel + ")", group);
+                                            group.Whisper(whisperSender, "You are Level " + myLevel + " (Total XP: " + wolfcoins.xpList[whisperSender] + " | XP To Next Level: " + xpToNextLevel + ")");
                                         }
                                     }
                                     if (!(wolfcoins.coinList.ContainsKey(whisperSender)) || !(wolfcoins.xpList.ContainsKey(whisperSender)))
                                     {
-                                        Whisper(whisperSender, "You either don't have coins or xp yet. Hang out in chat during the livestream to earn them!", group);
+                                        group.Whisper(whisperSender, "You either don't have coins or xp yet. Hang out in chat during the livestream to earn them!");
                                     }
                                 }
                             }
@@ -3858,8 +3186,8 @@ namespace LobotJR
                                 || first[0] == "!level" || first[0] == "!exp")
                             {
                                 irc.SendChatMessage("/timeout " + sender + " 1");
-                                Whisper(sender, "I see you're trying to check your stats! You'll need to WHISPER to me to get any information. Type '/w lobotjr' and then stats, xp, coins, etc. for that information.", group);
-                                Whisper(sender, "Sorry for purging you. Just trying to do my job to keep chat clear! <3", group);
+                                group.Whisper(sender, "I see you're trying to check your stats! You'll need to WHISPER to me to get any information. Type '/w lobotjr' and then stats, xp, coins, etc. for that information.");
+                                group.Whisper(sender, "Sorry for purging you. Just trying to do my job to keep chat clear! <3");
                             }
 
                             switch (first[0])
@@ -4208,306 +3536,11 @@ namespace LobotJR
             }
             else
             {
-                #region TwitchPlaysDS
-
-                irc.JoinRoom("lobosjr");
-
-                Process[] p = Process.GetProcessesByName("DARKSOULS");
-                IntPtr h = (IntPtr)0;
-                if (p.Length > 0)
-                {
-                    h = p[0].MainWindowHandle;
-                    NativeMethods.SetForegroundWindowSafe(h);
-                }
-
-                while (connected)
-                {
-                    // message[0] has username, message[1] has message
-                    string[] message = irc.ReadMessage();
-
-                    if (message.Length > 1)
-                    {
-                        if (message[0] != null && message[1] != null)
-                        {
-                            string[] first = message[1].Split(' ');
-                            string sender = message[0];
-                            char[] keys = { };
-
-                            const int MOVE_AMOUNT = 1000;
-                            switch (first[0].ToLower())
-                            {
-                                // M preceds movement. MF = Move Forward, MB = Move Backwards, etc.
-                                case "mf":
-                                    {
-                                        SendFor('W', MOVE_AMOUNT);
-                                        Console.WriteLine("MF - Move Forward");
-                                    }
-                                    break;
-
-                                case "mb":
-                                    {
-                                        SendFor('S', MOVE_AMOUNT);
-                                        Console.WriteLine("MB - Move Back");
-                                    }
-                                    break;
-
-                                case "ml":
-                                    {
-                                        SendFor('A', MOVE_AMOUNT);
-                                        Console.WriteLine("ML - Move Left");
-                                    }
-                                    break;
-
-                                case "mr":
-                                    {
-                                        SendFor('D', MOVE_AMOUNT);
-                                        Console.WriteLine("MR - Move Right");
-                                    }
-                                    break;
-
-                                // Camera Up, Down, Left, Right
-                                case "cu":
-                                    {
-                                        SendFor('I', MOVE_AMOUNT);
-                                        Console.WriteLine("CU - Camera Up");
-                                    }
-                                    break;
-
-                                case "cd":
-                                    {
-                                        SendFor('K', MOVE_AMOUNT);
-                                        Console.WriteLine("CD - Camera Down");
-                                    }
-                                    break;
-
-                                case "cl":
-                                    {
-                                        SendFor('J', MOVE_AMOUNT);
-                                    }
-                                    break;
-
-                                case "cr":
-                                    {
-                                        SendFor('L', MOVE_AMOUNT);
-                                    }
-                                    break;
-
-                                // Lock on/off
-                                case "l":
-                                    {
-                                        SendFor('O', 100);
-                                    }
-                                    break;
-
-                                // Use item
-                                case "u":
-                                    {
-                                        SendFor('E', 100);
-                                    }
-                                    break;
-                                // 2h toggle
-                                case "y":
-                                    {
-                                        SendFor(56, 100);
-                                    }
-                                    break;
-                                // Attacks
-                                case "r1":
-                                    {
-                                        SendFor('H', 100);
-                                    }
-                                    break;
-
-                                case "r2":
-                                    {
-                                        SendFor('U', 100);
-                                    }
-                                    break;
-
-                                case "l1":
-                                    {
-                                        SendFor(42, 100);
-                                    }
-                                    break;
-
-                                case "l2":
-                                    {
-                                        SendFor(15, 100);
-                                    }
-                                    break;
-                                // Rolling directions
-                                case "rl":
-                                    {
-                                        keys = new char[] { 'A', ' ' };
-                                        SendFor(keys, 100);
-                                    }
-                                    break;
-
-                                case "rr":
-                                    {
-                                        keys = new char[] { 'D', ' ' };
-                                        SendFor(keys, 100);
-                                    }
-                                    break;
-
-                                case "rf":
-                                    {
-                                        keys = new char[] { 'W', ' ' };
-                                        SendFor(keys, 100);
-                                    }
-                                    break;
-
-                                case "rb":
-                                    {
-                                        keys = new char[] { 'S', ' ' };
-                                        SendFor(keys, 100);
-                                    }
-                                    break;
-
-                                case "x":
-                                    {
-                                        SendFor('Q', 100);
-                                        SendFor(28, 100);
-                                    }
-                                    break;
-                                // switch LH weap
-                                case "dl":
-                                    {
-                                        SendFor('C', 100);
-                                    }
-                                    break;
-
-                                case "dr":
-                                    {
-                                        SendFor('V', 100);
-                                    }
-                                    break;
-
-                                case "du":
-                                    {
-                                        SendFor('R', 100);
-                                    }
-                                    break;
-
-                                case "dd":
-                                    {
-                                        SendFor('F', 100);
-                                    }
-                                    break;
-
-                                //case "just subscribed":
-                                //    {
-                                //        sendFor('G', 500);
-
-                                //        sendFor(13, 100);
-                                //    } break;
-
-                                default: break;
-
-
-
-                            }
-                        }
-                    }
-                }
-
-                Console.WriteLine("Connection terminated.");
-                #endregion
+                TwitchPlaysModule.Run(irc);
             }
         }
-        static Pet GrantPet(string playerName, Currency wolfcoins, Dictionary<int, Pet> petDatabase, IrcClient irc, IrcClient group)
-        {
-            List<Pet> toAward = new List<Pet>();
-            // figure out the rarity of pet to give and build a list of non-duplicate pets to award
-            int rarity = wolfcoins.classList[playerName].petEarned;
-            foreach (var basePet in petDatabase)
-            {
-                if (basePet.Value.petRarity != rarity)
-                    continue;
 
-                bool alreadyOwned = false;
-
-
-                foreach (var pet in wolfcoins.classList[playerName].myPets)
-                {
-                    if (pet.ID == basePet.Value.ID)
-                    {
-                        alreadyOwned = true;
-                        break;
-                    }
-
-                }
-
-                if (!alreadyOwned)
-                {
-                    toAward.Add(basePet.Value);
-                }
-            }
-            // now that we have a list of eligible pets, randomly choose one from the list to award
-            Pet newPet;
-
-            if (toAward.Count > 0)
-            {
-                string toSend = "";
-                Random RNG = new Random();
-                int petToAward = RNG.Next(1, toAward.Count + 1);
-                newPet = new Pet(toAward[petToAward - 1]);
-                int sparklyCheck = RNG.Next(1, 101);
-                bool firstPet = false;
-                if (wolfcoins.classList[playerName].myPets.Count == 0)
-                    firstPet = true;
-
-                if (sparklyCheck == 1)
-                    newPet.isSparkly = true;
-
-                if (firstPet)
-                {
-                    newPet.isActive = true;
-                    toSend = "You found your first pet! You now have a pet " + newPet.type + ". Whisper me !pethelp for more info.";
-                }
-                else
-                {
-                    toSend = "You found a new pet buddy! You earned a " + newPet.type + " pet!";
-                }
-
-                if (newPet.isSparkly)
-                {
-                    toSend += " WOW! And it's a sparkly version! Luck you!";
-                }
-
-                newPet.stableID = wolfcoins.classList[playerName].myPets.Count + 1;
-                wolfcoins.classList[playerName].myPets.Add(newPet);
-
-
-
-
-                Whisper(playerName, toSend, group);
-                if (newPet.isSparkly)
-                {
-                    Console.WriteLine(DateTime.Now.ToString() + "WOW! " + ": " + playerName + " just found a SPARKLY pet " + newPet.name + "!");
-                    irc.SendChatMessage("WOW! " + playerName + " just found a SPARKLY pet " + newPet.name + "! What luck!");
-                }
-                else
-                {
-                    Console.WriteLine(DateTime.Now.ToString() + ": " + playerName + " just found a pet " + newPet.name + "!");
-                    irc.SendChatMessage(playerName + " just found a pet " + newPet.name + "!");
-                }
-
-                if (wolfcoins.classList[playerName].myPets.Count == petDatabase.Count)
-                {
-                    Whisper(playerName, "You've collected all of the available pets! Congratulations!", group);
-                }
-
-                wolfcoins.classList[playerName].petEarned = -1;
-
-                return newPet;
-            }
-
-            return new Pet();
-
-        }
-
-        static void UpdateTokens(TokenData tokenData, LobotJR.Shared.Client.ClientData clientData, bool force = false)
+        static void UpdateTokens(TokenData tokenData, Shared.Client.ClientData clientData, bool force = false)
         {
             bool tokenUpdated = false;
             if (force || DateTime.Now >= tokenData.ChatToken.ExpirationDate)
@@ -4546,395 +3579,5 @@ namespace LobotJR
                 }
             }
         }
-
-        static string GetDungeonName(int dungeonID, Dictionary<int, string> dungeonList)
-        {
-            if (!dungeonList.ContainsKey(dungeonID))
-                return "Invalid DungeonID";
-
-            Dungeon tempDungeon = new Dungeon("content/dungeons/" + dungeonList[dungeonID]);
-            return tempDungeon.dungeonName;
-        }
-
-        static string GetEligibleDungeons(string user, Currency wolfcoins, Dictionary<int, string> dungeonList)
-        {
-            string eligibleDungeons = "";
-            int playerLevel = wolfcoins.DetermineLevel(user);
-            List<Dungeon> dungeons = new List<Dungeon>();
-            Dungeon tempDungeon;
-            foreach (var id in dungeonList)
-            {
-                tempDungeon = new Dungeon("content/dungeons/" + dungeonList[id.Key])
-                {
-                    dungeonID = id.Key
-                };
-                dungeons.Add(tempDungeon);
-            }
-
-            if (dungeons.Count == 0)
-                return eligibleDungeons;
-
-            bool firstAdded = false;
-            foreach (var dungeon in dungeons)
-            {
-                //if(dungeon.minLevel <= playerLevel)
-                //{
-                if (!firstAdded)
-                {
-                    firstAdded = true;
-                }
-                else
-                {
-                    eligibleDungeons += ",";
-                }
-                eligibleDungeons += dungeon.dungeonID;
-
-
-                //}
-            }
-            return eligibleDungeons;
-        }
-
-        static int DetermineEligibility(string user, int dungeonID, Dictionary<int, string> dungeonList, int baseDungeonCost, Currency wolfcoins)
-        {
-            if (!dungeonList.ContainsKey(dungeonID))
-                return -1;
-
-            int playerLevel = wolfcoins.DetermineLevel(wolfcoins.xpList[user]);
-            Dungeon tempDungeon = new Dungeon("content/dungeons/" + dungeonList[dungeonID]);
-
-            if (wolfcoins.Exists(wolfcoins.coinList, user))
-            {
-                if (wolfcoins.coinList[user] < (baseDungeonCost + ((playerLevel - 3) * 10)))
-                {
-                    //not enough money
-                    return -2;
-                }
-            }
-            // no longer gate dungeons by level
-            //if (tempDungeon.minLevel <= playerLevel)
-            //    return 1;
-
-            return 1;
-        }
-
-        static void WhisperPet(string user, Pet pet, IrcClient whisperClient, int detail)
-        {
-            const int HIGH_DETAIL = 1;
-
-            string name = pet.name;
-            int stableID = pet.stableID;
-            string rarity = "";
-            switch (pet.petRarity)
-            {
-                case (Pet.QUALITY_COMMON):
-                    {
-                        rarity = "Common";
-                    }
-                    break;
-
-                case (Pet.QUALITY_UNCOMMON):
-                    {
-                        rarity = "Uncommon";
-                    }
-                    break;
-
-                case (Pet.QUALITY_RARE):
-                    {
-                        rarity = "Rare";
-                    }
-                    break;
-
-                case (Pet.QUALITY_EPIC):
-                    {
-                        rarity = "Epic";
-                    }
-                    break;
-
-                case (Pet.QUALITY_ARTIFACT):
-                    {
-                        rarity = "Legendary";
-                    }
-                    break;
-
-                default:
-                    {
-                        rarity = "Error";
-                    }
-                    break;
-            }
-
-            List<string> stats = new List<string>();
-            if (detail == HIGH_DETAIL)
-                stats.Add("Level: " + pet.level + " | Affection: " + pet.affection + " | Energy: " + pet.hunger);
-
-            bool active = pet.isActive;
-            string status = "";
-            string myStableID = "";
-            if (active)
-            {
-                status = "Active";
-                myStableID = "<[" + pet.stableID + "]> ";
-            }
-            else
-            {
-                status = "In the Stable";
-                myStableID = "[" + pet.stableID + "] ";
-            }
-
-            Whisper(user, myStableID + name + " the " + pet.type + " (" + rarity + ") ", whisperClient);
-            string sparkly = "";
-            if (pet.isSparkly)
-                sparkly = "Yes!";
-            else
-                sparkly = "No";
-            if (detail == HIGH_DETAIL)
-                Whisper(user, "Status: " + status + " | Sparkly? " + sparkly, whisperClient);
-
-            foreach (var stat in stats)
-            {
-                Whisper(user, stat, whisperClient);
-            }
-
-        }
-
-        static void WhisperFish(string user, List<Fish> myFish, IrcClient whisperClient)
-        {
-            int iterator = 0;
-            foreach (var fish in myFish)
-            {
-                iterator++;
-                Whisper(user, iterator + ": " + fish.name, whisperClient);
-            }
-
-            Whisper(user, "Type !fish # for more information on the particular type of fish.", whisperClient);
-        }
-
-        static void WhisperFish(string user, Dictionary<string, Fisherman> fishingList, int fishID, IrcClient whisperClient)
-        {
-            Fish myFish = fishingList[user].biggestFish[fishID - 1];
-            string mySize = "";
-            switch (myFish.sizeCategory)
-            {
-                case Fish.SIZE_TINY:
-                    {
-                        mySize = "Tiny";
-                    }
-                    break;
-
-                case Fish.SIZE_SMALL:
-                    {
-                        mySize = "Small";
-                    }
-                    break;
-
-                case Fish.SIZE_MEDIUM:
-                    {
-                        mySize = "Medium";
-                    }
-                    break;
-
-                case Fish.SIZE_LARGE:
-                    {
-                        mySize = "Large";
-                    }
-                    break;
-
-                case Fish.SIZE_HUGE:
-                    {
-                        mySize = "Huge";
-                    }
-                    break;
-                default: break;
-            }
-
-            Whisper(user, "Name - " + myFish.name, whisperClient);
-            Whisper(user, "Length - " + myFish.length + " in.", whisperClient);
-            Whisper(user, "Weight - " + myFish.weight + " lbs.", whisperClient);
-            Whisper(user, "Size Category - " + mySize, whisperClient);
-            Whisper(user, myFish.flavorText, whisperClient);
-
-        }
-
-
-        static void WhisperItem(string user, Item itm, IrcClient whisperClient, Dictionary<int, Item> itemDatabase)
-        {
-            string name = itm.itemName;
-            string type = "";
-            int inventoryID = itm.inventoryID;
-            switch (itm.itemType)
-            {
-                case (Item.TYPE_ARMOR):
-                    {
-                        type = "Armor";
-                    }
-                    break;
-
-                case (Item.TYPE_WEAPON):
-                    {
-                        type = "Weapon";
-                    }
-                    break;
-
-                case (Item.TYPE_OTHER):
-                    {
-                        type = "Misc. Item";
-                    }
-                    break;
-                default:
-                    {
-                        type = "Broken";
-                    }
-                    break;
-            }
-            string rarity = "";
-            switch (itm.itemRarity)
-            {
-                case Item.QUALITY_UNCOMMON:
-                    {
-                        rarity = "Uncommon";
-                    }
-                    break;
-
-                case Item.QUALITY_RARE:
-                    {
-                        rarity = "Rare";
-                    }
-                    break;
-
-                case Item.QUALITY_EPIC:
-                    {
-                        rarity = "Epic";
-                    }
-                    break;
-
-                case Item.QUALITY_ARTIFACT:
-                    {
-                        rarity = "Artifact";
-                    }
-                    break;
-
-                default:
-                    {
-                        rarity = "Broken";
-                    }
-                    break;
-            }
-            List<string> stats = new List<string>();
-
-            if (itm.successChance > 0)
-            {
-                stats.Add("+" + itm.successChance + "% Success Chance");
-            }
-
-            if (itm.xpBonus > 0)
-            {
-                stats.Add("+" + itm.xpBonus + "% XP Bonus");
-            }
-
-            if (itm.coinBonus > 0)
-            {
-                stats.Add("+" + itm.coinBonus + "% Wolfcoin Bonus");
-            }
-
-            if (itm.itemFind > 0)
-            {
-                stats.Add("+" + itm.itemFind + "% Item Find");
-            }
-
-            if (itm.preventDeathBonus > 0)
-            {
-                stats.Add("+" + itm.preventDeathBonus + "% to Prevent Death");
-            }
-
-            bool active = itm.isActive;
-            string status = "";
-            if (active)
-            {
-                status = "(Equipped)";
-            }
-            else
-            {
-                status = "(Unequipped)";
-            }
-
-            Whisper(user, name + " (" + rarity + " " + type + ") " + status, whisperClient);
-            Whisper(user, "Inventory ID: " + inventoryID, whisperClient);
-            foreach (var stat in stats)
-            {
-                Whisper(user, stat, whisperClient);
-            }
-        }
-
-
-
-        static int GrantItem(int id, Currency wolfcoins, string user, Dictionary<int, Item> itemDatabase)
-        {
-            string logPath = "dungeonlog.txt";
-
-            if (id < 1)
-                return -1;
-
-            Item newItem = itemDatabase[id - 1];
-            bool hasActiveItem = false;
-            foreach (var item in wolfcoins.classList[user].myItems)
-            {
-                if (item.itemType == newItem.itemType && item.isActive)
-                    hasActiveItem = true;
-            }
-            if (!hasActiveItem)
-                newItem.isActive = true;
-
-            wolfcoins.classList[user].totalItemCount++;
-            newItem.inventoryID = wolfcoins.classList[user].totalItemCount;
-            wolfcoins.classList[user].myItems.Add(newItem);
-            wolfcoins.classList[user].itemEarned = -1;
-
-            File.AppendAllText(logPath, user + " looted a " + newItem.itemName + "!" + Environment.NewLine);
-            Console.WriteLine(user + " just looted a " + newItem.itemName + "!");
-
-            return newItem.itemID;
-        }
-
-        static void SendFor(char key, int ms)
-        {
-            // Send a keydown, leaving the key down indefinitely. It seems you have to do this for even
-            // single inputs with shorter times because putting the keyup right after the keydown in the
-            // buffer is too fast for Dark Souls
-            NativeMethods.SendInput(key);
-
-            // A timer is probably more suitable
-            Thread.Sleep(ms);
-
-            // After waiting, send the keyup
-            NativeMethods.SendInput(key, true);
-        }
-
-        static void SendFor(short key, int ms)
-        {
-            // Send a keydown, leaving the key down indefinitely. It seems you have to do this for even
-            // single inputs with shorter times because putting the keyup right after the keydown in the
-            // buffer is too fast for Dark Souls
-            NativeMethods.SendInput(key);
-
-            // A timer is probably more suitable
-            Thread.Sleep(ms);
-
-            // After waiting, send the keyup
-            NativeMethods.SendInput(key, true);
-        }
-
-        // overloaded to handle more than one character send at a time
-        static void SendFor(char[] key, int ms)
-        {
-            NativeMethods.SendInput(key);
-
-            // A timer is probably more suitable
-            Thread.Sleep(ms);
-
-            // After waiting, send the keyup
-            NativeMethods.SendInput(key, true);
-        }
     }
-
 }

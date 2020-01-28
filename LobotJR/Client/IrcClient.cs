@@ -59,18 +59,16 @@ namespace LobotJR.Client
 
         }
 
-        static void Whisper(string user, string message, IrcClient whisperClient)
+        public void Whisper(string user, string message)
         {
-            string toSend = ".w " + user + " " + message;
-            whisperClient.SendChatMessage(toSend);
+            this.SendChatMessage($"/w {user} {message}");
         }
 
-        static void Whisper(Party party, string message, IrcClient whisperClient)
+        public void WhisperParty(Party party, string message)
         {
-            for (int i = 0; i < party.NumMembers(); i++)
+            foreach (var member in party.members)
             {
-                string toSend = ".w " + party.members.ElementAt(i).name + " " + message;
-                whisperClient.SendChatMessage(toSend);
+                this.Whisper(member.name, message);
             }
         }
 

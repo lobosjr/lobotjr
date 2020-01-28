@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LobotJR.Modules.GroupFinder
+namespace LobotJR.Modules.Group
 {
     public class GroupFinderQueue
     {
