@@ -50,7 +50,7 @@ namespace TwitchBot
                 inputStream = new StreamReader(tcpClient.GetStream());
                 outputStream = new StreamWriter(tcpClient.GetStream());
 
-                outputStream.WriteLine("PASS " + password);
+                outputStream.WriteLine("PASS oauth:" + password);
                 outputStream.WriteLine("NICK " + username);
                 outputStream.WriteLine("USER " + username + " 8 * :" + username);
                 outputStream.Flush();
@@ -108,7 +108,7 @@ namespace TwitchBot
             if ((DateTime.Now - timeLast).TotalMilliseconds > cooldown)
             {
                 string temp = messageQueue.Dequeue();
-                string msg = ":" + username + "!" + username + "@" + username + "tmi.twitch.tv PRIVMSG #" + channel + " :" + temp;
+                string msg = ":" + username + "!" + username + "@" + username + ".tmi.twitch.tv PRIVMSG #" + channel + " :" + temp;
                 
                 try
                     {

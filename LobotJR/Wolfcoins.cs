@@ -14,7 +14,11 @@ using Classes;
 using Adventures;
 using Equipment;
 using Fishing;
-
+using LobotJR.Shared.Authentication;
+using LobotJR.Shared;
+using LobotJR.Shared.Utility;
+using LobotJR.Shared.Client;
+using LobotJR.Shared.User;
 
 namespace Wolfcoins
 {
@@ -94,7 +98,7 @@ namespace Wolfcoins
         private string xpPath = "XP.json";
         private string classPath = "classData.json";
 
-        string subsAuth = System.IO.File.ReadAllText(@"subsAuth.txt");
+        private ClientData clientData;
 
         private const int COINMAX = Int32.MaxValue;
 
@@ -110,8 +114,9 @@ namespace Wolfcoins
         public const string clientID = "c95v57t6nfrpts7dqk2urruyc8d0ln1";
         public const int baseRespecCost = 250;
 
-        public Currency()
+        public Currency(ClientData clientData)
         {
+            this.clientData = clientData;
             Init();
         }
 
@@ -558,120 +563,69 @@ namespace Wolfcoins
             return -1;
         }
 
-        //public void UpdateSubs()
-        //{
-        //    var nextLink = "https://api.twitch.tv/helix/subscriptions?broadcaster_id=28640725&limit=100&offset=0";
-        //    do
-        //    {
-        //        var request = (HttpWebRequest) WebRequest.Create(nextLink);
-        //        request.Accept = "application/vnd.twitchtv.v3+json";
-        //        request.Headers.Add("Client-ID", "c95v57t6nfrpts7dqk2urruyc8d0ln1");
-        //        request.Headers.Add("Authorization", string.Format("Bearer dhxrcj8x8e4tsft77292deuif7y5pj"));
-        //        request.UserAgent = "LobosJrBot";
- 
-        //        try
-        //        {
-        //            using (var response = request.GetResponse())
-        //            {
-        //                using (var stream = response.GetResponseStream())
-        //                {
-        //                    using (var reader = new StreamReader(stream))
-        //                    {
-        //                        var data = reader.ReadToEnd();
-        //                        var subList = JsonConvert.DeserializeObject<SubscriberData.RootObject>(data);
-        //                        if (subList.subscriptions.Count > 0)
-        //                        {
-        //                            nextLink = subList._links.next;
-        //                            subsList.AddRange(subList.subscriptions);
-        //                        }
-        //                        else
-        //                        {
-        //                            nextLink = "";
-        //                        }
-        //                    }
-        //                }
-        //            }
-        //        }
-        //        catch(Exception e)
-        //        {
-        //            Console.WriteLine("Unable to retrieve full sub list.");
-        //            Console.WriteLine(e);
-        //        }
-        //    } while (!string.IsNullOrWhiteSpace(nextLink));
- 
-        //    foreach (var sub in subsList)
-        //    {
-        //        subSet.Add(sub.user.name);
-        //    }
-        //    Console.WriteLine("Subscriber list may or may not have been updated!");
-        //}
-
-        public void UpdateSubs()
+public void UpdateSubs(string broadcastToken)
         {
-            var origLink = "https://api.twitch.tv/helix/subscriptions?broadcaster_id=28640725";
-            var nextLink = origLink;
-
-            string responseInString = "";
-            string myToken = "";
-            using (var wb = new WebClient())
-            {
-                var data = new NameValueCollection();
-                data["client_id"] = "c95v57t6nfrpts7dqk2urruyc8d0ln1";
-                data["client_secret"] = "cgaqp610iloshay3iar1tv55dbpnog";
-                data["grant_type"] = "client_credentials";
-
-                var response = wb.UploadValues("https://id.twitch.tv/oauth2/token", "POST", data);
-                
-                responseInString = Encoding.UTF8.GetString(response);
-                var jo = JObject.Parse(responseInString);
-
-                myToken = jo["access_token"].ToString();
-  
-            }
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            // ALERT: You can get rid of the dynamic lookup and just use a static channel id
+            // Your channel id is 28640725
+            var userData = Users.Get(broadcastToken, "lobosjr");
+            var channelId = userData.Data.First().Id;
+            var nextLink = $"https://api.twitch.tv/kraken/channels/{channelId}/subscriptions?limit=100&offset=0";
+            var offset = 0;
             do
             {
-                var request = (HttpWebRequest)WebRequest.Create(nextLink);
-                //request.Accept = "application/vnd.twitchtv.v3+json";
+                var request = (HttpWebRequest) WebRequest.Create(nextLink);
+                request.Accept = "application/vnd.twitchtv.v5+json";
                 request.Headers.Add("Client-ID", "c95v57t6nfrpts7dqk2urruyc8d0ln1");
-                //request.Headers.Add("OAuth token", "oauth:lmaj6pwj3qwolch7h0m5dm716e9kd6");
-                request.Headers.Add("Authorization", string.Format("Bearer " + myToken));
-
-                //request.UserAgent = "LobosJrBot";
-
-
+                request.Headers.Add("Authorization", string.Format("OAuth {0}", broadcastToken));
+                request.UserAgent = "LobosJrBot";
+ 
                 try
                 {
-                    using (var response = request.GetResponse())
+                    using (var response = (HttpWebResponse) request.GetResponse())
                     {
+                        if (response.StatusCode == HttpStatusCode.Unauthorized)
+                        {
+                            Console.WriteLine($"Unauthorized response retrieving subscribers using broadcast token {broadcastToken}");
+                            break;
+                        }
                         using (var stream = response.GetResponseStream())
                         {
                             using (var reader = new StreamReader(stream))
                             {
                                 var data = reader.ReadToEnd();
                                 var subList = JsonConvert.DeserializeObject<SubscriberData.RootObject>(data);
-                                if (!String.IsNullOrEmpty(subList.data.ToString()))
+                                if (subList.subscriptions.Count > 0)
                                 {
-                                    nextLink = origLink + "?after=" + subList.pagination.cursor;
+                                    if (!string.IsNullOrWhiteSpace(subList._cursor))
+                                    {
+                                        nextLink = $"https://api.twitch.tv/kraken/channels/{channelId}/subscriptions?cursor={subList._cursor}";
+                                    }
+                                    else
+                                    {
+                                        offset += subList.subscriptions.Count;
+                                        nextLink = $"https://api.twitch.tv/kraken/channels/{channelId}/subscriptions?limit=100&offset={offset}";
+                                    }
+                                    subsList.AddRange(subList.subscriptions);
                                 }
                                 else
                                 {
                                     nextLink = "";
                                 }
-                                subsList.AddRange(subList.data);
                             }
                         }
                     }
                 }
-                catch (Exception e)
+                catch(Exception e)
                 {
                     Console.WriteLine("Unable to retrieve full sub list.");
                     Console.WriteLine(e);
+                    nextLink = "";
                 }
             } while (!string.IsNullOrWhiteSpace(nextLink));
+ 
             foreach (var sub in subsList)
             {
-                subSet.Add(sub.user_name);
+                subSet.Add(sub.user.name);
             }
             Console.WriteLine("Subscriber list may or may not have been updated!");
         }

@@ -37,7 +37,7 @@ namespace GroupFinder
             bool partyFilled = false;
             newParty.AddMember(player);
             List<int> membersByPriority = new List<int>();
-            List<CharClass> eligibileMembers = new List<CharClass>();
+            List<CharClass> eligibleMembers = new List<CharClass>();
             List<int> matchedDungeons = player.queueDungeons;
 
             foreach(var member in queue)
@@ -75,13 +75,13 @@ namespace GroupFinder
                 {
                     if(member.queuePriority == membersByPriority.ElementAt(i))
                     {
-                        eligibileMembers.Add(member);
+                        eligibleMembers.Add(member);
                         break;
                     }
                 }
             }
 
-                foreach (var member in eligibileMembers)
+                foreach (var member in eligibleMembers)
                 {
                     List<int> currentMatches = new List<int>();
                     foreach (var dungeonID in member.queueDungeons)

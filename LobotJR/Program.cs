@@ -15,8 +15,10 @@ using Adventures;
 using Equipment;
 using Companions;
 using GroupFinder;
+using LobotJR.Shared.Authentication;
+using LobotJR.Shared;
+using LobotJR.Shared.Utility;
 using Fishing;
-
 
 namespace TwitchBot
 {
@@ -53,7 +55,16 @@ namespace TwitchBot
 
         static void UpdateDungeons(string dungeonListPath, ref Dictionary<int, string> dungeonList)
         {
-            IEnumerable<string> fileText = System.IO.File.ReadLines(dungeonListPath, UTF8Encoding.Default);
+            IEnumerable<string> fileText;
+            if (File.Exists(dungeonListPath))
+            {
+                fileText = File.ReadLines(dungeonListPath, UTF8Encoding.Default);
+            }
+            else
+            {
+                fileText = new List<string>();
+                Console.WriteLine($"Failed to load dungeon list file, {dungeonListPath} not found.");
+            }
 
             dungeonList = new Dictionary<int, string>();
             int dungeonIter = 1;
@@ -69,13 +80,24 @@ namespace TwitchBot
                 dungeonIter++;
             }
         }
+
         static void UpdateItems(string itemListPath, ref Dictionary<int, string> itemList, ref Dictionary<int, Item> itemDatabase)
         {
-            IEnumerable<string> fileText = System.IO.File.ReadLines(itemListPath, UTF8Encoding.Default);
+            IEnumerable<string> fileText;
+            if (File.Exists(itemListPath))
+            {
+                fileText = File.ReadLines(itemListPath, UTF8Encoding.Default);
+            }
+            else
+            {
+                fileText = new List<string>();
+                Console.WriteLine($"Failed to load item list file, {itemListPath} not found.");
+            }
             itemDatabase = new Dictionary<int, Item>();
             itemList = new Dictionary<int, string>();
             int itemIter = 1;
-            fileText = System.IO.File.ReadLines(itemListPath, UTF8Encoding.Default);
+            // ALERT: Was there a reason you were loading this from the file twice?
+            // fileText = System.IO.File.ReadLines(itemListPath, UTF8Encoding.Default);
             foreach (var line in fileText)
             {
                 string[] temp = line.Split(',');
@@ -160,11 +182,19 @@ namespace TwitchBot
 
         static void UpdatePets(string petListPath, ref Dictionary<int, string> petList, ref Dictionary<int, Pet> petDatabase)
         {
-            IEnumerable<string> fileText = System.IO.File.ReadLines(petListPath, UTF8Encoding.Default);
+            IEnumerable<string> fileText;
+            if (File.Exists(petListPath))
+            {
+                fileText = File.ReadLines(petListPath, UTF8Encoding.Default);
+            }
+            else
+            {
+                fileText = new List<string>();
+                Console.WriteLine($"Failed to load item list file, {petListPath} not found.");
+            }
             petDatabase = new Dictionary<int, Pet>();
             petList = new Dictionary<int, string>();
             int petIter = 1;
-            fileText = System.IO.File.ReadLines(petListPath, UTF8Encoding.Default);
             foreach (var line in fileText)
             {
                 string[] temp = line.Split(',');
@@ -256,11 +286,19 @@ namespace TwitchBot
 
         static void UpdateFish(string fishListPath, ref Dictionary<int, string> fishList, ref List<Fish> fishDatabase)
         {
-            IEnumerable<string> fileText = System.IO.File.ReadLines(fishListPath, UTF8Encoding.Default);
+            IEnumerable<string> fileText;
+            if (File.Exists(fishListPath))
+            {
+                fileText = File.ReadLines(fishListPath, UTF8Encoding.Default);
+            }
+            else
+            {
+                fileText = new List<string>();
+                Console.WriteLine($"Failed to load item list file, {fishListPath} not found.");
+            }
             fishDatabase = new List<Fish>();
             fishList = new Dictionary<int, string>();
             int fishIter = 0;
-            fileText = System.IO.File.ReadLines(fishListPath, UTF8Encoding.Default);
             foreach (var line in fileText)
             {
                 fishIter++;
@@ -487,7 +525,17 @@ namespace TwitchBot
             Dictionary<int, Pet> petDatabase = new Dictionary<int, Pet>();
             List<Fish> fishDatabase = new List<Fish>();
 
-            //IEnumerable<string> subathonFile = System.IO.File.ReadLines("C:/Users/Lobos/Dropbox/Stream/subathon.txt", UTF8Encoding.Default);
+            var subathonPath = "C:/Users/Lobos/Dropbox/Stream/subathon.txt";
+            IEnumerable<string> subathonFile;
+            if (File.Exists(subathonPath))
+            {
+                subathonFile = File.ReadLines(subathonPath, UTF8Encoding.Default);
+            }
+            else
+            {
+                subathonFile = new List<string>();
+                Console.WriteLine($"Failed to load subathon file, {subathonPath} not found.");
+            }
 
             Dictionary <int, string> dungeonList = new Dictionary<int, string>();
             string dungeonListPath = "content/dungeonlist.ini";
@@ -515,15 +563,17 @@ namespace TwitchBot
             bool betActive = false;
             bool betsAllowed = false;
 
-            string oAuthToken = System.IO.File.ReadAllText(@"token.txt"); // token.txt must be in the same folder as EXE
-            string clientSecret = System.IO.File.ReadAllText(@"secret.txt");
-            IrcClient irc = new IrcClient("irc.chat.twitch.tv", 80, "lobotjr", oAuthToken);
-            IrcClient group = new IrcClient("irc.chat.twitch.tv", 80, "lobotjr", oAuthToken);
+            var clientData = FileUtils.ReadClientData();
+            var tokenData = FileUtils.ReadTokenData();
+            IrcClient irc = new IrcClient("irc.chat.twitch.tv", 80, tokenData.ChatUser, tokenData.ChatToken.AccessToken);
+            IrcClient group = new IrcClient("irc.chat.twitch.tv", 80, tokenData.ChatUser, tokenData.ChatToken.AccessToken);
             // 199.9.253.119
             connected = irc.connected;
 
             if (connected)
             {
+                UpdateTokens(tokenData, clientData);
+                Console.WriteLine($"Logged in as {tokenData.ChatUser}");
                 irc.sendIrcMessage("twitch.tv/membership");
             }
             if (group.connected)
@@ -533,13 +583,13 @@ namespace TwitchBot
             if (!twitchPlays)
             {
                 #region NormalBot
-                const string channel = "lobosjr";
+                string channel = tokenData.BroadcastUser;
                 irc.joinRoom(channel);
                 group.joinRoom("jtv");
                 DateTime awardLast = DateTime.Now;
-                Currency wolfcoins = new Currency();
+                Currency wolfcoins = new Currency(clientData);
                 wolfcoins.UpdateViewers(channel);
-                wolfcoins.UpdateSubs();
+                wolfcoins.UpdateSubs(tokenData.BroadcastToken.AccessToken);
 
 
                 UpdateDungeons(dungeonListPath, ref dungeonList);
@@ -562,10 +612,11 @@ namespace TwitchBot
                 {
                     if (!irc.connected)
                     {
+                        UpdateTokens(tokenData, clientData);
                         if ((DateTime.Now - lastConnectAttempt).TotalSeconds > 5)
                         {
-                            irc = new IrcClient("irc.chat.twitch.tv", 80, "lobotjr", oAuthToken);
-                            group = new IrcClient("irc.chat.twitch.tv", 80, "lobotjr", oAuthToken);
+                            irc = new IrcClient("irc.chat.twitch.tv", 80, tokenData.ChatUser, tokenData.ChatToken.AccessToken);
+                            group = new IrcClient("irc.chat.twitch.tv", 80, tokenData.ChatUser, tokenData.ChatToken.AccessToken);
 
                             lastConnectAttempt = DateTime.Now;
                             if (!connected)
@@ -2562,12 +2613,7 @@ namespace TwitchBot
                                                     break;
                                                 case 1:
                                                     {
-                                                        if (!didRequest)
-                                                        {
-                                                            if (i < 9)
-                                                                requestedDungeons.Add(i);
-                                                        }
-
+                                                        requestedDungeons.Add(tempInt);
                                                     }
                                                     break;
 
@@ -2608,12 +2654,34 @@ namespace TwitchBot
                                         myParty.myID = maxPartyID;
                                         myParty.usedDungeonFinder = true;
 
+                                        int lowestNumOfDungeons = myParty.members.ElementAt(0).queueDungeons.Count;
+                                        int pickiestMember = 0;
+                                        int count = 0;
+
+                                        // Pick the party member with the least available dungeons (to narrow down options)
+                                        foreach (var member in myParty.members)
+                                        {
+
+                                            if (member.name == myParty.partyLeader)
+                                                continue;
+
+                                            count++;
+
+                                            if (member.queueDungeons.Count < lowestNumOfDungeons)
+                                            {
+                                                pickiestMember = count;
+                                                lowestNumOfDungeons = member.queueDungeons.Count;
+                                            }
+
+                                        }
+
                                         Random RNG = new Random();
-                                        int availableDungeons = myParty.members.ElementAt(0).queueDungeons.Count();
+                                        int numAvailableDungeons = myParty.members.ElementAt(pickiestMember).queueDungeons.Count();
+
                                         //choose a random dungeon out of the available options
-                                        int randDungeon = RNG.Next(0, (availableDungeons - 1));
+                                        int randDungeon = RNG.Next(0, (numAvailableDungeons - 1));
                                         // set the id based on that random dungeon
-                                        int dungeonID = myParty.members.ElementAt(0).queueDungeons.ElementAt(randDungeon);
+                                        int dungeonID = (myParty.members.ElementAt(pickiestMember).queueDungeons.ElementAt(randDungeon)) - 1;
                                         dungeonID++;
                                         myParty.members.ElementAt(0).groupFinderDungeon = dungeonID;
                                         string dungeonName = GetDungeonName(dungeonID, dungeonList);
@@ -4220,6 +4288,7 @@ namespace TwitchBot
                 }
 
                 Console.WriteLine("Connection terminated.");
+                UpdateTokens(tokenData, clientData, true);
                 connected = false;
                 #endregion
             }
@@ -4498,6 +4567,46 @@ namespace TwitchBot
 
             return new Pet();
             
+        }
+
+        static void UpdateTokens(TokenData tokenData, LobotJR.Shared.Client.ClientData clientData, bool force = false)
+        {
+            bool tokenUpdated = false;
+            if (force || DateTime.Now >= tokenData.ChatToken.ExpirationDate)
+            {
+                tokenUpdated = true;
+                try
+                {
+                    tokenData.ChatToken = AuthToken.Refresh(clientData.ClientId, clientData.ClientSecret, tokenData.ChatToken.RefreshToken);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Exception occurred refreshing the chat token: {e.Message}\n{e.StackTrace}");
+                }
+            }
+            if (force || DateTime.Now >= tokenData.BroadcastToken.ExpirationDate)
+            {
+                tokenUpdated = true;
+                try
+                {
+                    tokenData.BroadcastToken = AuthToken.Refresh(clientData.ClientId, clientData.ClientSecret, tokenData.BroadcastToken.RefreshToken);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Exception occurred refreshing the streamer token: {e.Message}\n{e.StackTrace}");
+                }
+            }
+            if (tokenUpdated)
+            {
+                try
+                {
+                    FileUtils.WriteTokenData(tokenData);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Exception occurred writing the updated token data: {e.Message}\n{e.StackTrace}");
+                }
+            }
         }
 
         static string GetDungeonName(int dungeonID, Dictionary<int,string> dungeonList)
