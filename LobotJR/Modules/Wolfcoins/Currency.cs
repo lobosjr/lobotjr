@@ -566,7 +566,7 @@ namespace LobotJR.Modules.Wolfcoins
                         }
                     }
                 }
-                catch (Exception e)
+                catch(Exception e)
                 {
                     Console.WriteLine("Unable to retrieve full sub list.");
                     Console.WriteLine(e);

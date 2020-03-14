@@ -1864,12 +1864,7 @@ namespace LobotJR
                                                     break;
                                                 case 1:
                                                     {
-                                                        if (!didRequest)
-                                                        {
-                                                            if (i < 9)
-                                                                requestedDungeons.Add(i);
-                                                        }
-
+                                                        requestedDungeons.Add(tempInt);
                                                     }
                                                     break;
 
@@ -1910,12 +1905,33 @@ namespace LobotJR
                                         myParty.myID = maxPartyID;
                                         myParty.usedDungeonFinder = true;
 
+                                        int lowestNumOfDungeons = myParty.members.ElementAt(0).queueDungeons.Count;
+                                        int pickiestMember = 0;
+                                        int count = 0;
+
+                                        // Pick the party member with the least available dungeons (to narrow down options)
+                                        foreach (var member in myParty.members)
+                                        {
+
+                                            if (member.name == myParty.partyLeader)
+                                                continue;
+
+                                            count++;
+
+                                            if (member.queueDungeons.Count < lowestNumOfDungeons)
+                                            {
+                                                pickiestMember = count;
+                                                lowestNumOfDungeons = member.queueDungeons.Count;
+                                            }
+
+                                        }
+
                                         Random RNG = new Random();
-                                        int availableDungeons = myParty.members.ElementAt(0).queueDungeons.Count();
+                                        int numAvailableDungeons = myParty.members.ElementAt(pickiestMember).queueDungeons.Count();
                                         //choose a random dungeon out of the available options
-                                        int randDungeon = RNG.Next(0, (availableDungeons - 1));
+                                        int randDungeon = RNG.Next(0, (numAvailableDungeons - 1));
                                         // set the id based on that random dungeon
-                                        int dungeonID = myParty.members.ElementAt(0).queueDungeons.ElementAt(randDungeon);
+                                        int dungeonID = (myParty.members.ElementAt(pickiestMember).queueDungeons.ElementAt(randDungeon)) - 1;
                                         dungeonID++;
                                         myParty.members.ElementAt(0).groupFinderDungeon = dungeonID;
                                         string dungeonName = DungeonModule.GetDungeonName(dungeonID, dungeonList);
