@@ -1,24 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.IO;
-using System.Net;
-using System.Collections.Specialized;
-using System.Web;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using TwitchBot;
+﻿using Adventures;
 using Classes;
-using Adventures;
 using Equipment;
 using Fishing;
-using LobotJR.Shared.Authentication;
-using LobotJR.Shared;
-using LobotJR.Shared.Utility;
 using LobotJR.Shared.Client;
 using LobotJR.Shared.User;
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Text;
+using TwitchBot;
 
 namespace Wolfcoins
 {
@@ -34,7 +27,7 @@ namespace Wolfcoins
 
         public void PostDungeon(Currency wolfcoins)
         {
-            foreach(var member in members)
+            foreach (var member in members)
             {
                 wolfcoins.classList[member.name].xpEarned = 0;
                 wolfcoins.classList[member.name].coinsEarned = 0;
@@ -49,14 +42,14 @@ namespace Wolfcoins
             this.lastTime = DateTime.Now;
         }
 
-        public  void AddMember(CharClass member)
+        public void AddMember(CharClass member)
         {
             members.Add(member);
         }
 
         public bool RemoveMember(string user)
         {
-            for (int i = 0; i < members.Count(); i++ )
+            for (int i = 0; i < members.Count(); i++)
             {
                 if (members.ElementAt(i).name == user)
                 {
@@ -70,19 +63,19 @@ namespace Wolfcoins
         public int NumMembers()
         {
             int num = 0;
-            for (int i = 0; i < members.Count(); i++ )
+            for (int i = 0; i < members.Count(); i++)
             {
-                if(!members.ElementAt(i).pendingInvite)
+                if (!members.ElementAt(i).pendingInvite)
                     num++;
             }
-                return num;
+            return num;
         }
     }
 
     class Currency
     {
 
-        public Dictionary<string, int> coinList = new Dictionary<string,int>();
+        public Dictionary<string, int> coinList = new Dictionary<string, int>();
         public Dictionary<string, int> xpList = new Dictionary<string, int>();
         public Dictionary<string, CharClass> classList = new Dictionary<string, CharClass>();
         public Dictionary<string, Fisherman> fishingList = new Dictionary<string, Fisherman>();
@@ -129,12 +122,12 @@ namespace Wolfcoins
         // algorithm is XP = 4 * (level^3) + 50
         public int determineLevel(string user)
         {
-            if(Exists(xpList, user))
+            if (Exists(xpList, user))
             {
-                
+
 
                 float xp = (float)xpList[user];
-                
+
                 if (xp <= 81)
                     return 1;
 
@@ -195,17 +188,17 @@ namespace Wolfcoins
                             case 1:
                                 {
                                     return "Warrior";
-                                } 
+                                }
 
                             case 2:
                                 {
                                     return "Mage";
-                                } 
+                                }
 
                             case 3:
                                 {
                                     return "Rogue";
-                                } 
+                                }
 
                             case 4:
                                 {
@@ -215,7 +208,7 @@ namespace Wolfcoins
                             case 5:
                                 {
                                     return "Cleric";
-                                } 
+                                }
 
                             default: break;
                         }
@@ -227,15 +220,15 @@ namespace Wolfcoins
 
         public void AwardCoins(int coins)
         {
-            
+
             for (int i = 0; i <= viewerList.Count - 1; i++)
             {
                 //int value = 0;
-                if (coinList != null) 
+                if (coinList != null)
                 {
                     AddCoins(viewerList[i], coins.ToString());
                 }
-                
+
             }
             Console.WriteLine("Added " + coins + " coins to current viewers.");
         }
@@ -248,28 +241,28 @@ namespace Wolfcoins
 
                 if (coinList.ContainsKey(user) && int.TryParse(coins.ToString(), out value))
                 {
-                        try
+                    try
+                    {
+                        int prevCoins = coinList[user];
+                        checked
                         {
-                            int prevCoins = coinList[user];
-                            checked
-                            {
-                                coinList[user] += value;
-                            }
-                            if (coinList[user] > COINMAX)
-                            {
-                                coinList[user] = COINMAX;
-                            }
-
-                            if (coinList[user] < 0)
-                                coinList[user] = 0;
-
-
+                            coinList[user] += value;
                         }
-                        catch (Exception e)
+                        if (coinList[user] > COINMAX)
                         {
-                            Console.WriteLine("Error adding coins.");
-                            Console.WriteLine(e);
+                            coinList[user] = COINMAX;
                         }
+
+                        if (coinList[user] < 0)
+                            coinList[user] = 0;
+
+
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("Error adding coins.");
+                        Console.WriteLine(e);
+                    }
 
                 }
             }
@@ -307,7 +300,7 @@ namespace Wolfcoins
                     }
 
                     int newLevel = determineLevel(user);
-                    
+
 
                     if (newLevel > MAX_LEVEL)
                     {
@@ -323,7 +316,7 @@ namespace Wolfcoins
                     if (newLevel > prevLevel && newLevel != 3 && newLevel > 1)
                     {
                         //prestige code
-                        if (myPrestige > 0) 
+                        if (myPrestige > 0)
                         {
                             whisperClient.sendChatMessage(".w " + user + " DING! You just reached Level " + newLevel + "! You are Prestige " + myPrestige + ". XP to next level: " + XpToNextLevel(user) + ".");
                         } //prestige code
@@ -358,7 +351,7 @@ namespace Wolfcoins
                 //int value = 0;
                 if (xpList != null)
                 {
-                    
+
                     string user = viewerList[i];
                     int prevLevel = determineLevel(user);
                     AddXP(user, xp.ToString());
@@ -388,14 +381,14 @@ namespace Wolfcoins
                         }
                         if (newLevel > 5)
                         {
-                            if(classList.ContainsKey(user))
+                            if (classList.ContainsKey(user))
                                 classList[user].level = newLevel;
                         }
                     }
 
-                    if(newLevel > prevLevel && newLevel == 3)
+                    if (newLevel > prevLevel && newLevel == 3)
                     {
-                        
+
                         CharClass newClass = new CharClass();
                         newClass.classType = -1;
                         if (classList.ContainsKey(user))
@@ -423,7 +416,8 @@ namespace Wolfcoins
                         classList[user].itemEarned = -1;
                         SaveClassData();
                         whisperClient.sendChatMessage(".w " + user + " You successfully selected the Warrior class!");
-                    } break;
+                    }
+                    break;
 
                 case "c2":
                     {
@@ -433,7 +427,8 @@ namespace Wolfcoins
                         classList[user].itemEarned = -1;
                         SaveClassData();
                         whisperClient.sendChatMessage(".w " + user + " You successfully selected the Mage class!");
-                    } break;
+                    }
+                    break;
 
                 case "c3":
                     {
@@ -443,7 +438,8 @@ namespace Wolfcoins
                         classList[user].itemEarned = -1;
                         SaveClassData();
                         whisperClient.sendChatMessage(".w " + user + " You successfully selected the Rogue class!");
-                    } break;
+                    }
+                    break;
 
                 case "c4":
                     {
@@ -453,7 +449,8 @@ namespace Wolfcoins
                         classList[user].itemEarned = -1;
                         SaveClassData();
                         whisperClient.sendChatMessage(".w " + user + " You successfully selected the Ranger class!");
-                    } break;
+                    }
+                    break;
 
                 case "c5":
                     {
@@ -463,14 +460,15 @@ namespace Wolfcoins
                         classList[user].itemEarned = -1;
                         SaveClassData();
                         whisperClient.sendChatMessage(".w " + user + " You successfully selected the Cleric class!");
-                    } break;
+                    }
+                    break;
 
                 default: break;
             }
         }
         public int SetXP(int xp, string user, IrcClient whisperClient)
         {
-            if(xpList != null)
+            if (xpList != null)
             {
                 if (xp > MAX_XP)
                     xp = MAX_XP - 1;
@@ -478,7 +476,7 @@ namespace Wolfcoins
                 if (xp < 0)
                     xp = 0;
 
-                if(xpList.Keys.Contains(user))
+                if (xpList.Keys.Contains(user))
                 {
                     int prevLevel = determineLevel(user);
                     xpList[user] = xp;
@@ -492,7 +490,7 @@ namespace Wolfcoins
                     if (newLevel > prevLevel && newLevel != 3 && Exists(classList, user))
                     {
                         whisperClient.sendChatMessage(".w " + user + " DING! You just reached Level " + newLevel + "!  XP to next level: " + XpToNextLevel(user) + ".");
-                        if(newLevel > 3)
+                        if (newLevel > 3)
                         {
                             if (Exists(classList, user))
                             {
@@ -516,7 +514,7 @@ namespace Wolfcoins
                     if (newLevel < prevLevel)
                     {
                         whisperClient.sendChatMessage(".w " + user + " You lost a level! :( You're now level: " + newLevel);
-                        if(Exists(classList, user))
+                        if (Exists(classList, user))
                         {
                             classList[user].level = newLevel;
                             SaveClassData();
@@ -563,25 +561,25 @@ namespace Wolfcoins
             return -1;
         }
 
-public void UpdateSubs(string broadcastToken)
+        public void UpdateSubs(string broadcastToken, string clientId)
         {
             // ALERT: You can get rid of the dynamic lookup and just use a static channel id
             // Your channel id is 28640725
-            var userData = Users.Get(broadcastToken, "lobosjr");
+            var userData = Users.Get(broadcastToken, clientId);
             var channelId = userData.Data.First().Id;
             var nextLink = $"https://api.twitch.tv/kraken/channels/{channelId}/subscriptions?limit=100&offset=0";
             var offset = 0;
             do
             {
-                var request = (HttpWebRequest) WebRequest.Create(nextLink);
+                var request = (HttpWebRequest)WebRequest.Create(nextLink);
                 request.Accept = "application/vnd.twitchtv.v5+json";
-                request.Headers.Add("Client-ID", "c95v57t6nfrpts7dqk2urruyc8d0ln1");
+                request.Headers.Add("Client-ID", clientId);
                 request.Headers.Add("Authorization", string.Format("OAuth {0}", broadcastToken));
                 request.UserAgent = "LobosJrBot";
- 
+
                 try
                 {
-                    using (var response = (HttpWebResponse) request.GetResponse())
+                    using (var response = (HttpWebResponse)request.GetResponse())
                     {
                         if (response.StatusCode == HttpStatusCode.Unauthorized)
                         {
@@ -615,14 +613,14 @@ public void UpdateSubs(string broadcastToken)
                         }
                     }
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     Console.WriteLine("Unable to retrieve full sub list.");
                     Console.WriteLine(e);
                     nextLink = "";
                 }
             } while (!string.IsNullOrWhiteSpace(nextLink));
- 
+
             foreach (var sub in subsList)
             {
                 subSet.Add(sub.user.name);
@@ -634,54 +632,54 @@ public void UpdateSubs(string broadcastToken)
         {
             viewerList = new List<string>();
             bool updated = false;
-            while(!updated)
+            while (!updated)
             {
-            using (var w = new WebClient())
-            {
-                w.Proxy = null;
-                string url = "https://tmi.twitch.tv/group/user/" + channel + "/chatters";
-                try
+                using (var w = new WebClient())
                 {
-                    var json = w.DownloadString(string.Format(url));
-                    viewers = JsonConvert.DeserializeObject<Data>(json);
+                    w.Proxy = null;
+                    string url = "https://tmi.twitch.tv/group/user/" + channel + "/chatters";
+                    try
+                    {
+                        var json = w.DownloadString(string.Format(url));
+                        viewers = JsonConvert.DeserializeObject<Data>(json);
 
-                for (int i = 0; i < viewers.chatters.vips.Count; i++)
-                {
-                    if (!viewerList.Contains(viewers.chatters.vips[i]))
-                        viewerList.Add(viewers.chatters.vips[i]);
-                }
-                for (int i = 0; i < viewers.chatters.admins.Count; i++)
-                {
-                    if (!viewerList.Contains(viewers.chatters.admins[i]))
-                        viewerList.Add(viewers.chatters.admins[i]);
-                }
+                        for (int i = 0; i < viewers.chatters.vips.Count; i++)
+                        {
+                            if (!viewerList.Contains(viewers.chatters.vips[i]))
+                                viewerList.Add(viewers.chatters.vips[i]);
+                        }
+                        for (int i = 0; i < viewers.chatters.admins.Count; i++)
+                        {
+                            if (!viewerList.Contains(viewers.chatters.admins[i]))
+                                viewerList.Add(viewers.chatters.admins[i]);
+                        }
 
-                for (int i = 0; i < viewers.chatters.moderators.Count; i++)
-                {
-                    if (!viewerList.Contains(viewers.chatters.moderators[i]))
-                        viewerList.Add(viewers.chatters.moderators[i]);
-                }
+                        for (int i = 0; i < viewers.chatters.moderators.Count; i++)
+                        {
+                            if (!viewerList.Contains(viewers.chatters.moderators[i]))
+                                viewerList.Add(viewers.chatters.moderators[i]);
+                        }
 
-                for (int i = 0; i < viewers.chatters.viewers.Count; i++)
-                {
-                    if (!viewerList.Contains(viewers.chatters.viewers[i]))
-                        viewerList.Add(viewers.chatters.viewers[i]);
-                }
+                        for (int i = 0; i < viewers.chatters.viewers.Count; i++)
+                        {
+                            if (!viewerList.Contains(viewers.chatters.viewers[i]))
+                                viewerList.Add(viewers.chatters.viewers[i]);
+                        }
 
-                for (int i = 0; i < viewers.chatters.staff.Count; i++)
-                {
-                    if (!viewerList.Contains(viewers.chatters.staff[i]))
-                        viewerList.Add(viewers.chatters.staff[i]);
-                }
+                        for (int i = 0; i < viewers.chatters.staff.Count; i++)
+                        {
+                            if (!viewerList.Contains(viewers.chatters.staff[i]))
+                                viewerList.Add(viewers.chatters.staff[i]);
+                        }
 
-                //Console.WriteLine("Updated viewer list.");
-                updated = true;
+                        //Console.WriteLine("Updated viewer list.");
+                        updated = true;
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("Error updating viewers: " + e);
+                    }
                 }
-                catch(Exception e)
-                {
-                    Console.WriteLine("Error updating viewers: " + e);
-                }
-            }
             }
         }
 
@@ -692,7 +690,7 @@ public void UpdateSubs(string broadcastToken)
 
         public bool Exists(Dictionary<string, int> dic, string user)
         {
-            if(dic != null)
+            if (dic != null)
             {
                 return dic.Keys.Contains(user);
             }
@@ -722,9 +720,9 @@ public void UpdateSubs(string broadcastToken)
 
         public bool CheckCoins(string user, int amount)
         {
-            if(Exists(coinList, user))
+            if (Exists(coinList, user))
             {
-                if(amount <= coinList[user])
+                if (amount <= coinList[user])
                 {
                     return true;
                 }
@@ -740,33 +738,33 @@ public void UpdateSubs(string broadcastToken)
 
             if (coinList.ContainsKey(user) && int.TryParse(coins, out value))
             {
-                    try
+                try
+                {
+                    int prevCoins = coinList[user];
+                    checked
                     {
-                        int prevCoins = coinList[user];
-                        checked
+                        if (subSet.Contains(user))
                         {
-                            if (subSet.Contains(user))
-                            {
-                                value *= 2;
-                            }
-                            coinList[user] += value;
+                            value *= 2;
                         }
-                        if (coinList[user] > COINMAX)
-                        {
-                            coinList[user] = COINMAX;
-                        }
-
-                        if (coinList[user] < 0)
-                            coinList[user] = 0;
-
-
-                        return true;
+                        coinList[user] += value;
                     }
-                    catch (Exception e)
+                    if (coinList[user] > COINMAX)
                     {
-                        Console.WriteLine("Error adding coins.");
-                        Console.WriteLine(e);
+                        coinList[user] = COINMAX;
                     }
+
+                    if (coinList[user] < 0)
+                        coinList[user] = 0;
+
+
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Error adding coins.");
+                    Console.WriteLine(e);
+                }
 
             }
             {
@@ -781,8 +779,8 @@ public void UpdateSubs(string broadcastToken)
                 }
 
             }
-            return false;   
-            
+            return false;
+
         }
 
         public int XpToNextLevel(string user)
@@ -792,7 +790,7 @@ public void UpdateSubs(string broadcastToken)
                 int myXP = xpList[user];
                 int myLevel = determineLevel(myXP);
                 int xpNextLevel = (int)(4 * (Math.Pow(myLevel + 1, 3)) + 50);
-                if(myLevel == 1)
+                if (myLevel == 1)
                     return (82 - myXP);
 
                 return (xpNextLevel - myXP);
@@ -806,38 +804,38 @@ public void UpdateSubs(string broadcastToken)
         public bool AddXP(string user, string xp)
         {
             if (xpList == null)
-                return false; 
+                return false;
 
             int value = 0;
             if (xpList.ContainsKey(user) && int.TryParse(xp, out value))
             {
-                    try
+                try
+                {
+                    int prevXP = xpList[user];
+                    if (subSet.Contains(user.ToLower()))
                     {
-                        int prevXP = xpList[user];
-                        if (subSet.Contains(user.ToLower()))
-                        {
-                            value *= 2;
-                        }
-                        checked
-                        {
-                            xpList[user] += value;
-                        }
-                        //if (xpList[user] > MAX_XP)
-                        //{
-                        //    xpList[user] = MAX_XP - 1;
-                        //}
-
-                        if (xpList[user] < 0)
-                            xpList[user] = 0;
-
-                        return true;
+                        value *= 2;
                     }
-                    catch (Exception e)
+                    checked
                     {
-                        Console.WriteLine("Error adding xp.");
-                        Console.WriteLine(e);
+                        xpList[user] += value;
                     }
-     
+                    //if (xpList[user] > MAX_XP)
+                    //{
+                    //    xpList[user] = MAX_XP - 1;
+                    //}
+
+                    if (xpList[user] < 0)
+                        xpList[user] = 0;
+
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Error adding xp.");
+                    Console.WriteLine(e);
+                }
+
 
             }
             if (!xpList.ContainsKey(user) && int.TryParse(xp, out value))
@@ -894,7 +892,7 @@ public void UpdateSubs(string broadcastToken)
             }
             return false;
         }
-        
+
         public bool SaveCoins()
         {
             var json = JsonConvert.SerializeObject(coinList);
@@ -910,14 +908,14 @@ public void UpdateSubs(string broadcastToken)
                 Console.WriteLine(e);
                 return false;
             }
-            
+
         }
 
         public void ChangeClass(string user, int newClass, IrcClient whisperClient)
         {
-            if(classList != null && coinList != null)
+            if (classList != null && coinList != null)
             {
-                if(classList.Keys.Contains(user) && coinList.Keys.Contains(user))
+                if (classList.Keys.Contains(user) && coinList.Keys.Contains(user))
                 {
                     int respecCost = (baseRespecCost * (classList[user].level - 4));
                     if (respecCost < baseRespecCost)
@@ -928,7 +926,7 @@ public void UpdateSubs(string broadcastToken)
                         classList[user].myItems = new List<Item>();
                         classList[user].classType = newClass;
                         RemoveCoins(user, respecCost.ToString());
-                        
+
                         string myClass = determineClass(user);
                         classList[user].className = myClass;
                         whisperClient.sendChatMessage(".w " + user + " Class successfully updated to " + myClass + "! " + respecCost + " deducted from your Wolfcoin balance.");
@@ -1043,9 +1041,9 @@ public void UpdateSubs(string broadcastToken)
 
         public void Init()
         {
-            if( File.Exists(path))
+            if (File.Exists(path))
             {
-                coinList = JsonConvert.DeserializeObject<Dictionary<string,int>>(File.ReadAllText(path));
+                coinList = JsonConvert.DeserializeObject<Dictionary<string, int>>(File.ReadAllText(path));
                 Console.WriteLine("Wolfcoins collection loaded.");
             }
             else

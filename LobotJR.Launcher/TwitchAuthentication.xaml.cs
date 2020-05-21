@@ -1,9 +1,11 @@
 ﻿using LobotJR.Shared.Authentication;
 using LobotJR.Shared.Client;
 using LobotJR.Shared.Utility;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -110,6 +112,22 @@ namespace LobotJR.Launcher
         private void Browser_LoadCompleted(object sender, NavigationEventArgs e)
         {
             _isNavigating = false;
+        }
+
+        private void SetBrowserEmulation()
+        {
+            var browserEmulationKey = @"SOFTWARE\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_BROWSER_EMULATION";
+            var exeName = Path.GetFileNameWithoutExtension(Environment.GetCommandLineArgs()[0]);
+            var keyName = $"{exeName}.exe";
+            uint browserVersion = 11001;
+            using (var registryEntry = Registry.CurrentUser.OpenSubKey(browserEmulationKey, true))
+            {
+                var registryValue = registryEntry.GetValue(keyName);
+                if (registryValue == null || (int)registryValue != browserVersion)
+                {
+                    registryEntry.SetValue(keyName, (uint)11001, RegistryValueKind.DWord);
+                }
+            }
         }
 
         private void LaunchBot()
@@ -245,6 +263,7 @@ namespace LobotJR.Launcher
 
         private void LoadTwitchAuthPage(WebBrowser control, IEnumerable<string> scopes, string title)
         {
+            this.SetBrowserEmulation();
             LoginLabel.Content = title;
 
             var builder = new UriBuilder("https", "id.twitch.tv");
