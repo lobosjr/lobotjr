@@ -1,24 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.IO;
-using System.Windows.Forms;
-using System.Runtime.InteropServices;
-using System.Diagnostics;
-using System.Net;
-using Newtonsoft.Json;
-using Wolfcoins;
+﻿using Adventures;
 using Classes;
-using Adventures;
-using Equipment;
 using Companions;
+using Equipment;
+using Fishing;
 using GroupFinder;
 using LobotJR.Shared.Authentication;
-using LobotJR.Shared;
 using LobotJR.Shared.Utility;
-using Fishing;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading;
+using Wolfcoins;
 
 namespace TwitchBot
 {
@@ -37,7 +33,7 @@ namespace TwitchBot
 
     class Program
     {
-         
+
         static void Whisper(string user, string message, IrcClient whisperClient)
         {
             string toSend = ".w " + user + " " + message;
@@ -304,7 +300,7 @@ namespace TwitchBot
                 fishIter++;
                 fishList.Add(fishIter, "content/fishing/" + line);
             }
-            
+
             fishIter = 0;
             foreach (var fish in fishList)
             {
@@ -388,7 +384,7 @@ namespace TwitchBot
                 }
                 dividingFactor = (updatedChance / numRarities);
             }
-            
+
             Random rng = new Random();
             // get a decimal rng value between 0 and 1.0 and scale it up to be 1 - 100
             float roll = ((float)rng.NextDouble() * 100);
@@ -407,7 +403,7 @@ namespace TwitchBot
             // create a list of fish that have that rarity
             List<Fish> fishToChooseFrom = new List<Fish>();
 
-            foreach(var fish in myFishDatabase)
+            foreach (var fish in myFishDatabase)
             {
                 if (fish.rarity == result)
                     fishToChooseFrom.Add(new Fish(fish));
@@ -498,7 +494,7 @@ namespace TwitchBot
             bool twitchPlays = false;
             bool connected = true;
             bool broadcasting = false;
-            
+
             // How often to award Wolfcoins in minutes
             const int DUNGEON_MAX = 3;
             const int PARTY_FORMING = 1;
@@ -521,7 +517,7 @@ namespace TwitchBot
             int gloatCost = 25;
             int pryCost = 1;
 
-            Dictionary<int, Item> itemDatabase = new Dictionary<int,Item>();
+            Dictionary<int, Item> itemDatabase = new Dictionary<int, Item>();
             Dictionary<int, Pet> petDatabase = new Dictionary<int, Pet>();
             List<Fish> fishDatabase = new List<Fish>();
 
@@ -537,7 +533,7 @@ namespace TwitchBot
                 Console.WriteLine($"Failed to load subathon file, {subathonPath} not found.");
             }
 
-            Dictionary <int, string> dungeonList = new Dictionary<int, string>();
+            Dictionary<int, string> dungeonList = new Dictionary<int, string>();
             string dungeonListPath = "content/dungeonlist.ini";
 
             Dictionary<int, string> itemList = new Dictionary<int, string>();
@@ -558,7 +554,7 @@ namespace TwitchBot
             //const int baseRaidCost = 150;
             const int baseRespecCost = 250;
 
-            Dictionary<string,Better> betters = new Dictionary<string,Better>();
+            Dictionary<string, Better> betters = new Dictionary<string, Better>();
             //string betStatement = "";
             bool betActive = false;
             bool betsAllowed = false;
@@ -589,7 +585,7 @@ namespace TwitchBot
                 DateTime awardLast = DateTime.Now;
                 Currency wolfcoins = new Currency(clientData);
                 wolfcoins.UpdateViewers(channel);
-                wolfcoins.UpdateSubs(tokenData.BroadcastToken.AccessToken);
+                wolfcoins.UpdateSubs(tokenData.BroadcastToken.AccessToken, clientData.ClientId);
 
 
                 UpdateDungeons(dungeonListPath, ref dungeonList);
@@ -687,27 +683,32 @@ namespace TwitchBot
                                     case Fish.SIZE_TINY:
                                         {
                                             toSend = "You feel a light tug at your line! Type !catch to reel it in!";
-                                        } break;
+                                        }
+                                        break;
 
                                     case Fish.SIZE_SMALL:
                                         {
                                             toSend = "Something nibbles at your bait! Type !catch to reel it in!";
-                                        } break;
+                                        }
+                                        break;
 
                                     case Fish.SIZE_MEDIUM:
                                         {
                                             toSend = "A strong tug snags your bait! Type !catch to reel it in!";
-                                        } break;
+                                        }
+                                        break;
 
                                     case Fish.SIZE_LARGE:
                                         {
                                             toSend = "Whoa! Something big grabs your line! Type !catch to reel it in!";
-                                        } break;
+                                        }
+                                        break;
 
                                     case Fish.SIZE_HUGE:
                                         {
                                             toSend = "You're almost pulled into the water! Something HUGE is hooked! Type !catch to reel it in!";
-                                        } break;
+                                        }
+                                        break;
 
                                     default: break;
                                 }
@@ -3967,7 +3968,8 @@ namespace TwitchBot
                                         int minutesRemaining = timeRemaining / 60;
                                         irc.sendChatMessage(minutesRemaining + " minutes and " + secondsRemaining + " seconds until next coins/xp are awarded.");
 
-                                    } break;
+                                    }
+                                    break;
 
                                 case "!setinterval":
                                     {
@@ -3984,7 +3986,8 @@ namespace TwitchBot
                                             }
                                         }
 
-                                    } break;
+                                    }
+                                    break;
 
                                 case "!setmultiplier":
                                     {
@@ -4072,7 +4075,8 @@ namespace TwitchBot
                                             awardLast = DateTime.Now;
                                             irc.sendChatMessage("Wolfcoins & XP will be awarded.");
                                         }
-                                    } break;
+                                    }
+                                    break;
 
                                 case "!xpoff":
                                     {
@@ -4083,7 +4087,8 @@ namespace TwitchBot
                                             irc.sendChatMessage("Wolfcoins & XP will no longer be awarded.");
                                             wolfcoins.BackupData();
                                         }
-                                    } break;
+                                    }
+                                    break;
 
                                 case "!setxp":
                                     {
@@ -4115,7 +4120,8 @@ namespace TwitchBot
                                             irc.sendChatMessage("Not enough data provided for !setxp command.");
                                         }
 
-                                    } break;
+                                    }
+                                    break;
 
                                 case "!grantxp":
                                     {
@@ -4139,12 +4145,14 @@ namespace TwitchBot
                                             irc.sendChatMessage("Not enough data provided for !givexp command.");
                                         }
 
-                                    } break;
+                                    }
+                                    break;
 
                                 case "!setcoins":
                                     {
 
-                                    } break;
+                                    }
+                                    break;
 
                                 #region NormalBotStuff
                                 //case "!hug":
@@ -4242,7 +4250,8 @@ namespace TwitchBot
                                             irc.sendChatMessage("Sorry, " + sender + ", AddCoins is a moderator-only command.");
                                         }
 
-                                    } break;
+                                    }
+                                    break;
 
                                 case "!addcoins":
                                     {
@@ -4277,7 +4286,8 @@ namespace TwitchBot
                                             irc.sendChatMessage("Sorry, " + sender + ", AddCoins is a moderator-only command.");
                                         }
 
-                                    } break;
+                                    }
+                                    break;
 
                                 default: break;
 
@@ -4317,150 +4327,174 @@ namespace TwitchBot
                         {
                             string[] first = message[1].Split(' ');
                             string sender = message[0];
-                            char[] keys = {};
+                            char[] keys = { };
 
                             const int MOVE_AMOUNT = 1000;
                             switch (first[0].ToLower())
                             {
-                                    // M preceds movement. MF = Move Forward, MB = Move Backwards, etc.
+                                // M preceds movement. MF = Move Forward, MB = Move Backwards, etc.
                                 case "mf":
                                     {
                                         sendFor('W', MOVE_AMOUNT);
                                         Console.WriteLine("MF - Move Forward");
-                                    } break;
+                                    }
+                                    break;
 
                                 case "mb":
                                     {
                                         sendFor('S', MOVE_AMOUNT);
                                         Console.WriteLine("MB - Move Back");
-                                    } break;
+                                    }
+                                    break;
 
                                 case "ml":
                                     {
                                         sendFor('A', MOVE_AMOUNT);
                                         Console.WriteLine("ML - Move Left");
-                                    } break;
+                                    }
+                                    break;
 
                                 case "mr":
                                     {
                                         sendFor('D', MOVE_AMOUNT);
                                         Console.WriteLine("MR - Move Right");
-                                    } break;
+                                    }
+                                    break;
 
-                                    // Camera Up, Down, Left, Right
+                                // Camera Up, Down, Left, Right
                                 case "cu":
                                     {
                                         sendFor('I', MOVE_AMOUNT);
                                         Console.WriteLine("CU - Camera Up");
-                                    } break;
+                                    }
+                                    break;
 
                                 case "cd":
                                     {
                                         sendFor('K', MOVE_AMOUNT);
                                         Console.WriteLine("CD - Camera Down");
-                                    } break;
+                                    }
+                                    break;
 
                                 case "cl":
                                     {
                                         sendFor('J', MOVE_AMOUNT);
-                                    } break;
+                                    }
+                                    break;
 
                                 case "cr":
                                     {
                                         sendFor('L', MOVE_AMOUNT);
-                                    } break;
+                                    }
+                                    break;
 
-                                    // Lock on/off
+                                // Lock on/off
                                 case "l":
                                     {
                                         sendFor('O', 100);
-                                    } break;
+                                    }
+                                    break;
 
-                                    // Use item
+                                // Use item
                                 case "u":
                                     {
                                         sendFor('E', 100);
-                                    } break;
-                                    // 2h toggle
+                                    }
+                                    break;
+                                // 2h toggle
                                 case "y":
                                     {
                                         sendFor(56, 100);
-                                    } break;
-                                    // Attacks
+                                    }
+                                    break;
+                                // Attacks
                                 case "r1":
                                     {
                                         sendFor('H', 100);
-                                    } break;
+                                    }
+                                    break;
 
                                 case "r2":
                                     {
                                         sendFor('U', 100);
-                                    } break;
+                                    }
+                                    break;
 
                                 case "l1":
                                     {
                                         sendFor(42, 100);
-                                    } break;
+                                    }
+                                    break;
 
                                 case "l2":
                                     {
                                         sendFor(15, 100);
-                                    } break;
-                                    // Rolling directions
+                                    }
+                                    break;
+                                // Rolling directions
                                 case "rl":
                                     {
                                         keys = new char[] { 'A', ' ' };
                                         sendFor(keys, 100);
-                                    } break;
+                                    }
+                                    break;
 
                                 case "rr":
                                     {
                                         keys = new char[] { 'D', ' ' };
                                         sendFor(keys, 100);
-                                    } break;
+                                    }
+                                    break;
 
                                 case "rf":
                                     {
                                         keys = new char[] { 'W', ' ' };
                                         sendFor(keys, 100);
-                                    } break;
+                                    }
+                                    break;
 
                                 case "rb":
                                     {
                                         keys = new char[] { 'S', ' ' };
                                         sendFor(keys, 100);
-                                    } break;
+                                    }
+                                    break;
 
                                 case "x":
                                     {
                                         sendFor('Q', 100);
                                         sendFor(28, 100);
-                                    } break;
-                                    // switch LH weap
+                                    }
+                                    break;
+                                // switch LH weap
                                 case "dl":
                                     {
                                         sendFor('C', 100);
-                                    } break;
+                                    }
+                                    break;
 
                                 case "dr":
                                     {
                                         sendFor('V', 100);
-                                    } break;
+                                    }
+                                    break;
 
                                 case "du":
                                     {
                                         sendFor('R', 100);
-                                    } break;
+                                    }
+                                    break;
 
                                 case "dd":
                                     {
                                         sendFor('F', 100);
-                                    } break;
+                                    }
+                                    break;
 
                                 //case "just subscribed":
                                 //    {
                                 //        sendFor('G', 500);
-                                        
+
                                 //        sendFor(13, 100);
                                 //    } break;
 
@@ -4477,7 +4511,7 @@ namespace TwitchBot
                 #endregion
             }
         }
-        static Pet GrantPet(string playerName, Currency wolfcoins, Dictionary<int, Pet> petDatabase, IrcClient irc, IrcClient group )
+        static Pet GrantPet(string playerName, Currency wolfcoins, Dictionary<int, Pet> petDatabase, IrcClient irc, IrcClient group)
         {
             List<Pet> toAward = new List<Pet>();
             // figure out the rarity of pet to give and build a list of non-duplicate pets to award
@@ -4541,7 +4575,7 @@ namespace TwitchBot
                 wolfcoins.classList[playerName].myPets.Add(newPet);
 
 
-                
+
 
                 Whisper(playerName, toSend, group);
                 if (newPet.isSparkly)
@@ -4555,7 +4589,7 @@ namespace TwitchBot
                     irc.sendChatMessage(playerName + " just found a pet " + newPet.name + "!");
                 }
 
-                if(wolfcoins.classList[playerName].myPets.Count == petDatabase.Count)
+                if (wolfcoins.classList[playerName].myPets.Count == petDatabase.Count)
                 {
                     Whisper(playerName, "You've collected all of the available pets! Congratulations!", group);
                 }
@@ -4566,7 +4600,7 @@ namespace TwitchBot
             }
 
             return new Pet();
-            
+
         }
 
         static void UpdateTokens(TokenData tokenData, LobotJR.Shared.Client.ClientData clientData, bool force = false)
@@ -4609,7 +4643,7 @@ namespace TwitchBot
             }
         }
 
-        static string GetDungeonName(int dungeonID, Dictionary<int,string> dungeonList)
+        static string GetDungeonName(int dungeonID, Dictionary<int, string> dungeonList)
         {
             if (!dungeonList.ContainsKey(dungeonID))
                 return "Invalid DungeonID";
@@ -4624,7 +4658,7 @@ namespace TwitchBot
             int playerLevel = wolfcoins.determineLevel(user);
             List<Dungeon> dungeons = new List<Dungeon>();
             Dungeon tempDungeon;
-            foreach(var id in dungeonList)
+            foreach (var id in dungeonList)
             {
                 tempDungeon = new Dungeon("content/dungeons/" + dungeonList[id.Key]);
                 tempDungeon.dungeonID = id.Key;
@@ -4635,21 +4669,21 @@ namespace TwitchBot
                 return eligibleDungeons;
 
             bool firstAdded = false;
-            foreach(var dungeon in dungeons)
+            foreach (var dungeon in dungeons)
             {
                 //if(dungeon.minLevel <= playerLevel)
                 //{
-                    if(!firstAdded)
-                    {
-                        firstAdded = true;
-                    }
-                    else
-                    {
-                        eligibleDungeons += ",";
-                    }
-                    eligibleDungeons += dungeon.dungeonID;
+                if (!firstAdded)
+                {
+                    firstAdded = true;
+                }
+                else
+                {
+                    eligibleDungeons += ",";
+                }
+                eligibleDungeons += dungeon.dungeonID;
 
-                    
+
                 //}
             }
             return eligibleDungeons;
@@ -4686,41 +4720,47 @@ namespace TwitchBot
             string name = pet.name;
             int stableID = pet.stableID;
             string rarity = "";
-            switch(pet.petRarity)
+            switch (pet.petRarity)
             {
                 case (Pet.QUALITY_COMMON):
                     {
                         rarity = "Common";
-                    } break;
+                    }
+                    break;
 
                 case (Pet.QUALITY_UNCOMMON):
                     {
                         rarity = "Uncommon";
-                    } break;
+                    }
+                    break;
 
                 case (Pet.QUALITY_RARE):
                     {
                         rarity = "Rare";
-                    } break;
+                    }
+                    break;
 
                 case (Pet.QUALITY_EPIC):
                     {
                         rarity = "Epic";
-                    } break;
+                    }
+                    break;
 
                 case (Pet.QUALITY_ARTIFACT):
                     {
                         rarity = "Legendary";
-                    } break;
+                    }
+                    break;
 
                 default:
                     {
                         rarity = "Error";
-                    } break;
+                    }
+                    break;
             }
 
             List<string> stats = new List<string>();
-            if(detail == HIGH_DETAIL)
+            if (detail == HIGH_DETAIL)
                 stats.Add("Level: " + pet.level + " | Affection: " + pet.affection + " | Energy: " + pet.hunger);
 
             bool active = pet.isActive;
@@ -4812,63 +4852,72 @@ namespace TwitchBot
         }
 
 
-        static void WhisperItem(string user, Item itm, IrcClient whisperClient, Dictionary<int,Item> itemDatabase)
+        static void WhisperItem(string user, Item itm, IrcClient whisperClient, Dictionary<int, Item> itemDatabase)
         {
             string name = itm.itemName;
             string type = "";
             int inventoryID = itm.inventoryID;
-            switch(itm.itemType)
+            switch (itm.itemType)
             {
                 case (Item.TYPE_ARMOR):
                     {
                         type = "Armor";
-                    } break;
+                    }
+                    break;
 
                 case (Item.TYPE_WEAPON):
                     {
                         type = "Weapon";
-                    } break;
+                    }
+                    break;
 
                 case (Item.TYPE_OTHER):
                     {
                         type = "Misc. Item";
-                    } break;
+                    }
+                    break;
                 default:
                     {
                         type = "Broken";
-                    } break;
+                    }
+                    break;
             }
             string rarity = "";
-            switch(itm.itemRarity)
+            switch (itm.itemRarity)
             {
                 case Item.QUALITY_UNCOMMON:
                     {
                         rarity = "Uncommon";
-                    } break;
+                    }
+                    break;
 
                 case Item.QUALITY_RARE:
                     {
                         rarity = "Rare";
-                    } break;
+                    }
+                    break;
 
                 case Item.QUALITY_EPIC:
                     {
                         rarity = "Epic";
-                    } break;
+                    }
+                    break;
 
                 case Item.QUALITY_ARTIFACT:
                     {
                         rarity = "Artifact";
-                    } break;
+                    }
+                    break;
 
                 default:
                     {
                         rarity = "Broken";
-                    } break;
+                    }
+                    break;
             }
             List<string> stats = new List<string>();
 
-            if(itm.successChance > 0)
+            if (itm.successChance > 0)
             {
                 stats.Add("+" + itm.successChance + "% Success Chance");
             }
@@ -4895,7 +4944,7 @@ namespace TwitchBot
 
             bool active = itm.isActive;
             string status = "";
-            if(active)
+            if (active)
             {
                 status = "(Equipped)";
             }
@@ -4906,18 +4955,18 @@ namespace TwitchBot
 
             Whisper(user, name + " (" + rarity + " " + type + ") " + status, whisperClient);
             Whisper(user, "Inventory ID: " + inventoryID, whisperClient);
-            foreach(var stat in stats)
+            foreach (var stat in stats)
             {
                 Whisper(user, stat, whisperClient);
             }
         }
 
-        
 
-        static int GrantItem(int id, Currency wolfcoins, string user, Dictionary<int,Item> itemDatabase)
+
+        static int GrantItem(int id, Currency wolfcoins, string user, Dictionary<int, Item> itemDatabase)
         {
             string logPath = "dungeonlog.txt";
-            
+
             if (id < 1)
                 return -1;
 
@@ -4998,7 +5047,7 @@ namespace TwitchBot
             inputData[0].ki.wScan = scanCode;
             inputData[0].ki.dwFlags = KEYEVENTF_SCANCODE;
             SendInput((uint)inputData.Length, inputData, Marshal.SizeOf(typeof(INPUT)));
-            if(key.Length > 1)
+            if (key.Length > 1)
             {
                 inputData[0].ki.wScan = (short)MapVirtualKey(VkKeyScan(key[1]), 0);
                 SendInput((uint)inputData.Length, inputData, Marshal.SizeOf(typeof(INPUT)));
@@ -5020,5 +5069,5 @@ namespace TwitchBot
 
         }
     }
-        
+
 }

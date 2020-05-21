@@ -15,16 +15,16 @@ namespace LobotJR.Shared.User
         /// Calls the twitch Get Users API with no parameters.
         /// </summary>
         /// <param name="token">A bearer token.</param>
-        /// <param name="username">The name of the user to retrieve.</param>
+        /// <param name="clientId">The client id the app is running under.</param>
         /// <returns>The user data of the authenticated user.</returns>
-        public static UserResponse Get(string token, string username)
+        public static UserResponse Get(string token, string clientId)
         {
             var client = new RestClient("https://api.twitch.tv");
             client.AddHandler("application/json", () => NewtonsoftDeserializer.Default);
             var request = new RestRequest("helix/users", Method.GET);
             request.AddHeader("Accept", "application/json");
             request.AddHeader("Authorization", $"Bearer {token}");
-            request.AddQueryParameter("login", username);
+            request.AddHeader("Client-ID", clientId);
             var response = client.Execute<UserResponse>(request);
             switch (response.StatusCode)
             {
