@@ -19,6 +19,7 @@ namespace LobotJR.Shared.User
         /// <returns>The user data of the authenticated user.</returns>
         public static UserResponse Get(string token, string clientId)
         {
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             var client = new RestClient("https://api.twitch.tv");
             client.AddHandler("application/json", () => NewtonsoftDeserializer.Default);
             var request = new RestRequest("helix/users", Method.GET);
