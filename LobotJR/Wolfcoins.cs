@@ -565,6 +565,7 @@ namespace Wolfcoins
         {
             // ALERT: You can get rid of the dynamic lookup and just use a static channel id
             // Your channel id is 28640725
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             var userData = Users.Get(broadcastToken, clientId);
             var channelId = userData.Data.First().Id;
             var nextLink = $"https://api.twitch.tv/kraken/channels/{channelId}/subscriptions?limit=100&offset=0";
