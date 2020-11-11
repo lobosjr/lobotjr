@@ -64,6 +64,7 @@ namespace Fishing
         public string username = "";
         public int level = -1;
         public int XP = -1;
+        public int tournamentPoints = 0;
         public List<Fish> biggestFish = new List<Fish>();
         public int lure = -1;
         public bool isFishing = false;
@@ -72,7 +73,7 @@ namespace Fishing
         public DateTime timeOfCatch;
         public DateTime timeSinceHook;
 
-        public Fish Catch(Fish tempFish, IrcClient whisperClient)
+        public Fish Catch(Fish tempFish, IrcClient whisperClient, bool isTournamentActive)
         {
             // get fish data out of table
             Fish myCatch = new Fish(tempFish);
@@ -88,9 +89,17 @@ namespace Fishing
 
             // roll to determine size category
             float size = (float)rng.NextDouble() * 100;
+            int pointValue = 0;
+
+            if(isTournamentActive)
+            {
+                tournamentPoints += (int)size;
+                pointValue = (int)size;
+            }
 
             float minLength = myCatch.lengthRange[0];
             float minWeight = myCatch.weightRange[0];
+
             // dependant on size category, set up lengthFactor & roll between the adjusted ranges for weight/length 
             if ( size <= TINY_CHANCE)
             {
@@ -150,10 +159,13 @@ namespace Fishing
                 biggestFish.Add(myCatch);
                 whisperClient.sendChatMessage(".w " + username + " This is the biggest " + myCatch.name + " you've ever caught!");
             }
-            Console.WriteLine(username + " caught a " + myCatch.weight + " pound, " + myCatch.length + " inch " + myCatch.name + "!");
+            Console.WriteLine(username + " caught a " + myCatch.weight + " pound, " + myCatch.length + " inch " + myCatch.name + " worth " + pointValue + " points.");
 
             myCatch.caughtBy = username;
-            
+            if(isTournamentActive)
+            {
+                whisperClient.sendChatMessage(".w " + username + " You caught a " + myCatch.name + " worth " + pointValue + " points! You are now at " + tournamentPoints + " total points.");
+            }
             return myCatch;
         }
     }
