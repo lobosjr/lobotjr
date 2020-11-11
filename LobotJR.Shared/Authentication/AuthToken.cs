@@ -2,7 +2,6 @@
 using RestSharp;
 using System;
 using System.Net;
-using System.Web;
 
 namespace LobotJR.Shared.Authentication
 {
@@ -21,6 +20,7 @@ namespace LobotJR.Shared.Authentication
         /// <returns></returns>
         public static TokenResponse Fetch(string clientId, string clientSecret, string code, string redirectUri)
         {
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             var client = new RestClient("https://id.twitch.tv");
             client.AddHandler("application/json", () => NewtonsoftDeserializer.Default);
             var request = new RestRequest("oauth2/token", Method.POST);
@@ -46,6 +46,7 @@ namespace LobotJR.Shared.Authentication
         /// <returns>The validation response.</returns>
         public static ValidationResponse Validate(string token)
         {
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             var client = new RestClient("https://id.twitch.tv");
             client.AddHandler("application/json", () => NewtonsoftDeserializer.Default);
             var request = new RestRequest("oauth2/validate", Method.GET);
@@ -68,6 +69,7 @@ namespace LobotJR.Shared.Authentication
         /// <returns></returns>
         public static TokenResponse Refresh(string clientId, string clientSecret, string refreshToken)
         {
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             var client = new RestClient("https://id.twitch.tv");
             client.AddHandler("application/json", () => NewtonsoftDeserializer.Default);
             var request = new RestRequest("oauth2/token", Method.POST);
