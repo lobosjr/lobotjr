@@ -65,6 +65,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Command\ICommand.cs" />
+    <Compile Include="Command\CommandManager.cs" />
     <Compile Include="Fishing.cs" />
     <Compile Include="Dungeon.cs" />
     <Compile Include="Classes.cs" />
