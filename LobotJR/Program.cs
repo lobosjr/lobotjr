@@ -4,6 +4,7 @@ using Companions;
 using Equipment;
 using Fishing;
 using GroupFinder;
+using LobotJR.Command;
 using LobotJR.Shared.Authentication;
 using LobotJR.Shared.Utility;
 using System;
@@ -573,6 +574,10 @@ namespace TwitchBot
             // 199.9.253.119
             connected = irc.connected;
 
+            var commandManager = new CommandManager();
+            commandManager.Initialize(tokenData.BroadcastUser, tokenData.ChatUser);
+            commandManager.LoadAllModules();
+
             if (connected)
             {
                 UpdateTokens(tokenData, clientData);
@@ -728,14 +733,14 @@ namespace TwitchBot
 
                         int maxDuration = tournamentDuration * 60; // value is in minutes, so convert to seconds to compare against time elapsed
                         int currentDuration = (int)((DateTime.Now - tournamentStart).TotalSeconds);
-                        if(currentDuration > maxDuration)
+                        if (currentDuration > maxDuration)
                         {
                             int numParticipants = 0;
                             int topScore = 0;
                             string winner = "";
                             fishingTournamentActive = false;
 
-                            foreach(var fisher in wolfcoins.fishingList)
+                            foreach (var fisher in wolfcoins.fishingList)
                             {
                                 if (fisher.Value.tournamentPoints != 0)
                                 {
@@ -746,7 +751,7 @@ namespace TwitchBot
                                     continue;
                                 }
 
-                               if (fisher.Value.tournamentPoints > topScore)
+                                if (fisher.Value.tournamentPoints > topScore)
                                 {
                                     topScore = fisher.Value.tournamentPoints;
                                     winner = fisher.Value.username;
@@ -1091,6 +1096,7 @@ namespace TwitchBot
                             whisperSender = whispers[0];
                             whisperMessage = whispers[1];
 
+
                             if (wolfcoins.Exists(wolfcoins.classList, whisperSender))
                             {
                                 if (wolfcoins.determineLevel(whisperSender) >= 3 && wolfcoins.determineClass(whisperSender) == "INVALID CLASS" && !whisperMessage.StartsWith("c") && !whisperMessage.StartsWith("C"))
@@ -1099,6 +1105,18 @@ namespace TwitchBot
                                     Whisper(whisperSender, "'C1' (Warrior), 'C2' (Mage), 'C3' (Rogue), 'C4' (Ranger), or 'C5' (Cleric)", group);
                                 }
                             }
+                            if (whisperMessage.StartsWith("!") && commandManager.ProcessMessage(whisperMessage.Substring(1), whisperSender, out var responses))
+                            {
+                                if (responses != null)
+                                {
+                                    foreach (var response in responses)
+                                    {
+                                        Whisper(whisperSender, response, group);
+                                    }
+                                }
+                                continue;
+                            }
+
                             if (whisperMessage == "?" || whisperMessage == "help" || whisperMessage == "!help" || whisperMessage == "faq" || whisperMessage == "!faq")
                             {
                                 //Whisper(whisperSender, "Help command coming soon. For now, know that only viewers Level 2 & higher can post hyperlinks. This helps keep chat free of bots!");
@@ -2075,7 +2093,7 @@ namespace TwitchBot
                                 }
                                 else
                                 {
-                                    if(fishingTournamentActive)
+                                    if (fishingTournamentActive)
                                     {
                                         Whisper(whisperSender, "A fishing tournament is active now! Go catch fish at: https://tinyurl.com/PlayWolfpackRPG !", group);
                                     }
@@ -4257,7 +4275,7 @@ namespace TwitchBot
                                             broadcasting = true;
                                             awardLast = DateTime.Now;
                                             nextTournament = DateTime.Now.AddMinutes(15);
-                                            
+
                                             irc.sendChatMessage("Wolfcoins & XP will be awarded.");
                                         }
                                     }

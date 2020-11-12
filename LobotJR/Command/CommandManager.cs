@@ -1,7 +1,9 @@
-﻿using Newtonsoft.Json;
+﻿using LobotJR.Modules;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace LobotJR.Command
 {
@@ -11,48 +13,140 @@ namespace LobotJR.Command
     public class CommandManager : ICommandManager
     {
         private static string _roleDataPath = "content/role.data";
-        private Dictionary<string, ICommand> commands;
-        
+
+        private Action<string, string> writeDataAction;
+        private Func<string, string> readDataAction;
+        private Func<string, bool> checkDataAction;
+        private Dictionary<string, string> commandStringToIdMap;
+        private Dictionary<string, CommandExecutor> commandIdToExecutorMap;
+
         /// <summary>
         /// List of user roles.
         /// </summary>
         public List<UserRole> Roles { get; set; }
+        /// <summary>
+        /// List of ids for registered commands.
+        /// </summary>
+        public IEnumerable<string> Commands { get { return this.commandIdToExecutorMap.Keys.ToArray(); } }
 
-        private void AddCommand(ICommand command)
+        private void AddCommand(CommandHandler command, string prefix)
         {
-            var commandStrings = command.GetCommandStrings();
-            foreach (var commandString in commandStrings)
+            var commandId = $"{prefix}.{command.Name}";
+            this.commandIdToExecutorMap.Add(commandId, command.Executor);
+            foreach (var commandString in command.CommandStrings)
             {
-                if (this.commands.ContainsKey(commandString))
+                if (this.commandStringToIdMap.ContainsKey(commandString))
                 {
-                    throw (new Exception($"Command {command.Name}: The command string \"{commandString}\" has already been registered by Command {this.commands[commandString].Name}."));
+                    throw (new Exception($"{commandId}: The command string \"{commandString}\" has already been registered by {this.commandStringToIdMap[commandString]}."));
                 }
-                this.commands.Add(commandString, command);
+                this.commandStringToIdMap.Add(commandString, commandId);
             }
         }
 
-        private bool CanUserExecute(ICommand command, string user)
+        private void AddModule(ICommandModule module, string prefix = null)
         {
-            return false;
+            if (prefix != null)
+            {
+                prefix = $"{prefix}.{module.Name}";
+            }
+            else
+            {
+                prefix = module.Name;
+            }
+
+            foreach (var command in module.Commands)
+            {
+                this.AddCommand(command, prefix);
+            }
+
+            if (module.SubModules != null)
+            {
+                foreach (var subModule in module.SubModules)
+                {
+                    this.AddModule(subModule, prefix);
+                }
+            }
+        }
+
+        private bool CanUserExecute(string commandId, string user)
+        {
+            var roles = this.Roles.Where(x => x.CoversCommand(commandId));
+            return !roles.Any() || roles.Any(x => x.Users.Contains(user));
+        }
+
+        public CommandManager()
+        {
+            this.readDataAction = File.ReadAllText;
+            this.writeDataAction = File.WriteAllText;
+            this.checkDataAction = File.Exists;
+        }
+
+        public CommandManager(Func<string, string> readDataAction, Action<string, string> writeDataAction, Func<string, bool> checkDataAction)
+        {
+            this.readDataAction = readDataAction;
+            this.writeDataAction = writeDataAction;
+            this.checkDataAction = checkDataAction;
         }
 
         /// <summary>
         /// Initialize the command manager, loading role data and registering
         /// the commands.
         /// </summary>
-        public void Initialize()
+        public void Initialize(string broadcastUser, string chatUser)
         {
-            this.Roles = JsonConvert.DeserializeObject<List<UserRole>>(File.ReadAllText(_roleDataPath));
+            if (!this.checkDataAction(_roleDataPath))
+            {
+                this.Roles = new List<UserRole>();
+                this.Roles.Add(new UserRole()
+                {
+                    Name = "Streamer",
+                    Commands = new List<string>(new string[] { "FeatureManagement.*" }),
+                    Users = new List<string>(new string[] { broadcastUser, chatUser }),
+                });
+                this.UpdateRoles();
+            }
+            else
+            {
+                this.Roles = JsonConvert.DeserializeObject<List<UserRole>>(this.readDataAction(_roleDataPath));
+            }
 
-            // this.AddCommand();
+            this.commandStringToIdMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            this.commandIdToExecutorMap = new Dictionary<string, CommandExecutor>();
         }
 
         /// <summary>
-        /// Save role data to the disk.
+        /// Loads all registered command modules.
         /// </summary>
-        public void UpdateRoles()
+        public void LoadAllModules()
         {
-            File.WriteAllText(_roleDataPath, JsonConvert.SerializeObject(this.Roles));
+            this.AddModule(new FeatureManagement(this));
+        }
+
+        /// <summary>
+        /// Loads all registered command modules.
+        /// <param name="modules">An array of modules to load.</param>
+        /// </summary>
+        public void LoadModules(params ICommandModule[] modules)
+        {
+            foreach (var module in modules)
+            {
+                this.AddModule(module);
+            }
+        }
+
+        /// <summary>
+        /// Checks if a command id exists or is a valid wildcard pattern.
+        /// </summary>
+        /// <param name="commandId">The command id to validate.</param>
+        /// <returns>Whether or not the command id is valid.</returns>
+        public bool IsValidCommand(string commandId)
+        {
+            var index = commandId.IndexOf('*');
+            if (index >= 0)
+            {
+                return this.Commands.Any(x => x.StartsWith(commandId.Substring(0, index)));
+            }
+            return this.commandIdToExecutorMap.ContainsKey(commandId);
         }
 
         /// <summary>
@@ -60,7 +154,9 @@ namespace LobotJR.Command
         /// </summary>
         /// <param name="message">The message the user sent.</param>
         /// <param name="user">The user's name.</param>
-        public bool ProcessMessage(string message, string user)
+        /// <param name="responses">The response messages to send to the user.</param>
+        /// <returns>Whether a command was found and executed.</returns>
+        public bool ProcessMessage(string message, string user, out IEnumerable<string> responses)
         {
             var space = message.IndexOf(' ');
             string commandString;
@@ -75,16 +171,26 @@ namespace LobotJR.Command
                 commandString = message;
             }
 
-            var command = this.commands[commandString];
-            if (command != null)
+            var commandId = this.commandStringToIdMap[commandString];
+            if (commandId != null)
             {
-                if (this.CanUserExecute(command, user))
+                if (this.CanUserExecute(commandId, user))
                 {
-                    command.Execute(data, user);
+                    var executor = this.commandIdToExecutorMap[commandId];
+                    responses = executor.Invoke(data, user);
                     return true;
                 }
             }
+            responses = null;
             return false;
+        }
+
+        /// <summary>
+        /// Save role data to the disk.
+        /// </summary>
+        public void UpdateRoles()
+        {
+            this.writeDataAction(_roleDataPath, JsonConvert.SerializeObject(this.Roles));
         }
     }
 }
