@@ -15,11 +15,20 @@ namespace LobotJR.Command
         /// <summary>
         /// A list of users who are members of the role.
         /// </summary>
-        public List<string> Users { get; set; }
+        public List<string> Users { get; set; } = new List<string>();
         /// <summary>
         /// A list of commands that require role access to execute.
         /// </summary>
-        public List<string> Commands { get; set; }
+        public List<string> Commands { get; set; } = new List<string>();
+
+        /// <summary>
+        /// Creates a user role with a name.
+        /// </summary>
+        /// <param name="name">The name of the role.</param>
+        public UserRole(string name)
+        {
+            Name = name;
+        }
 
         /// <summary>
         /// Checks a command to see if it's covered by this role.

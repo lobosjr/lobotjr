@@ -40,8 +40,8 @@ namespace LobotJR.Modules
                 new CommandHandler("CheckAccess", this.CheckAccess, "CheckAccess", "check-access"),
                 new CommandHandler("UnenrollUser", this.RemoveUserFromRole, "UnenrollUser", "unenroll-user"),
 
-                new CommandHandler("ListCommands", this.ListCommands, "ListCommands", "list-commands"),
                 new CommandHandler("RestrictCommand", this.AddCommandToRole, "RestrictCommand", "restrict-command"),
+                new CommandHandler("ListCommands", this.ListCommands, "ListCommands", "list-commands"),
                 new CommandHandler("UnrestrictCommand", this.RemoveCommandFromRole, "UnrestrictCommand", "unrestrict-command")
             };
         }
@@ -59,7 +59,7 @@ namespace LobotJR.Modules
                 return new string[] { $"Error: Unable to create role, \"{data}\" already exists." };
             }
 
-            this.commandManager.Roles.Add(new UserRole() { Name = data });
+            this.commandManager.Roles.Add(new UserRole(data));
             this.commandManager.UpdateRoles();
             return new string[] { $"Role \"${data}\" created successfully!" };
         }
@@ -67,7 +67,7 @@ namespace LobotJR.Modules
         private IEnumerable<string> DescribeRole(string data, string user)
         {
             var existingRole = this.commandManager.Roles.Where(x => x.Name.Equals(data)).FirstOrDefault();
-            if (existingRole != null)
+            if (existingRole == null)
             {
                 return new string[] { $"Error: Role \"{data}\" not found." };
             }
@@ -93,7 +93,7 @@ namespace LobotJR.Modules
 
             this.commandManager.Roles.Remove(existingRole);
             this.commandManager.UpdateRoles();
-            return new string[] { $"Role \"${data}\" removed successfully!" };
+            return new string[] { $"Role \"${data}\" deleted successfully!" };
         }
 
         private IEnumerable<string> AddUserToRole(string data, string user)
@@ -184,19 +184,6 @@ namespace LobotJR.Modules
             return new string[] { $"User \"{userToRemove}\" was removed from role \"{role.Name}\" successfully!" };
         }
 
-        private IEnumerable<string> ListCommands(string data, string user)
-        {
-            var commands = this.commandManager.Commands;
-            var modules = commands.Where(x => x.IndexOf('.') != -1).Select(x => x.Substring(0, x.IndexOf('.'))).Distinct().ToList();
-            var response = new string[modules.Count + 1];
-            response[0] = $"There are {commands.Count()} commands across {modules.Count} modules.";
-            for (var i = 0; i < modules.Count; i++)
-            {
-                response[i + 1] = $"{modules[i]}: {string.Join(", ", commands.Where(x => x.StartsWith(modules[i])))}";
-            }
-            return response;
-        }
-
         public IEnumerable<string> AddCommandToRole(string data, string user)
         {
             var space = data.IndexOf(' ');
@@ -238,6 +225,19 @@ namespace LobotJR.Modules
             return new string[] { $"Command \"{commandName}\" was added to the role \"{role.Name}\" successfully!" };
         }
 
+        private IEnumerable<string> ListCommands(string data, string user)
+        {
+            var commands = this.commandManager.Commands;
+            var modules = commands.Where(x => x.IndexOf('.') != -1).Select(x => x.Substring(0, x.IndexOf('.'))).Distinct().ToList();
+            var response = new string[modules.Count + 1];
+            response[0] = $"There are {commands.Count()} commands across {modules.Count} modules.";
+            for (var i = 0; i < modules.Count; i++)
+            {
+                response[i + 1] = $"{modules[i]}: {string.Join(", ", commands.Where(x => x.StartsWith(modules[i])))}";
+            }
+            return response;
+        }
+
         public IEnumerable<string> RemoveCommandFromRole(string data, string user)
         {
             var space = data.IndexOf(' ');
@@ -272,7 +272,7 @@ namespace LobotJR.Modules
                 return new string[] { $"Error: \"{roleName}\" doesn't have access to \"{commandName}\"." };
             }
 
-            role.Commands.Add(commandName);
+            role.Commands.Remove(commandName);
             this.commandManager.UpdateRoles();
 
             return new string[] { $"Command \"{commandName}\" was removed from role \"{role.Name}\" successfully!" };

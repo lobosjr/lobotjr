@@ -97,9 +97,8 @@ namespace LobotJR.Command
             if (!this.checkDataAction(_roleDataPath))
             {
                 this.Roles = new List<UserRole>();
-                this.Roles.Add(new UserRole()
+                this.Roles.Add(new UserRole("Streamer")
                 {
-                    Name = "Streamer",
                     Commands = new List<string>(new string[] { "FeatureManagement.*" }),
                     Users = new List<string>(new string[] { broadcastUser, chatUser }),
                 });

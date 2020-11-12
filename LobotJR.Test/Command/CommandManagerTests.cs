@@ -1,5 +1,4 @@
 ﻿using LobotJR.Command;
-using LobotJR.Modules;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
 using System.Collections.Generic;
@@ -13,7 +12,7 @@ namespace LobotJR.Test.Command
         [TestMethod]
         public void LoadModulesLoadsModules()
         {
-            var module = new DummyModule();
+            var module = new CommandModule();
             var commandManager = new CommandManager(path => "",
                 (path, data) => { },
                 path => true);
@@ -36,7 +35,6 @@ namespace LobotJR.Test.Command
                 (path, data) => { writtenJson = data; },
                 path => false);
             commandManager.Initialize(broadcastUser, chatUser);
-            commandManager.LoadModules(new DummyModule());
             Assert.AreEqual(JsonConvert.SerializeObject(commandManager.Roles), writtenJson);
             Assert.AreEqual(1, commandManager.Roles.Count);
             Assert.AreEqual("Streamer", commandManager.Roles[0].Name);
@@ -50,9 +48,8 @@ namespace LobotJR.Test.Command
         {
             var roles = new List<UserRole>(new UserRole[]
             {
-                new UserRole()
+                new UserRole("TestRole")
                 {
-                    Name = "TestRole",
                     Users = new List<string>(new string[] { "User1", "User2", "User3" }),
                     Commands = new List<string>(new string[] { "Command.One", "Test.*" })
                 }
@@ -67,7 +64,7 @@ namespace LobotJR.Test.Command
         [TestMethod]
         public void IsValidCommandMatchesFullId()
         {
-            var module = new DummyModule();
+            var module = new CommandModule();
             var firstCommand = module.Commands.First();
             var commandManager = new CommandManager(path => "",
                 (path, data) => { },
@@ -80,7 +77,7 @@ namespace LobotJR.Test.Command
         [TestMethod]
         public void IsValidCommandMatchesWildcard()
         {
-            var module = new DummyModule();
+            var module = new CommandModule();
             var commandManager = new CommandManager(path => "",
                 (path, data) => { },
                 path => true);
@@ -92,7 +89,7 @@ namespace LobotJR.Test.Command
         [TestMethod]
         public void ProcessMessageExecutesCommands()
         {
-            var module = new DummyModule();
+            var module = new CommandModule();
             var commandManager = new CommandManager(path => "[]",
                 (path, data) => { },
                 path => true);
@@ -103,20 +100,19 @@ namespace LobotJR.Test.Command
             {
                 commandManager.ProcessMessage(command, "", out var responses);
             }
-            Assert.AreEqual(commandStrings.Count(), module.callCount);
+            Assert.AreEqual(commandStrings.Count(), module.Calls.Count());
         }
 
         [TestMethod]
         public void ProcessMessageRestrictsAccessToUnauthorizedUsers()
         {
-            var module = new DummyModule();
+            var module = new CommandModule();
             var roles = new List<UserRole>(new UserRole[]
             {
-                new UserRole()
+                new UserRole("TestRole")
                 {
-                    Name = "TestRole",
                     Users = new List<string>(new string[] { "Auth" }),
-                    Commands = new List<string>(new string[] { "DummyModule.DummyCommand" })
+                    Commands = new List<string>(new string[] { "Command.Foo" })
                 }
             });
             var commandManager = new CommandManager(path => JsonConvert.SerializeObject(roles),
@@ -124,21 +120,20 @@ namespace LobotJR.Test.Command
                 path => true);
             commandManager.Initialize(null, null);
             commandManager.LoadModules(module);
-            var wasProcessed = commandManager.ProcessMessage(module.Commands.First().CommandStrings.First(), "NotAuth", out var responses);
+            var wasProcessed = commandManager.ProcessMessage("Foo", "NotAuth", out var responses);
             Assert.IsFalse(wasProcessed);
         }
 
         [TestMethod]
         public void ProcessMessageAllowsAccessToAuthorizedUsers()
         {
-            var module = new DummyModule();
+            var module = new CommandModule();
             var roles = new List<UserRole>(new UserRole[]
             {
-                new UserRole()
+                new UserRole("TestRole")
                 {
-                    Name = "TestRole",
                     Users = new List<string>(new string[] { "Auth" }),
-                    Commands = new List<string>(new string[] { "DummyModule.DummyCommand" })
+                    Commands = new List<string>(new string[] { "Command.Foo" })
                 }
             });
             var commandManager = new CommandManager(path => JsonConvert.SerializeObject(roles),
@@ -146,21 +141,20 @@ namespace LobotJR.Test.Command
                 path => true);
             commandManager.Initialize(null, null);
             commandManager.LoadModules(module);
-            var wasProcessed = commandManager.ProcessMessage(module.Commands.First().CommandStrings.First(), "Auth", out var responses);
+            var wasProcessed = commandManager.ProcessMessage("Foo", "Auth", out var responses);
             Assert.IsTrue(wasProcessed);
         }
 
         [TestMethod]
         public void ProcessMessageRestrictsCommandsWithWildcardRoles()
         {
-            var module = new DummyModule();
+            var module = new CommandModule();
             var roles = new List<UserRole>(new UserRole[]
             {
-                new UserRole()
+                new UserRole("TestRole")
                 {
-                    Name = "TestRole",
                     Users = new List<string>(new string[] { "Auth" }),
-                    Commands = new List<string>(new string[] { "DummyModule.*" })
+                    Commands = new List<string>(new string[] { "Command.*" })
                 }
             });
             var commandManager = new CommandManager(path => JsonConvert.SerializeObject(roles),
@@ -177,9 +171,8 @@ namespace LobotJR.Test.Command
         {
             var roles = new List<UserRole>(new UserRole[]
             {
-                new UserRole()
+                new UserRole("TestRole")
                 {
-                    Name = "TestRole",
                     Users = new List<string>(new string[] { "User1", "User2", "User3" }),
                     Commands = new List<string>(new string[] { "Command.One", "Test.*" })
                 }
@@ -194,19 +187,5 @@ namespace LobotJR.Test.Command
             Assert.IsTrue(wasCalled);
             Assert.AreEqual(JsonConvert.SerializeObject(roles), calledWith);
         }
-    }
-
-    public class DummyModule : ICommandModule
-    {
-        public string Name => "DummyModule";
-
-        public int callCount { get; set; }
-
-        public IEnumerable<CommandHandler> Commands => new CommandHandler[]
-        {
-            new CommandHandler("DummyCommand", (data, user) => { this.callCount++; return null; }, "DummyCommand", "dummy-command")
-        };
-
-        public IEnumerable<ICommandModule> SubModules => null;
     }
 }
