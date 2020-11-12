@@ -37,6 +37,7 @@ namespace LobotJR.Modules
                 new CommandHandler("DeleteRole", this.DeleteRole, "DeleteRole", "delete-role"),
 
                 new CommandHandler("EnrollUser", this.AddUserToRole, "EnrollUser", "enroll-user"),
+                new CommandHandler("CheckAccess", this.CheckAccess, "CheckAccess", "check-access"),
                 new CommandHandler("UnenrollUser", this.RemoveUserFromRole, "UnenrollUser", "unenroll-user"),
 
                 new CommandHandler("ListCommands", this.ListCommands, "ListCommands", "list-commands"),
@@ -120,10 +121,32 @@ namespace LobotJR.Modules
                 return new string[] { $"Error: No role with name \"{roleName}\" was found." };
             }
 
+            if (role.Users.Contains(userToAdd))
+            {
+                return new string[] { $"Error: User \"{userToAdd}\" is already a member of \"{roleName}\"" };
+            }
             role.Users.Add(userToAdd);
             this.commandManager.UpdateRoles();
 
             return new string[] { $"User \"{userToAdd}\" was added to role \"{role.Name}\" successfully!" };
+        }
+
+        private IEnumerable<string> CheckAccess(string data, string user)
+        {
+            var roleName = data;
+            if (roleName.Length == 0)
+            {
+                return new string[] { "Error: Role name cannot be empty." };
+            }
+
+            var role = this.commandManager.Roles.Where(x => x.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            if (role == null)
+            {
+                return new string[] { $"Error: No role with name \"{roleName}\" was found." };
+            }
+
+            var access = role.Users.Contains(user) ? "are" : "are not";
+            return new string[] { $"You {access} a member of \"{role.Name}\"!" };
         }
 
         private IEnumerable<string> RemoveUserFromRole(string data, string user)
@@ -134,8 +157,8 @@ namespace LobotJR.Modules
                 return new string[] { "Error: Invalid number of parameters. Expected parameters: {username} {role name}." };
             }
 
-            var userToAdd = data.Substring(0, space);
-            if (userToAdd.Length == 0)
+            var userToRemove = data.Substring(0, space);
+            if (userToRemove.Length == 0)
             {
                 return new string[] { "Error: Username cannot be empty." };
             }
@@ -151,10 +174,14 @@ namespace LobotJR.Modules
                 return new string[] { $"Error: No role with name \"{roleName}\" was found." };
             }
 
-            role.Users.Remove(userToAdd);
+            if (!role.Users.Contains(userToRemove))
+            {
+                return new string[] { $"Error: User \"{userToRemove}\" is not a member of \"{roleName}\"." };
+            }
+            role.Users.Remove(userToRemove);
             this.commandManager.UpdateRoles();
 
-            return new string[] { $"User \"{userToAdd}\" was removed from role \"{role.Name}\" successfully!" };
+            return new string[] { $"User \"{userToRemove}\" was removed from role \"{role.Name}\" successfully!" };
         }
 
         private IEnumerable<string> ListCommands(string data, string user)
@@ -200,6 +227,10 @@ namespace LobotJR.Modules
                 return new string[] { $"Error: Role \"{roleName}\" does not exist." };
             }
 
+            if (role.Commands.Contains(commandName))
+            {
+                return new string[] { $"Error: \"{roleName}\" already has access to \"{commandName}\"." };
+            }
 
             role.Commands.Add(commandName);
             this.commandManager.UpdateRoles();
@@ -234,6 +265,11 @@ namespace LobotJR.Modules
             if (role == null)
             {
                 return new string[] { $"Error: Role \"{roleName}\" does not exist." };
+            }
+
+            if (!role.Commands.Contains(commandName))
+            {
+                return new string[] { $"Error: \"{roleName}\" doesn't have access to \"{commandName}\"." };
             }
 
             role.Commands.Add(commandName);
