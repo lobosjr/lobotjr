@@ -140,7 +140,7 @@ namespace LobotJR.Modules
                 if (roles.Any())
                 {
                     var count = roles.Count();
-                    return new string[] { $"You are a member of the following {count} role{(count == 1 ? "" : "s")}: { string.Join(", ", roles.Select(x => x.Name)) }." };
+                    return new string[] { $"You are a member of the following role{(count == 1 ? "" : "s")}: { string.Join(", ", roles.Select(x => x.Name)) }." };
                 }
                 else
                 {
