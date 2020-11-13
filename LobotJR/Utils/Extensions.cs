@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace LobotJR.Test
+namespace LobotJR.Utils
 {
-    public static class TestUtilities
+    public static class Extensions
     {
         /// <summary>
         /// Returns a value indicating whether a specified substring occurs within this string.

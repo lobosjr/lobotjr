@@ -136,7 +136,8 @@ namespace LobotJR.Modules
             var roleName = data;
             if (roleName.Length == 0)
             {
-                return new string[] { "Error: Role name cannot be empty." };
+                var roles = this.commandManager.Roles.Where(x => x.Users.Any(y => y.Equals(user, StringComparison.OrdinalIgnoreCase)));
+                return new string[] { $"You are a member of the following roles: { string.Join(", ", roles.Select(x => x.Name)) }." };
             }
 
             var role = this.commandManager.Roles.Where(x => x.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();

@@ -58,7 +58,6 @@
     <Compile Include="Command\FeatureManagementCommandTests.cs" />
     <Compile Include="Command\CommandManagerTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TestUtilities.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

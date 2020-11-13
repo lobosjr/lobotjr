@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using LobotJR.Utils;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Linq;
 
@@ -56,7 +57,7 @@ namespace LobotJR.Test.Command
         }
 
         [TestMethod]
-        public void ChecksUsersAccess()
+        public void ChecksUsersAccessOfSpecificRole()
         {
             var command = module.Commands.Where(x => x.Name.Equals("CheckAccess")).FirstOrDefault();
             var responses = command.Executor("TestRole", "Foo");
@@ -68,12 +69,15 @@ namespace LobotJR.Test.Command
         }
 
         [TestMethod]
-        public void ChecksUsersAccessErrorsWithNoRole()
+        public void ChecksUsersAccessListsAllRoles()
         {
             var command = module.Commands.Where(x => x.Name.Equals("CheckAccess")).FirstOrDefault();
-            var responses = command.Executor("", "");
+            var username = "Foo";
+            var responses = command.Executor("", username);
             Assert.AreEqual(1, responses.Count());
-            Assert.IsTrue(responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
+            Assert.IsTrue(commandManager.Roles
+                .Where(x => x.Users.Any(y => y.Equals(username)))
+                .All(x => responses.Any(y => y.Contains(x.Name))));
         }
 
         [TestMethod]
