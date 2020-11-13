@@ -69,7 +69,18 @@ namespace LobotJR.Test.Command
         }
 
         [TestMethod]
-        public void ChecksUsersAccessListsAllRoles()
+        public void CheckAccessGivesNoRoleMessage()
+        {
+            var command = module.Commands.Where(x => x.Name.Equals("CheckAccess")).FirstOrDefault();
+            var username = "NewUser";
+            var responses = command.Executor("", username);
+            var roles = commandManager.Roles.Select(x => x.Name);
+            Assert.AreEqual(1, responses.Count());
+            Assert.IsFalse(roles.Any(x => responses.Any(y => y.Contains(x))));
+        }
+
+        [TestMethod]
+        public void CheckAccessListsAllRoles()
         {
             var command = module.Commands.Where(x => x.Name.Equals("CheckAccess")).FirstOrDefault();
             var username = "Foo";
@@ -81,7 +92,7 @@ namespace LobotJR.Test.Command
         }
 
         [TestMethod]
-        public void ChecksUsersAccessErrorsWithRoleNotFound()
+        public void ChecksAccessErrorsWithRoleNotFound()
         {
             var command = module.Commands.Where(x => x.Name.Equals("CheckAccess")).FirstOrDefault();
             var responses = command.Executor("NotTestRole", "");

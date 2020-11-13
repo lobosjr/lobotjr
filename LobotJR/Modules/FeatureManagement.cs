@@ -137,7 +137,15 @@ namespace LobotJR.Modules
             if (roleName.Length == 0)
             {
                 var roles = this.commandManager.Roles.Where(x => x.Users.Any(y => y.Equals(user, StringComparison.OrdinalIgnoreCase)));
-                return new string[] { $"You are a member of the following roles: { string.Join(", ", roles.Select(x => x.Name)) }." };
+                if (roles.Any())
+                {
+                    var count = roles.Count();
+                    return new string[] { $"You are a member of the following {count} role{(count == 1 ? "" : "s")}: { string.Join(", ", roles.Select(x => x.Name)) }." };
+                }
+                else
+                {
+                    return new string[] { "You are not a member of any roles." };
+                }
             }
 
             var role = this.commandManager.Roles.Where(x => x.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
