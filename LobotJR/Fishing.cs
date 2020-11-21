@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using TwitchBot;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Fishing
 {
@@ -19,8 +16,8 @@ namespace Fishing
         public int ID = -1;
         public int rarity = -1;
         public string name = "";
-        public float[] lengthRange = {-1, -1};
-        public float[] weightRange = {-1, -1};
+        public float[] lengthRange = { -1, -1 };
+        public float[] weightRange = { -1, -1 };
         public float length = -1;
         public float weight = -1;
         public string flavorText = "";
@@ -31,7 +28,7 @@ namespace Fishing
 
         }
 
-        public Fish (Fish toCopy)
+        public Fish(Fish toCopy)
         {
             sizeCategory = toCopy.sizeCategory;
             ID = toCopy.ID;
@@ -91,17 +88,17 @@ namespace Fishing
             float size = (float)rng.NextDouble() * 100;
             int pointValue = 0;
 
-            if(isTournamentActive)
+            if (isTournamentActive)
             {
-                tournamentPoints += (int)size;
-                pointValue = (int)size;
+                pointValue = Math.Max((int)size, 1);
+                tournamentPoints += pointValue;
             }
 
             float minLength = myCatch.lengthRange[0];
             float minWeight = myCatch.weightRange[0];
 
             // dependant on size category, set up lengthFactor & roll between the adjusted ranges for weight/length 
-            if ( size <= TINY_CHANCE)
+            if (size <= TINY_CHANCE)
             {
                 myCatch.length = minLength + (lengthFactor * (float)rng.NextDouble());
                 myCatch.weight = minWeight + (weightFactor * (float)rng.NextDouble());
@@ -128,7 +125,7 @@ namespace Fishing
                 myCatch.length = minLength + (lengthFactor * (float)rng.NextDouble());
                 myCatch.weight = minWeight + (weightFactor * (float)rng.NextDouble());
             }
-            else if(size ==  HUGE_CHANCE)
+            else if (size == HUGE_CHANCE)
             {
                 minLength += (lengthFactor * 4);
                 minWeight += (weightFactor * 4);
@@ -142,10 +139,10 @@ namespace Fishing
             bool matchFound = false;
             for (int i = 0; i < biggestFish.Count; i++)
             {
-                if(biggestFish[i].ID == myCatch.ID)
+                if (biggestFish[i].ID == myCatch.ID)
                 {
                     matchFound = true;
-                    if(myCatch.weight > biggestFish[i].weight)
+                    if (myCatch.weight > biggestFish[i].weight)
                     {
                         biggestFish[i] = new Fish(myCatch);
                         whisperClient.sendChatMessage(".w " + username + " This is the biggest " + myCatch.name + " you've ever caught!");
@@ -154,7 +151,7 @@ namespace Fishing
                 }
             }
 
-            if(!matchFound)
+            if (!matchFound)
             {
                 biggestFish.Add(myCatch);
                 whisperClient.sendChatMessage(".w " + username + " This is the biggest " + myCatch.name + " you've ever caught!");
@@ -162,7 +159,7 @@ namespace Fishing
             Console.WriteLine(username + " caught a " + myCatch.weight + " pound, " + myCatch.length + " inch " + myCatch.name + " worth " + pointValue + " points.");
 
             myCatch.caughtBy = username;
-            if(isTournamentActive)
+            if (isTournamentActive)
             {
                 whisperClient.sendChatMessage(".w " + username + " You caught a " + myCatch.name + " worth " + pointValue + " points! You are now at " + tournamentPoints + " total points.");
             }
