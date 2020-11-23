@@ -76,7 +76,7 @@
     <Compile Include="IrcClient.cs" />
     <Compile Include="Items.cs" />
     <Compile Include="JSON.cs" />
-    <Compile Include="Modules\FeatureManagement.cs" />
+    <Compile Include="Modules\AccessControl.cs" />
     <Compile Include="Modules\ICommandModule.cs" />
     <Compile Include="Pets.cs" />
     <Compile Include="Program.cs" />

@@ -6,7 +6,7 @@ using System.Linq;
 namespace LobotJR.Test.Command
 {
     [TestClass]
-    public class FeatureManagementRoleTests : FeatureManagementBase
+    public class AccessControlRoleTests : AccessControlBase
     {
         [TestMethod]
         public void ListsRoles()

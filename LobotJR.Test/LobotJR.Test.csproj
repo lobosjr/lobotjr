@@ -52,10 +52,10 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Command\FeatureManagementBase.cs" />
-    <Compile Include="Command\FeatureManagementRoleTests.cs" />
-    <Compile Include="Command\FeatureManagementUserTests.cs" />
-    <Compile Include="Command\FeatureManagementCommandTests.cs" />
+    <Compile Include="Command\AccessControlBase.cs" />
+    <Compile Include="Command\AccessControlRoleTests.cs" />
+    <Compile Include="Command\AccessControlUserTests.cs" />
+    <Compile Include="Command\AccessControlCommandTests.cs" />
     <Compile Include="Command\CommandManagerTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

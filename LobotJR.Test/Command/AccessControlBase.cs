@@ -7,10 +7,10 @@ using System.Collections.Generic;
 namespace LobotJR.Test.Command
 {
     [TestClass]
-    public abstract class FeatureManagementBase
+    public abstract class AccessControlBase
     {
         protected CommandManager commandManager;
-        protected FeatureManagement module;
+        protected AccessControl module;
         protected CommandModule commandModule;
         protected TestModule testModule;
 
@@ -31,7 +31,7 @@ namespace LobotJR.Test.Command
             commandModule = new CommandModule();
             testModule = new TestModule();
             commandManager.LoadModules(commandModule, testModule);
-            module = new FeatureManagement(commandManager);
+            module = new AccessControl(commandManager);
         }
     }
 

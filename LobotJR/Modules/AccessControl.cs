@@ -6,15 +6,15 @@ using System.Linq;
 namespace LobotJR.Modules
 {
     /// <summary>
-    /// Module of feature management commands.
+    /// Module of access control commands.
     /// </summary>
-    public class FeatureManagement : ICommandModule
+    public class AccessControl : ICommandModule
     {
         private ICommandManager commandManager;
         /// <summary>
         /// Prefix applied to names of commands within this module.
         /// </summary>
-        public string Name => "FeatureManagement";
+        public string Name => "AccessControl";
 
         /// <summary>
         /// A collection of commands for managing access to commands.
@@ -26,7 +26,7 @@ namespace LobotJR.Modules
         /// </summary>
         public IEnumerable<ICommandModule> SubModules => null;
 
-        public FeatureManagement(ICommandManager commandManager)
+        public AccessControl(ICommandManager commandManager)
         {
             this.commandManager = commandManager;
             this.Commands = new CommandHandler[]
