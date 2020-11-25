@@ -500,6 +500,7 @@ namespace TwitchBot
             DateTime nextTournament = DateTime.MinValue;
 
             int tournamentDuration = 15; // how long the tourney lasts in minutes
+            int tournamentInterval = 30; // how long between the start of each tournament in minutes
             int tournamentCastTimeMax = 30; // max time it takes for a fish to bite in seconds. maybe scale between 1/2 of max time to max? 1/4?
 
             // How often to award Wolfcoins in minutes
@@ -667,21 +668,22 @@ namespace TwitchBot
                             {
                                 fisher.Value.isFishing = false;
                                 fisher.Value.fishHooked = false;
-                                irc.sendChatMessage("A fishing tournament has just begun! For the next " + tournamentDuration + " minutes, fish can be caught more quickly & will be eligible for leaderboard recognition! Head to https://tinyurl.com/PlayWolfpackRPG and type !cast to play!");
-                                Console.WriteLine("A fishing tournament kicked off at" + DateTime.Now.ToString());
                                 // Whisper(fisher.Value.username, "A new fishing tournament has begun! Your cast has been reset.", group);
                             }
                         }
+
                         // time for a tournament!
                         fishingTournamentActive = true;
                         //Whisper("lobosjr", "A tournament has begun!", group);
 
                         // set next tournament time
-                        nextTournament = DateTime.Now.AddMinutes(30);
+                        nextTournament = DateTime.Now.AddMinutes(tournamentInterval);
 
                         // set tournament start time
                         tournamentStart = DateTime.Now;
 
+                        irc.sendChatMessage("A fishing tournament has just begun! For the next " + tournamentDuration + " minutes, fish can be caught more quickly & will be eligible for leaderboard recognition! Head to https://tinyurl.com/PlayWolfpackRPG and type !cast to play!");
+                        Console.WriteLine("A fishing tournament kicked off at" + DateTime.Now.ToString());
                     }
                     // Console.WriteLine("Next tournament in: " + ((nextTournament - DateTime.Now).Ticks));
 
@@ -728,14 +730,14 @@ namespace TwitchBot
 
                         int maxDuration = tournamentDuration * 60; // value is in minutes, so convert to seconds to compare against time elapsed
                         int currentDuration = (int)((DateTime.Now - tournamentStart).TotalSeconds);
-                        if(currentDuration > maxDuration)
+                        if (currentDuration > maxDuration)
                         {
                             int numParticipants = 0;
                             int topScore = 0;
                             string winner = "";
                             fishingTournamentActive = false;
 
-                            foreach(var fisher in wolfcoins.fishingList)
+                            foreach (var fisher in wolfcoins.fishingList)
                             {
                                 if (fisher.Value.tournamentPoints != 0)
                                 {
@@ -746,7 +748,7 @@ namespace TwitchBot
                                     continue;
                                 }
 
-                               if (fisher.Value.tournamentPoints > topScore)
+                                if (fisher.Value.tournamentPoints > topScore)
                                 {
                                     topScore = fisher.Value.tournamentPoints;
                                     winner = fisher.Value.username;
@@ -2075,7 +2077,7 @@ namespace TwitchBot
                                 }
                                 else
                                 {
-                                    if(fishingTournamentActive)
+                                    if (fishingTournamentActive)
                                     {
                                         Whisper(whisperSender, "A fishing tournament is active now! Go catch fish at: https://tinyurl.com/PlayWolfpackRPG !", group);
                                     }
@@ -4257,7 +4259,7 @@ namespace TwitchBot
                                             broadcasting = true;
                                             awardLast = DateTime.Now;
                                             nextTournament = DateTime.Now.AddMinutes(15);
-                                            
+
                                             irc.sendChatMessage("Wolfcoins & XP will be awarded.");
                                         }
                                     }
