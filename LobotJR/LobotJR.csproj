@@ -65,6 +65,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Command\CommandHandler.cs" />
+    <Compile Include="Command\CommandManager.cs" />
+    <Compile Include="Command\ICommandManager.cs" />
+    <Compile Include="Command\UserRole.cs" />
     <Compile Include="Fishing.cs" />
     <Compile Include="Dungeon.cs" />
     <Compile Include="Classes.cs" />
@@ -72,6 +76,8 @@
     <Compile Include="IrcClient.cs" />
     <Compile Include="Items.cs" />
     <Compile Include="JSON.cs" />
+    <Compile Include="Modules\AccessControl.cs" />
+    <Compile Include="Modules\ICommandModule.cs" />
     <Compile Include="Pets.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -80,6 +86,7 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
+    <Compile Include="Utils\Extensions.cs" />
     <Compile Include="Wolfcoins.cs" />
   </ItemGroup>
   <ItemGroup>
