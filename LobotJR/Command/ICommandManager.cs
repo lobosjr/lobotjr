@@ -11,7 +11,7 @@ namespace LobotJR.Command
         /// <summary>
         /// List of user roles.
         /// </summary>
-        List<UserRole> Roles { get; }
+        IList<UserRole> Roles { get; }
         /// <summary>
         /// List of ids for registered commands.
         /// </summary>

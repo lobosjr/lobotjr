@@ -13,9 +13,7 @@ namespace LobotJR.Test.Command
         public void LoadModulesLoadsModules()
         {
             var module = new CommandModule();
-            var commandManager = new CommandManager(path => "",
-                (path, data) => { },
-                path => true);
+            var commandManager = new CommandManager(new TestDataAccess());
             commandManager.Initialize("", "");
             commandManager.LoadModules(module);
             var commands = commandManager.Commands;
@@ -30,12 +28,10 @@ namespace LobotJR.Test.Command
         {
             var broadcastUser = "Broadcaster";
             var chatUser = "Chatter";
-            var writtenJson = "";
-            var commandManager = new CommandManager(path => "",
-                (path, data) => { writtenJson = data; },
-                path => false);
+            var dataAccess = new TestDataAccess(null, false);
+            var commandManager = new CommandManager(dataAccess);
             commandManager.Initialize(broadcastUser, chatUser);
-            Assert.AreEqual(JsonConvert.SerializeObject(commandManager.Roles), writtenJson);
+            Assert.AreEqual(commandManager.Roles, dataAccess.WrittenData);
             Assert.AreEqual(1, commandManager.Roles.Count);
             Assert.AreEqual("Streamer", commandManager.Roles[0].Name);
             Assert.IsTrue(commandManager.Roles[0].Users.Contains(broadcastUser));
@@ -54,9 +50,7 @@ namespace LobotJR.Test.Command
                     Commands = new List<string>(new string[] { "Command.One", "Test.*" })
                 }
             });
-            var commandManager = new CommandManager(path => JsonConvert.SerializeObject(roles),
-                (path, data) => { },
-                path => true);
+            var commandManager = new CommandManager(new TestDataAccess(roles));
             commandManager.Initialize(null, null);
             Assert.AreEqual(JsonConvert.SerializeObject(roles), JsonConvert.SerializeObject(commandManager.Roles));
         }
@@ -66,9 +60,7 @@ namespace LobotJR.Test.Command
         {
             var module = new CommandModule();
             var firstCommand = module.Commands.First();
-            var commandManager = new CommandManager(path => "",
-                (path, data) => { },
-                path => true);
+            var commandManager = new CommandManager(new TestDataAccess());
             commandManager.Initialize(null, null);
             commandManager.LoadModules(module);
             Assert.IsTrue(commandManager.IsValidCommand($"{module.Name}.{firstCommand.Name}"));
@@ -78,9 +70,7 @@ namespace LobotJR.Test.Command
         public void IsValidCommandMatchesWildcard()
         {
             var module = new CommandModule();
-            var commandManager = new CommandManager(path => "",
-                (path, data) => { },
-                path => true);
+            var commandManager = new CommandManager(new TestDataAccess());
             commandManager.Initialize(null, null);
             commandManager.LoadModules(module);
             Assert.IsTrue(commandManager.IsValidCommand($"{module.Name}.*"));
@@ -90,9 +80,7 @@ namespace LobotJR.Test.Command
         public void ProcessMessageExecutesCommands()
         {
             var module = new CommandModule();
-            var commandManager = new CommandManager(path => "[]",
-                (path, data) => { },
-                path => true);
+            var commandManager = new CommandManager(new TestDataAccess(new List<UserRole>()));
             commandManager.Initialize(null, null);
             commandManager.LoadModules(module);
             var commandStrings = module.Commands.First().CommandStrings;
@@ -115,9 +103,7 @@ namespace LobotJR.Test.Command
                     Commands = new List<string>(new string[] { "Command.Foo" })
                 }
             });
-            var commandManager = new CommandManager(path => JsonConvert.SerializeObject(roles),
-                (path, data) => { },
-                path => true);
+            var commandManager = new CommandManager(new TestDataAccess(roles));
             commandManager.Initialize(null, null);
             commandManager.LoadModules(module);
             var wasProcessed = commandManager.ProcessMessage("Foo", "NotAuth", out var responses);
@@ -136,9 +122,7 @@ namespace LobotJR.Test.Command
                     Commands = new List<string>(new string[] { "Command.Foo" })
                 }
             });
-            var commandManager = new CommandManager(path => JsonConvert.SerializeObject(roles),
-                (path, data) => { },
-                path => true);
+            var commandManager = new CommandManager(new TestDataAccess(roles));
             commandManager.Initialize(null, null);
             commandManager.LoadModules(module);
             var wasProcessed = commandManager.ProcessMessage("Foo", "Auth", out var responses);
@@ -157,9 +141,7 @@ namespace LobotJR.Test.Command
                     Commands = new List<string>(new string[] { "Command.*" })
                 }
             });
-            var commandManager = new CommandManager(path => JsonConvert.SerializeObject(roles),
-                (path, data) => { },
-                path => true);
+            var commandManager = new CommandManager(new TestDataAccess(roles));
             commandManager.Initialize(null, null);
             commandManager.LoadModules(module);
             var wasProcessed = commandManager.ProcessMessage(module.Commands.First().CommandStrings.First(), "NotAuth", out var responses);
@@ -177,15 +159,12 @@ namespace LobotJR.Test.Command
                     Commands = new List<string>(new string[] { "Command.One", "Test.*" })
                 }
             });
-            var wasCalled = false;
-            string calledWith = null;
-            var commandManager = new CommandManager(path => "",
-                (path, data) => { wasCalled = true; calledWith = data; },
-                path => true);
+            var dataAccess = new TestDataAccess(roles);
+            var commandManager = new CommandManager(dataAccess);
             commandManager.Roles = roles;
             commandManager.UpdateRoles();
-            Assert.IsTrue(wasCalled);
-            Assert.AreEqual(JsonConvert.SerializeObject(roles), calledWith);
+            Assert.IsTrue(dataAccess.WriteCount > 0);
+            Assert.AreEqual(roles, dataAccess.WrittenData);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using LobotJR.Modules;
+﻿using LobotJR.Data;
+using LobotJR.Modules;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -14,16 +15,14 @@ namespace LobotJR.Command
     {
         private static string _roleDataPath = "content/role.data";
 
-        private Action<string, string> writeDataAction;
-        private Func<string, string> readDataAction;
-        private Func<string, bool> checkDataAction;
+        private IDataAccess<IList<UserRole>> dataAccess;
         private Dictionary<string, string> commandStringToIdMap;
         private Dictionary<string, CommandExecutor> commandIdToExecutorMap;
 
         /// <summary>
         /// List of user roles.
         /// </summary>
-        public List<UserRole> Roles { get; set; }
+        public IList<UserRole> Roles { get; set; }
         /// <summary>
         /// List of ids for registered commands.
         /// </summary>
@@ -76,16 +75,12 @@ namespace LobotJR.Command
 
         public CommandManager()
         {
-            this.readDataAction = File.ReadAllText;
-            this.writeDataAction = File.WriteAllText;
-            this.checkDataAction = File.Exists;
+            this.dataAccess = new FileDataAccess<IList<UserRole>>();
         }
 
-        public CommandManager(Func<string, string> readDataAction, Action<string, string> writeDataAction, Func<string, bool> checkDataAction)
+        public CommandManager(IDataAccess<IList<UserRole>> dataAccess)
         {
-            this.readDataAction = readDataAction;
-            this.writeDataAction = writeDataAction;
-            this.checkDataAction = checkDataAction;
+            this.dataAccess = dataAccess;
         }
 
         /// <summary>
@@ -94,7 +89,7 @@ namespace LobotJR.Command
         /// </summary>
         public void Initialize(string broadcastUser, string chatUser)
         {
-            if (!this.checkDataAction(_roleDataPath))
+            if (!this.dataAccess.Exists(_roleDataPath))
             {
                 this.Roles = new List<UserRole>();
                 this.Roles.Add(new UserRole("Streamer")
@@ -106,7 +101,7 @@ namespace LobotJR.Command
             }
             else
             {
-                this.Roles = JsonConvert.DeserializeObject<List<UserRole>>(this.readDataAction(_roleDataPath));
+                this.Roles = this.dataAccess.ReadData(_roleDataPath);
             }
 
             this.commandStringToIdMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -118,7 +113,7 @@ namespace LobotJR.Command
         /// </summary>
         public void LoadAllModules()
         {
-            this.AddModule(new FeatureManagement(this));
+            this.AddModule(new AccessControl(this));
         }
 
         /// <summary>
@@ -189,7 +184,7 @@ namespace LobotJR.Command
         /// </summary>
         public void UpdateRoles()
         {
-            this.writeDataAction(_roleDataPath, JsonConvert.SerializeObject(this.Roles));
+            this.dataAccess.WriteData(_roleDataPath, this.Roles);
         }
     }
 }
