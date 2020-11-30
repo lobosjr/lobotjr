@@ -118,7 +118,7 @@ namespace LobotJR.Command
         /// </summary>
         public void LoadAllModules()
         {
-            this.AddModule(new FeatureManagement(this));
+            this.AddModule(new AccessControl(this));
         }
 
         /// <summary>

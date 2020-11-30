@@ -1986,7 +1986,7 @@ namespace TwitchBot
                                         {
                                             if (fish.ID == wolfcoins.fishingList[whisperSender].hookedFishID)
                                             {
-                                                myCatch = (wolfcoins.fishingList[whisperSender].Catch(new Fish(fish), group, fishingTournamentActive));
+                                                myCatch = (wolfcoins.fishingList[whisperSender].Catch(new Fish(fish), group, fishingTournamentActive, wolfcoins.fishingList));
                                             }
                                         }
 
