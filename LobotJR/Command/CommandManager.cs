@@ -1,9 +1,7 @@
 ﻿using LobotJR.Data;
 using LobotJR.Modules;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 
 namespace LobotJR.Command
@@ -32,13 +30,21 @@ namespace LobotJR.Command
         {
             var commandId = $"{prefix}.{command.Name}";
             this.commandIdToExecutorMap.Add(commandId, command.Executor);
+            var exceptions = new List<Exception>();
             foreach (var commandString in command.CommandStrings)
             {
                 if (this.commandStringToIdMap.ContainsKey(commandString))
                 {
-                    throw (new Exception($"{commandId}: The command string \"{commandString}\" has already been registered by {this.commandStringToIdMap[commandString]}."));
+                    exceptions.Add(new Exception($"{commandId}: The command string \"{commandString}\" has already been registered by {this.commandStringToIdMap[commandString]}."));
                 }
-                this.commandStringToIdMap.Add(commandString, commandId);
+                else
+                {
+                    this.commandStringToIdMap.Add(commandString, commandId);
+                }
+            }
+            if (exceptions.Count > 0)
+            {
+                throw new AggregateException(exceptions);
             }
         }
 
@@ -53,17 +59,37 @@ namespace LobotJR.Command
                 prefix = module.Name;
             }
 
+            var exceptions = new List<Exception>();
             foreach (var command in module.Commands)
             {
-                this.AddCommand(command, prefix);
+                try
+                {
+                    this.AddCommand(command, prefix);
+                }
+                catch (AggregateException e)
+                {
+                    exceptions.Add(e);
+                }
             }
 
             if (module.SubModules != null)
             {
                 foreach (var subModule in module.SubModules)
                 {
-                    this.AddModule(subModule, prefix);
+                    try
+                    {
+                        this.AddModule(subModule, prefix);
+                    }
+                    catch (AggregateException ae)
+                    {
+                        exceptions.AddRange(ae.InnerExceptions);
+                    }
                 }
+            }
+
+            if (exceptions.Count > 0)
+            {
+                throw new AggregateException("Failed to load module", exceptions);
             }
         }
 
@@ -94,7 +120,7 @@ namespace LobotJR.Command
                 this.Roles = new List<UserRole>();
                 this.Roles.Add(new UserRole("Streamer")
                 {
-                    Commands = new List<string>(new string[] { "FeatureManagement.*" }),
+                    Commands = new List<string>(new string[] { "AccessControl.*" }),
                     Users = new List<string>(new string[] { broadcastUser, chatUser }),
                 });
                 this.UpdateRoles();
@@ -113,7 +139,7 @@ namespace LobotJR.Command
         /// </summary>
         public void LoadAllModules()
         {
-            this.AddModule(new AccessControl(this));
+            this.LoadModules(new AccessControl(this));
         }
 
         /// <summary>
@@ -122,9 +148,21 @@ namespace LobotJR.Command
         /// </summary>
         public void LoadModules(params ICommandModule[] modules)
         {
+            var exceptions = new List<Exception>();
             foreach (var module in modules)
             {
-                this.AddModule(module);
+                try
+                {
+                    this.AddModule(module);
+                }
+                catch (AggregateException e)
+                {
+                    exceptions.Add(e);
+                }
+            }
+            if (exceptions.Count > 0)
+            {
+                throw new AggregateException(exceptions);
             }
         }
 
@@ -150,7 +188,7 @@ namespace LobotJR.Command
         /// <param name="user">The user's name.</param>
         /// <param name="responses">The response messages to send to the user.</param>
         /// <returns>Whether a command was found and executed.</returns>
-        public bool ProcessMessage(string message, string user, out IEnumerable<string> responses)
+        public CommandResult ProcessMessage(string message, string user)
         {
             var space = message.IndexOf(' ');
             string commandString;
@@ -171,12 +209,25 @@ namespace LobotJR.Command
                 if (this.CanUserExecute(commandId, user))
                 {
                     var executor = this.commandIdToExecutorMap[commandId];
-                    responses = executor.Invoke(data, user);
-                    return true;
+                    try
+                    {
+                        var response = executor.Invoke(data, user);
+                        if (response != null)
+                        {
+                            return response;
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        return new CommandResult(true, null, new Exception[] { e });
+                    }
+                }
+                else
+                {
+                    return new CommandResult(true, null, new Exception[] { new UnauthorizedAccessException($"User \"{user}\" attempted to execute unauthorized command \"{message}\"") });
                 }
             }
-            responses = null;
-            return false;
+            return new CommandResult();
         }
 
         /// <summary>

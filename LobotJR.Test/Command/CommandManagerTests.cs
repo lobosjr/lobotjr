@@ -86,7 +86,7 @@ namespace LobotJR.Test.Command
             var commandStrings = module.Commands.First().CommandStrings;
             foreach (var command in commandStrings)
             {
-                commandManager.ProcessMessage(command, "", out var responses);
+                commandManager.ProcessMessage(command, "");
             }
             Assert.AreEqual(commandStrings.Count(), module.Calls.Count());
         }
@@ -106,8 +106,9 @@ namespace LobotJR.Test.Command
             var commandManager = new CommandManager(new TestDataAccess(roles));
             commandManager.Initialize(null, null);
             commandManager.LoadModules(module);
-            var wasProcessed = commandManager.ProcessMessage("Foo", "NotAuth", out var responses);
-            Assert.IsFalse(wasProcessed);
+            var result = commandManager.ProcessMessage("Foo", "NotAuth");
+            Assert.IsTrue(result.Processed);
+            Assert.IsTrue(result.Errors.Any());
         }
 
         [TestMethod]
@@ -125,8 +126,9 @@ namespace LobotJR.Test.Command
             var commandManager = new CommandManager(new TestDataAccess(roles));
             commandManager.Initialize(null, null);
             commandManager.LoadModules(module);
-            var wasProcessed = commandManager.ProcessMessage("Foo", "Auth", out var responses);
-            Assert.IsTrue(wasProcessed);
+            var result = commandManager.ProcessMessage("Foo", "Auth");
+            Assert.IsTrue(result.Processed);
+            Assert.AreEqual(null, result.Errors);
         }
 
         [TestMethod]
@@ -144,8 +146,9 @@ namespace LobotJR.Test.Command
             var commandManager = new CommandManager(new TestDataAccess(roles));
             commandManager.Initialize(null, null);
             commandManager.LoadModules(module);
-            var wasProcessed = commandManager.ProcessMessage(module.Commands.First().CommandStrings.First(), "NotAuth", out var responses);
-            Assert.IsFalse(wasProcessed);
+            var result = commandManager.ProcessMessage(module.Commands.First().CommandStrings.First(), "NotAuth");
+            Assert.IsTrue(result.Processed);
+            Assert.AreNotEqual(null, result.Errors);
         }
 
         [TestMethod]

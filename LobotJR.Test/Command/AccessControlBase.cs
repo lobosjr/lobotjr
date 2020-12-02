@@ -74,9 +74,9 @@ namespace LobotJR.Test.Command
 
         public IEnumerable<CommandHandler> Commands => new CommandHandler[]
         {
-            new CommandHandler("Foo", (data, user) => { Calls.Add("Command.Foo"); return null; }, "Foo"),
-            new CommandHandler("Bar", (data, user) => { Calls.Add("Command.Bar"); return null; }, "Bar"),
-            new CommandHandler("Unrestricted", (data, user) => { Calls.Add("Command.Unrestricted"); return null; }, "Unrestricted")
+            new CommandHandler("Foo", (data, user) => { Calls.Add("Command.Foo"); return new CommandResult(""); }, "Foo"),
+            new CommandHandler("Bar", (data, user) => { Calls.Add("Command.Bar"); return new CommandResult(""); }, "Bar"),
+            new CommandHandler("Unrestricted", (data, user) => { Calls.Add("Command.Unrestricted"); return new CommandResult(""); }, "Unrestricted")
         };
 
         public IEnumerable<ICommandModule> SubModules => null;

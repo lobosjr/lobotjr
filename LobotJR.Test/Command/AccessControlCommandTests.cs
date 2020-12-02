@@ -13,9 +13,10 @@ namespace LobotJR.Test.Command
         {
             var command = module.Commands.Where(x => x.Name.Equals("RestrictCommand")).FirstOrDefault();
             var role = commandManager.Roles.FirstOrDefault();
-            var responses = command.Executor("Command.Unrestricted TestRole", "");
-            Assert.AreEqual(1, responses.Count());
-            Assert.IsTrue(responses.Any(x => x.Contains("success", StringComparison.OrdinalIgnoreCase)));
+            var result = command.Executor("Command.Unrestricted TestRole", "");
+            Assert.IsTrue(result.Processed);
+            Assert.AreEqual(1, result.Responses.Count());
+            Assert.IsTrue(result.Responses.Any(x => x.Contains("success", StringComparison.OrdinalIgnoreCase)));
             Assert.AreEqual(4, role.Commands.Count);
             Assert.IsTrue(role.Commands.Contains("Command.Unrestricted"));
         }
@@ -25,15 +26,18 @@ namespace LobotJR.Test.Command
         {
             var command = module.Commands.Where(x => x.Name.Equals("RestrictCommand")).FirstOrDefault();
             var role = commandManager.Roles.FirstOrDefault();
-            var responses = command.Executor("BadInput", "");
-            Assert.AreEqual(1, responses.Count());
-            Assert.IsTrue(responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
-            responses = command.Executor(" NoUser", "");
-            Assert.AreEqual(1, responses.Count());
-            Assert.IsTrue(responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
-            responses = command.Executor("NoRole ", "");
-            Assert.AreEqual(1, responses.Count());
-            Assert.IsTrue(responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
+            var result = command.Executor("BadInput", "");
+            Assert.IsTrue(result.Processed);
+            Assert.AreEqual(1, result.Responses.Count());
+            Assert.IsTrue(result.Responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
+            result = command.Executor(" NoUser", "");
+            Assert.IsTrue(result.Processed);
+            Assert.AreEqual(1, result.Responses.Count());
+            Assert.IsTrue(result.Responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
+            result = command.Executor("NoRole ", "");
+            Assert.IsTrue(result.Processed);
+            Assert.AreEqual(1, result.Responses.Count());
+            Assert.IsTrue(result.Responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
         }
 
         [TestMethod]
@@ -41,9 +45,10 @@ namespace LobotJR.Test.Command
         {
             var command = module.Commands.Where(x => x.Name.Equals("RestrictCommand")).FirstOrDefault();
             var role = commandManager.Roles.FirstOrDefault();
-            var responses = command.Executor("Command.Unrestricted NotTestRole", "");
-            Assert.AreEqual(1, responses.Count());
-            Assert.IsTrue(responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
+            var result = command.Executor("Command.Unrestricted NotTestRole", "");
+            Assert.IsTrue(result.Processed);
+            Assert.AreEqual(1, result.Responses.Count());
+            Assert.IsTrue(result.Responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
         }
 
         [TestMethod]
@@ -51,9 +56,10 @@ namespace LobotJR.Test.Command
         {
             var command = module.Commands.Where(x => x.Name.Equals("RestrictCommand")).FirstOrDefault();
             var role = commandManager.Roles.FirstOrDefault();
-            var responses = command.Executor("Command.Not TestRole", "");
-            Assert.AreEqual(1, responses.Count());
-            Assert.IsTrue(responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
+            var result = command.Executor("Command.Not TestRole", "");
+            Assert.IsTrue(result.Processed);
+            Assert.AreEqual(1, result.Responses.Count());
+            Assert.IsTrue(result.Responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
         }
 
         [TestMethod]
@@ -61,23 +67,25 @@ namespace LobotJR.Test.Command
         {
             var command = module.Commands.Where(x => x.Name.Equals("RestrictCommand")).FirstOrDefault();
             var role = commandManager.Roles.FirstOrDefault();
-            var responses = command.Executor("Command.Foo TestRole", "");
-            Assert.AreEqual(1, responses.Count());
-            Assert.IsTrue(responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
+            var result = command.Executor("Command.Foo TestRole", "");
+            Assert.IsTrue(result.Processed);
+            Assert.AreEqual(1, result.Responses.Count());
+            Assert.IsTrue(result.Responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
         }
 
         [TestMethod]
         public void ListsCommands()
         {
             var command = module.Commands.Where(x => x.Name.Equals("ListCommands")).FirstOrDefault();
-            var responses = command.Executor("", "");
-            Assert.AreEqual(3, responses.Count());
-            Assert.IsTrue(responses.Any(x => x.Contains("4 commands", StringComparison.OrdinalIgnoreCase)));
-            Assert.IsTrue(responses.Any(x => x.Contains("2 modules", StringComparison.OrdinalIgnoreCase)));
-            Assert.IsTrue(responses.Any(
+            var result = command.Executor("", "");
+            Assert.IsTrue(result.Processed);
+            Assert.AreEqual(3, result.Responses.Count());
+            Assert.IsTrue(result.Responses.Any(x => x.Contains("4 commands", StringComparison.OrdinalIgnoreCase)));
+            Assert.IsTrue(result.Responses.Any(x => x.Contains("2 modules", StringComparison.OrdinalIgnoreCase)));
+            Assert.IsTrue(result.Responses.Any(
                 x => x.Contains(commandModule.Name) &&
                 commandModule.Commands.All(y => x.Contains(y.Name))));
-            Assert.IsTrue(responses.Any(
+            Assert.IsTrue(result.Responses.Any(
                 x => x.Contains(testModule.Name) &&
                 testModule.Commands.All(y => x.Contains(y.Name))));
         }
@@ -87,9 +95,10 @@ namespace LobotJR.Test.Command
         {
             var command = module.Commands.Where(x => x.Name.Equals("UnrestrictCommand")).FirstOrDefault();
             var role = this.commandManager.Roles.FirstOrDefault();
-            var responses = command.Executor("Command.Foo TestRole", "");
-            Assert.AreEqual(1, responses.Count());
-            Assert.IsTrue(responses.Any(x => x.Contains("success", StringComparison.OrdinalIgnoreCase)));
+            var result = command.Executor("Command.Foo TestRole", "");
+            Assert.IsTrue(result.Processed);
+            Assert.AreEqual(1, result.Responses.Count());
+            Assert.IsTrue(result.Responses.Any(x => x.Contains("success", StringComparison.OrdinalIgnoreCase)));
             Assert.IsFalse(role.Commands.Contains("Command.Foo"));
         }
 
@@ -98,15 +107,16 @@ namespace LobotJR.Test.Command
         {
             var command = module.Commands.Where(x => x.Name.Equals("UnrestrictCommand")).FirstOrDefault();
             var role = this.commandManager.Roles.FirstOrDefault();
-            var responses = command.Executor("BadInput", "");
-            Assert.AreEqual(1, responses.Count());
-            Assert.IsTrue(responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
-            responses = command.Executor(" NoUser", "");
-            Assert.AreEqual(1, responses.Count());
-            Assert.IsTrue(responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
-            responses = command.Executor("NoRole ", "");
-            Assert.AreEqual(1, responses.Count());
-            Assert.IsTrue(responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
+            var result = command.Executor("BadInput", "");
+            Assert.IsTrue(result.Processed);
+            Assert.AreEqual(1, result.Responses.Count());
+            Assert.IsTrue(result.Responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
+            result = command.Executor(" NoUser", "");
+            Assert.AreEqual(1, result.Responses.Count());
+            Assert.IsTrue(result.Responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
+            result = command.Executor("NoRole ", "");
+            Assert.AreEqual(1, result.Responses.Count());
+            Assert.IsTrue(result.Responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
         }
 
         [TestMethod]
@@ -114,9 +124,10 @@ namespace LobotJR.Test.Command
         {
             var command = module.Commands.Where(x => x.Name.Equals("UnrestrictCommand")).FirstOrDefault();
             var role = this.commandManager.Roles.FirstOrDefault();
-            var responses = command.Executor("Command.Unrestricted TestRole", "");
-            Assert.AreEqual(1, responses.Count());
-            Assert.IsTrue(responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
+            var result = command.Executor("Command.Unrestricted TestRole", "");
+            Assert.IsTrue(result.Processed);
+            Assert.AreEqual(1, result.Responses.Count());
+            Assert.IsTrue(result.Responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
         }
 
         [TestMethod]
@@ -124,9 +135,10 @@ namespace LobotJR.Test.Command
         {
             var command = module.Commands.Where(x => x.Name.Equals("UnrestrictCommand")).FirstOrDefault();
             var role = this.commandManager.Roles.FirstOrDefault();
-            var responses = command.Executor("Command.Unrestricted NotTestRole", "");
-            Assert.AreEqual(1, responses.Count());
-            Assert.IsTrue(responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
+            var result = command.Executor("Command.Unrestricted NotTestRole", "");
+            Assert.IsTrue(result.Processed);
+            Assert.AreEqual(1, result.Responses.Count());
+            Assert.IsTrue(result.Responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
         }
 
         [TestMethod]
@@ -134,9 +146,10 @@ namespace LobotJR.Test.Command
         {
             var command = module.Commands.Where(x => x.Name.Equals("UnrestrictCommand")).FirstOrDefault();
             var role = this.commandManager.Roles.FirstOrDefault();
-            var responses = command.Executor("Command.None TestRole", "");
-            Assert.AreEqual(1, responses.Count());
-            Assert.IsTrue(responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
+            var result = command.Executor("Command.None TestRole", "");
+            Assert.IsTrue(result.Processed);
+            Assert.AreEqual(1, result.Responses.Count());
+            Assert.IsTrue(result.Responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
         }
 
     }
