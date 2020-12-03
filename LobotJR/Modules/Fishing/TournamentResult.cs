@@ -1,11 +1,16 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 
 namespace LobotJR.Modules.Fishing
 {
     public class TournamentResult
     {
-        public IList<TournamentEntry> Entries { get; private set; }
+        public int Id { get; set; }
+        public DateTime Date { get; set; } = DateTime.Now;
+        
+        public virtual List<TournamentEntry> Entries { get; set; } = new List<TournamentEntry>();
 
         public TournamentEntry Winner
         {
@@ -14,14 +19,14 @@ namespace LobotJR.Modules.Fishing
                 return Entries.FirstOrDefault();
             }
         }
+        public TournamentResult()
+        {
+
+        }
 
         public TournamentResult(IEnumerable<TournamentEntry> entries)
         {
-            if (entries == null)
-            {
-                Entries = new List<TournamentEntry>();
-            }
-            Entries = entries.OrderByDescending(x => x.Points).ToList();
+            Entries = entries?.OrderByDescending(x => x.Points).ToList();
         }
 
         public int GetRankByName(string name)
@@ -32,7 +37,11 @@ namespace LobotJR.Modules.Fishing
 
     public class TournamentEntry
     {
+        public int Id { get; set; }
         public string Name { get; set; }
         public int Points { get; set; }
+
+        public int ResultId { get; set; }
+        public virtual TournamentResult Result { get; set; }
     }
 }

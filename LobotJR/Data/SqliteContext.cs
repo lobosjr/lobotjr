@@ -6,6 +6,8 @@ namespace LobotJR.Data
 {
     public class SqliteContext : DbContext, IDatabaseContext
     {
+        public static SqliteContext Instance = new SqliteContext();
+
         public DbSet<TournamentResult> FishingTournaments { get; set; }
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)

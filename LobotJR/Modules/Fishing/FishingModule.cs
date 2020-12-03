@@ -38,9 +38,15 @@ namespace LobotJR.Modules.Fishing
                 new CommandHandler("TournamentRecords", this.TournamentRecords, "TournamentRecords", "tournament-records")
             };
 
-            context = new SqliteContext();
-            context.FishingTournaments.Add(new TournamentResult(new TournamentEntry[] { new TournamentEntry() { Name = "Tester", Points = 100 } }));
-            context.SaveChanges();
+            context = SqliteContext.Instance;
+            // context.FishingTournaments.Add(new TournamentResult(new TournamentEntry[] { new TournamentEntry() { Name = "Tester", Points = 100 } }));
+            // context.FishingTournaments.Add(new TournamentResult(new TournamentEntry[] { new TournamentEntry() { Name = "Bester", Points = 1000 } }));
+            // context.SaveChanges();
+
+            foreach (var tournament in context.FishingTournaments)
+            {
+                Console.WriteLine($"Fishing tournament {tournament.Id} on {tournament.Date} with {tournament.Entries.Count} entrants. Winner: {tournament.Winner.Name} with {tournament.Winner.Points}");
+            }
         }
 
         public IEnumerable<string> TournamentResults(string data, string user)

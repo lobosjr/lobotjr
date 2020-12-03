@@ -1,4 +1,5 @@
 ﻿using LobotJR.Modules;
+using LobotJR.Modules.Fishing;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -119,6 +120,7 @@ namespace LobotJR.Command
         public void LoadAllModules()
         {
             this.AddModule(new AccessControl(this));
+            this.AddModule(new FishingModule(this));
         }
 
         /// <summary>
@@ -170,14 +172,17 @@ namespace LobotJR.Command
                 commandString = message;
             }
 
-            var commandId = this.commandStringToIdMap[commandString];
-            if (commandId != null)
+            if (this.commandStringToIdMap.ContainsKey(commandString))
             {
-                if (this.CanUserExecute(commandId, user))
+                var commandId = this.commandStringToIdMap[commandString];
+                if (commandId != null)
                 {
-                    var executor = this.commandIdToExecutorMap[commandId];
-                    responses = executor.Invoke(data, user);
-                    return true;
+                    if (this.CanUserExecute(commandId, user))
+                    {
+                        var executor = this.commandIdToExecutorMap[commandId];
+                        responses = executor.Invoke(data, user);
+                        return true;
+                    }
                 }
             }
             responses = null;
@@ -189,7 +194,7 @@ namespace LobotJR.Command
         /// </summary>
         public void UpdateRoles()
         {
-            this.writeDataAction(_roleDataPath, JsonConvert.SerializeObject(this.Roles));
+            // this.writeDataAction(_roleDataPath, JsonConvert.SerializeObject(this.Roles));
         }
     }
 }
