@@ -1,7 +1,7 @@
 ﻿using LobotJR.Command;
+using LobotJR.Data;
 using LobotJR.Modules;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Newtonsoft.Json;
 using System.Collections.Generic;
 
 namespace LobotJR.Test.Command
@@ -25,13 +25,44 @@ namespace LobotJR.Test.Command
                     Commands = new List<string>(new string[] { "Command.Foo", "Command.Bar", "Test.*" })
                 }
             });
-            var rolesJson = JsonConvert.SerializeObject(roles);
-            commandManager = new CommandManager(path => rolesJson, (path, data) => { }, path => true);
+            commandManager = new CommandManager(new TestDataAccess(roles));
             commandManager.Initialize("", "");
             commandModule = new CommandModule();
             testModule = new TestModule();
             commandManager.LoadModules(commandModule, testModule);
             module = new AccessControl(commandManager);
+        }
+    }
+
+    public class TestDataAccess : IDataAccess<IList<UserRole>>
+    {
+        private IList<UserRole> _content;
+        private bool _exists;
+
+        public int ReadCount { get; private set; }
+        public int WriteCount { get; private set; }
+        public IList<UserRole> WrittenData { get; private set; }
+        public TestDataAccess(IList<UserRole> content = null, bool exists = true)
+        {
+            _content = content;
+            _exists = exists;
+        }
+
+        public bool Exists(string source)
+        {
+            return _exists;
+        }
+
+        public IList<UserRole> ReadData(string source)
+        {
+            ReadCount++;
+            return _content;
+        }
+
+        public void WriteData(string source, IList<UserRole> content)
+        {
+            WriteCount++;
+            WrittenData = content;
         }
     }
 
@@ -43,9 +74,9 @@ namespace LobotJR.Test.Command
 
         public IEnumerable<CommandHandler> Commands => new CommandHandler[]
         {
-            new CommandHandler("Foo", (data, user) => { Calls.Add("Command.Foo"); return null; }, "Foo"),
-            new CommandHandler("Bar", (data, user) => { Calls.Add("Command.Bar"); return null; }, "Bar"),
-            new CommandHandler("Unrestricted", (data, user) => { Calls.Add("Command.Unrestricted"); return null; }, "Unrestricted")
+            new CommandHandler("Foo", (data, user) => { Calls.Add("Command.Foo"); return new CommandResult(""); }, "Foo"),
+            new CommandHandler("Bar", (data, user) => { Calls.Add("Command.Bar"); return new CommandResult(""); }, "Bar"),
+            new CommandHandler("Unrestricted", (data, user) => { Calls.Add("Command.Unrestricted"); return new CommandResult(""); }, "Unrestricted")
         };
 
         public IEnumerable<ICommandModule> SubModules => null;

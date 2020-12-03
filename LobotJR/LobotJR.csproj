@@ -67,8 +67,10 @@
   <ItemGroup>
     <Compile Include="Command\CommandHandler.cs" />
     <Compile Include="Command\CommandManager.cs" />
+    <Compile Include="Command\CommandResult.cs" />
     <Compile Include="Command\ICommandManager.cs" />
     <Compile Include="Command\UserRole.cs" />
+    <Compile Include="Data\FileDataAccess.cs" />
     <Compile Include="Fishing.cs" />
     <Compile Include="Dungeon.cs" />
     <Compile Include="Classes.cs" />
@@ -87,6 +89,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
     <Compile Include="Utils\Extensions.cs" />
+    <Compile Include="Data\IDataAccess.cs" />
     <Compile Include="Wolfcoins.cs" />
   </ItemGroup>
   <ItemGroup>
