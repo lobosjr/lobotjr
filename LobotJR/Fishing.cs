@@ -90,7 +90,7 @@ namespace Fishing
 
             if (isTournamentActive)
             {
-                pointValue = Math.Max((int)size, 1);
+                pointValue = Math.Min((int)size, 1);
                 tournamentPoints += pointValue;
             }
 
