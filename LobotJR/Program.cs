@@ -1127,8 +1127,8 @@ namespace TwitchBot
                                             Console.WriteLine(error);
                                         }
                                     }
+                                    continue;
                                 }
-                                continue;
                             }
 
                             if (whisperMessage == "?" || whisperMessage == "help" || whisperMessage == "!help" || whisperMessage == "faq" || whisperMessage == "!faq")
