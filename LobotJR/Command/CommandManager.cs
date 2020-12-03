@@ -203,8 +203,7 @@ namespace LobotJR.Command
                 commandString = message;
             }
 
-            var commandId = this.commandStringToIdMap[commandString];
-            if (commandId != null)
+            if (this.commandStringToIdMap.TryGetValue(commandString, out var commandId))
             {
                 if (this.CanUserExecute(commandId, user))
                 {
