@@ -49,50 +49,50 @@ namespace LobotJR.Modules.Fishing
             }
         }
 
-        public IEnumerable<string> TournamentResults(string data, string user)
+        public CommandResult TournamentResults(string data, string user)
         {
 
             return null;
         }
 
-        public IEnumerable<string> TournamentRecords(string data, string user)
+        public CommandResult TournamentRecords(string data, string user)
         {
             var space = data.IndexOf(' ');
             if (space == -1)
             {
-                return new string[] { "Error: Invalid number of parameters. Expected paremeters: {command name} {role name}." };
+                return new CommandResult("Error: Invalid number of parameters. Expected paremeters: {command name} {role name}.");
             }
 
             var commandName = data.Substring(0, space);
             if (commandName.Length == 0)
             {
-                return new string[] { "Error: Command name cannot be empty." };
+                return new CommandResult("Error: Command name cannot be empty.");
             }
             if (!this.commandManager.IsValidCommand(commandName))
             {
-                return new string[] { $"Error: Command ${commandName} does not match any commands." };
+                return new CommandResult($"Error: Command ${commandName} does not match any commands.");
             }
 
             var roleName = data.Substring(space + 1);
             if (roleName.Length == 0)
             {
-                return new string[] { "Error: Role name cannot be empty." };
+                return new CommandResult("Error: Role name cannot be empty.");
             }
             var role = this.commandManager.Roles.Where(x => x.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             if (role == null)
             {
-                return new string[] { $"Error: Role \"{roleName}\" does not exist." };
+                return new CommandResult($"Error: Role \"{roleName}\" does not exist.");
             }
 
             if (!role.Commands.Contains(commandName))
             {
-                return new string[] { $"Error: \"{roleName}\" doesn't have access to \"{commandName}\"." };
+                return new CommandResult($"Error: \"{roleName}\" doesn't have access to \"{commandName}\".");
             }
 
             role.Commands.Remove(commandName);
             this.commandManager.UpdateRoles();
 
-            return new string[] { $"Command \"{commandName}\" was removed from role \"{role.Name}\" successfully!" };
+            return new CommandResult($"Command \"{commandName}\" was removed from role \"{role.Name}\" successfully!");
         }
     }
 }

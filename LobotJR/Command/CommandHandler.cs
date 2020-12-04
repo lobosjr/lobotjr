@@ -2,7 +2,7 @@
 
 namespace LobotJR.Command
 {
-    public delegate IEnumerable<string> CommandExecutor(string data, string user);
+    public delegate CommandResult CommandExecutor(string data, string user);
 
     /// <summary>
     /// Represents a command the bot can execute in response to a message from

@@ -11,7 +11,7 @@ namespace LobotJR.Command
         /// <summary>
         /// List of user roles.
         /// </summary>
-        List<UserRole> Roles { get; }
+        IList<UserRole> Roles { get; }
         /// <summary>
         /// List of ids for registered commands.
         /// </summary>
@@ -44,9 +44,8 @@ namespace LobotJR.Command
         /// </summary>
         /// <param name="message">The message the user sent.</param>
         /// <param name="user">The user's name.</param>
-        /// <param name="responses">The response messages to send to the user.</param>
-        /// <returns>Whether a command was found and executed.</returns>
-        bool ProcessMessage(string message, string user, out IEnumerable<string> responses);
+        /// <returns>An object containing the results of the attempt to process the message.</returns>
+        CommandResult ProcessMessage(string message, string user);
         /// <summary>
         /// Save role data to the disk.
         /// </summary>

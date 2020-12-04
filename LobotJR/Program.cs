@@ -1107,16 +1107,28 @@ namespace TwitchBot
                                     Whisper(whisperSender, "'C1' (Warrior), 'C2' (Mage), 'C3' (Rogue), 'C4' (Ranger), or 'C5' (Cleric)", group);
                                 }
                             }
-                            if (whisperMessage.StartsWith("!") && commandManager.ProcessMessage(whisperMessage.Substring(1), whisperSender, out var responses))
+                            if (whisperMessage.StartsWith("!"))
                             {
-                                if (responses != null)
+                                var result = commandManager.ProcessMessage(whisperMessage.Substring(1), whisperSender);
+                                if (result != null && result.Processed)
                                 {
-                                    foreach (var response in responses)
+                                    if (result.Responses != null && result.Responses.Count > 0)
                                     {
-                                        Whisper(whisperSender, response, group);
+                                        foreach (var response in result.Responses)
+                                        {
+                                            Whisper(whisperSender, response, group);
+                                        }
                                     }
+                                    if (result.Errors != null && result.Errors.Count > 0)
+                                    {
+                                        Console.WriteLine($"Errors encountered while processing command \"{whisperMessage}\" from user {whisperSender}");
+                                        foreach (var error in result.Errors)
+                                        {
+                                            Console.WriteLine(error);
+                                        }
+                                    }
+                                    continue;
                                 }
-                                continue;
                             }
 
                             if (whisperMessage == "?" || whisperMessage == "help" || whisperMessage == "!help" || whisperMessage == "faq" || whisperMessage == "!faq")
