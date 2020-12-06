@@ -5,6 +5,7 @@ using Equipment;
 using Fishing;
 using GroupFinder;
 using LobotJR.Command;
+using LobotJR.Data;
 using LobotJR.Shared.Authentication;
 using LobotJR.Shared.Utility;
 using System;
@@ -575,7 +576,8 @@ namespace TwitchBot
             // 199.9.253.119
             connected = irc.connected;
 
-            var commandManager = new CommandManager();
+            var context = new SqliteContext();
+            var commandManager = new CommandManager(new SqliteRepository<UserRole>(context));
             commandManager.Initialize(tokenData.BroadcastUser, tokenData.ChatUser);
             commandManager.LoadAllModules();
 

@@ -1,6 +1,6 @@
-﻿using LobotJR.Modules;
+﻿using LobotJR.Data;
+using LobotJR.Modules;
 using LobotJR.Modules.Fishing;
-using LobotJR.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,14 +14,13 @@ namespace LobotJR.Command
     {
         private static string _roleDataPath = "content/role.data";
 
-        private IDataAccess<IList<UserRole>> dataAccess;
         private Dictionary<string, string> commandStringToIdMap;
         private Dictionary<string, CommandExecutor> commandIdToExecutorMap;
 
         /// <summary>
-        /// List of user roles.
+        /// Repository access for all user roles.
         /// </summary>
-        public IList<UserRole> Roles { get; set; }
+        public IRepository<UserRole> Roles { get; set; }
         /// <summary>
         /// List of ids for registered commands.
         /// </summary>
@@ -96,18 +95,13 @@ namespace LobotJR.Command
 
         private bool CanUserExecute(string commandId, string user)
         {
-            var roles = this.Roles.Where(x => x.CoversCommand(commandId));
+            var roles = this.Roles.Read().Where(x => x.CoversCommand(commandId));
             return !roles.Any() || roles.Any(x => x.Users.Contains(user));
         }
 
-        public CommandManager()
+        public CommandManager(IRepository<UserRole> roles)
         {
-            this.dataAccess = new FileDataAccess<IList<UserRole>>();
-        }
-
-        public CommandManager(IDataAccess<IList<UserRole>> dataAccess)
-        {
-            this.dataAccess = dataAccess;
+            Roles = roles;
         }
 
         /// <summary>
@@ -116,21 +110,6 @@ namespace LobotJR.Command
         /// </summary>
         public void Initialize(string broadcastUser, string chatUser)
         {
-            if (!this.dataAccess.Exists(_roleDataPath))
-            {
-                this.Roles = new List<UserRole>();
-                this.Roles.Add(new UserRole("Streamer")
-                {
-                    Commands = new List<string>(new string[] { "AccessControl.*" }),
-                    Users = new List<string>(new string[] { broadcastUser, chatUser }),
-                });
-                this.UpdateRoles();
-            }
-            else
-            {
-                this.Roles = this.dataAccess.ReadData(_roleDataPath);
-            }
-
             this.commandStringToIdMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             this.commandIdToExecutorMap = new Dictionary<string, CommandExecutor>();
         }
@@ -229,14 +208,6 @@ namespace LobotJR.Command
                 }
             }
             return new CommandResult();
-        }
-
-        /// <summary>
-        /// Save role data to the disk.
-        /// </summary>
-        public void UpdateRoles()
-        {
-            this.dataAccess.WriteData(_roleDataPath, this.Roles);
         }
     }
 }

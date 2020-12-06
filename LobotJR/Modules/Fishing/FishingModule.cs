@@ -12,7 +12,7 @@ namespace LobotJR.Modules.Fishing
     public class FishingModule : ICommandModule
     {
         private ICommandManager commandManager;
-        private IDatabaseContext context;
+        private IRepository<TournamentResult> context;
 
         /// <summary>
         /// Prefix applied to names of commands within this module.
@@ -37,16 +37,6 @@ namespace LobotJR.Modules.Fishing
                 new CommandHandler("TournamentResults", this.TournamentResults, "TournamentResults", "tournament-results"),
                 new CommandHandler("TournamentRecords", this.TournamentRecords, "TournamentRecords", "tournament-records")
             };
-
-            context = SqliteContext.Instance;
-            // context.FishingTournaments.Add(new TournamentResult(new TournamentEntry[] { new TournamentEntry() { Name = "Tester", Points = 100 } }));
-            // context.FishingTournaments.Add(new TournamentResult(new TournamentEntry[] { new TournamentEntry() { Name = "Bester", Points = 1000 } }));
-            // context.SaveChanges();
-
-            foreach (var tournament in context.FishingTournaments)
-            {
-                Console.WriteLine($"Fishing tournament {tournament.Id} on {tournament.Date} with {tournament.Entries.Count} entrants. Winner: {tournament.Winner.Name} with {tournament.Winner.Points}");
-            }
         }
 
         public CommandResult TournamentResults(string data, string user)
@@ -78,7 +68,7 @@ namespace LobotJR.Modules.Fishing
             {
                 return new CommandResult("Error: Role name cannot be empty.");
             }
-            var role = this.commandManager.Roles.Where(x => x.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            var role = this.commandManager.Roles.Read(x => x.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             if (role == null)
             {
                 return new CommandResult($"Error: Role \"{roleName}\" does not exist.");
@@ -90,7 +80,7 @@ namespace LobotJR.Modules.Fishing
             }
 
             role.Commands.Remove(commandName);
-            this.commandManager.UpdateRoles();
+
 
             return new CommandResult($"Command \"{commandName}\" was removed from role \"{role.Name}\" successfully!");
         }

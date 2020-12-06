@@ -1,4 +1,5 @@
-﻿using LobotJR.Modules;
+﻿using LobotJR.Data;
+using LobotJR.Modules;
 using System.Collections.Generic;
 
 namespace LobotJR.Command
@@ -11,7 +12,7 @@ namespace LobotJR.Command
         /// <summary>
         /// List of user roles.
         /// </summary>
-        IList<UserRole> Roles { get; }
+        IRepository<UserRole> Roles { get; }
         /// <summary>
         /// List of ids for registered commands.
         /// </summary>
@@ -46,9 +47,5 @@ namespace LobotJR.Command
         /// <param name="user">The user's name.</param>
         /// <returns>An object containing the results of the attempt to process the message.</returns>
         CommandResult ProcessMessage(string message, string user);
-        /// <summary>
-        /// Save role data to the disk.
-        /// </summary>
-        void UpdateRoles();
     }
 }

@@ -1,18 +1,20 @@
-﻿using LobotJR.Modules.Fishing;
-using SQLite.CodeFirst;
+﻿using LobotJR.Command;
+using LobotJR.Modules.Fishing;
 using System.Data.Entity;
 
 namespace LobotJR.Data
 {
-    public class SqliteContext : DbContext, IDatabaseContext
+    /// <summary>
+    /// SQLite implementation of the EF6 DbContext
+    /// </summary>
+    public class SqliteContext : DbContext
     {
-        public static SqliteContext Instance = new SqliteContext();
-
         public DbSet<TournamentResult> FishingTournaments { get; set; }
+        public DbSet<UserRole> UserRoles { get; set; }
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
-            var sqliteConnectionInitializer = new SqliteCreateDatabaseIfNotExists<SqliteContext>(modelBuilder);
+            var sqliteConnectionInitializer = new SqliteInitializer(modelBuilder);
             Database.SetInitializer(sqliteConnectionInitializer);
         }
     }

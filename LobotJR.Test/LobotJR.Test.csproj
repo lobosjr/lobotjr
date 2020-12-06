@@ -52,11 +52,13 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Command\AccessControlBase.cs" />
-    <Compile Include="Command\AccessControlRoleTests.cs" />
-    <Compile Include="Command\AccessControlUserTests.cs" />
-    <Compile Include="Command\AccessControlCommandTests.cs" />
+    <Compile Include="Command\AccessControlTests.cs" />
+    <Compile Include="Command\AccessControlAdminBase.cs" />
+    <Compile Include="Command\AccessControlAdminRoleTests.cs" />
+    <Compile Include="Command\AccessControlAdminUserTests.cs" />
+    <Compile Include="Command\AccessControlAdminCommandTests.cs" />
     <Compile Include="Command\CommandManagerTests.cs" />
+    <Compile Include="Command\MockImplementations.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
