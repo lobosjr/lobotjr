@@ -1,8 +1,8 @@
 ﻿using LobotJR.Command;
 using LobotJR.Data;
+using LobotJR.Utils;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace LobotJR.Modules.Fishing
 {
@@ -11,8 +11,7 @@ namespace LobotJR.Modules.Fishing
     /// </summary>
     public class FishingModule : ICommandModule
     {
-        private ICommandManager commandManager;
-        private IRepository<TournamentResult> context;
+        private readonly IRepository<TournamentResult> repository;
 
         /// <summary>
         /// Prefix applied to names of commands within this module.
@@ -29,60 +28,70 @@ namespace LobotJR.Modules.Fishing
         /// </summary>
         public IEnumerable<ICommandModule> SubModules => null;
 
-        public FishingModule(ICommandManager commandManager)
+        public FishingModule(IRepository<TournamentResult> repository)
         {
-            this.commandManager = commandManager;
-            this.Commands = new CommandHandler[]
+            this.repository = repository;
+            Commands = new CommandHandler[]
             {
-                new CommandHandler("TournamentResults", this.TournamentResults, "TournamentResults", "tournament-results"),
-                new CommandHandler("TournamentRecords", this.TournamentRecords, "TournamentRecords", "tournament-records")
+                new CommandHandler("TournamentResults", TournamentResults, TournamentResultsCompact, "TournamentResults", "tournament-results"),
+                new CommandHandler("TournamentRecords", TournamentRecords, TournamentRecordsCompact, "TournamentRecords", "tournament-records")
             };
         }
 
         public CommandResult TournamentResults(string data, string user)
         {
+            var values = TournamentResultsCompact(data, user);
+            var sinceEnded = DateTime.Now - DateTime.Parse(values["ended"]);
+            var responses = new List<string>(new string[] { $"The most recent tournament ended {sinceEnded} ago.",
+                $"The tournament was won by {values["winner"]} with {values["score"]} points." });
+            if (values.ContainsKey("userScore"))
+            {
+                var rank = int.Parse(values["userRank"]).ToOrdinal();
+                responses.Add($"You placed {rank} with {values["userScore"]}.");
+            }
+            return new CommandResult(responses.ToArray());
+        }
 
-            return null;
+        public Dictionary<string, string> TournamentResultsCompact(string data, string user)
+        {
+            var output = new Dictionary<string, string>();
+            output.Add("ended", DateTime.Now.ToString());
+            output.Add("winner", "arfafax");
+            output.Add("score", 2000.ToString());
+            if (true)   // check if the user was a participant in the fishing tournament
+            {
+                output.Add("userScore", 500.ToString());
+                output.Add("userRank", 2.ToString());
+            }
+            return output;
         }
 
         public CommandResult TournamentRecords(string data, string user)
         {
-            var space = data.IndexOf(' ');
-            if (space == -1)
+            var values = TournamentRecordsCompact(data, user);
+            var topRank = int.Parse(values["topRank"]);
+            if (topRank == -1)
             {
-                return new CommandResult("Error: Invalid number of parameters. Expected paremeters: {command name} {role name}.");
+                return new CommandResult("You have not entered any fishing tournaments.");
             }
+            var topScoreRank = int.Parse(values["topScoreRank"]);
+            return new CommandResult($"Your highest score in a tournament was {values["topScore"]} points, earning you {topScoreRank.ToOrdinal()} place.",
+                $"Your highest rank in a tournament was {topRank.ToOrdinal()}, with {values["topRankScore"]} points.");
+        }
 
-            var commandName = data.Substring(0, space);
-            if (commandName.Length == 0)
+        public Dictionary<string, string> TournamentRecordsCompact(string data, string user)
+        {
+            var output = new Dictionary<string, string>();
+            if (false)  //if the user has never entered a tournament
             {
-                return new CommandResult("Error: Command name cannot be empty.");
+                output.Add("topRank", "-1");
+                return output;
             }
-            if (!this.commandManager.IsValidCommand(commandName))
-            {
-                return new CommandResult($"Error: Command ${commandName} does not match any commands.");
-            }
-
-            var roleName = data.Substring(space + 1);
-            if (roleName.Length == 0)
-            {
-                return new CommandResult("Error: Role name cannot be empty.");
-            }
-            var role = this.commandManager.Roles.Read(x => x.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-            if (role == null)
-            {
-                return new CommandResult($"Error: Role \"{roleName}\" does not exist.");
-            }
-
-            if (!role.Commands.Contains(commandName))
-            {
-                return new CommandResult($"Error: \"{roleName}\" doesn't have access to \"{commandName}\".");
-            }
-
-            role.Commands.Remove(commandName);
-
-
-            return new CommandResult($"Command \"{commandName}\" was removed from role \"{role.Name}\" successfully!");
+            output.Add("topRank", "1");
+            output.Add("topRankScore", "1000");
+            output.Add("topScore", "2000");
+            output.Add("topScoreRank", "3");
+            return output;
         }
     }
 }

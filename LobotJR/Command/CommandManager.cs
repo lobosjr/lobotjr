@@ -12,10 +12,10 @@ namespace LobotJR.Command
     /// </summary>
     public class CommandManager : ICommandManager
     {
-        private static string _roleDataPath = "content/role.data";
 
         private Dictionary<string, string> commandStringToIdMap;
         private Dictionary<string, CommandExecutor> commandIdToExecutorMap;
+        private Dictionary<string, CompactExecutor> compactIdToExecutorMap;
 
         /// <summary>
         /// Repository access for all user roles.
@@ -24,22 +24,26 @@ namespace LobotJR.Command
         /// <summary>
         /// List of ids for registered commands.
         /// </summary>
-        public IEnumerable<string> Commands { get { return this.commandIdToExecutorMap.Keys.ToArray(); } }
+        public IEnumerable<string> Commands { get { return commandIdToExecutorMap.Keys.ToArray(); } }
 
         private void AddCommand(CommandHandler command, string prefix)
         {
             var commandId = $"{prefix}.{command.Name}";
-            this.commandIdToExecutorMap.Add(commandId, command.Executor);
+            commandIdToExecutorMap.Add(commandId, command.Executor);
+            if (command.CompactExecutor != null)
+            {
+                compactIdToExecutorMap.Add(commandId, command.CompactExecutor);
+            }
             var exceptions = new List<Exception>();
             foreach (var commandString in command.CommandStrings)
             {
-                if (this.commandStringToIdMap.ContainsKey(commandString))
+                if (commandStringToIdMap.ContainsKey(commandString))
                 {
-                    exceptions.Add(new Exception($"{commandId}: The command string \"{commandString}\" has already been registered by {this.commandStringToIdMap[commandString]}."));
+                    exceptions.Add(new Exception($"{commandId}: The command string \"{commandString}\" has already been registered by {commandStringToIdMap[commandString]}."));
                 }
                 else
                 {
-                    this.commandStringToIdMap.Add(commandString, commandId);
+                    commandStringToIdMap.Add(commandString, commandId);
                 }
             }
             if (exceptions.Count > 0)
@@ -64,7 +68,7 @@ namespace LobotJR.Command
             {
                 try
                 {
-                    this.AddCommand(command, prefix);
+                    AddCommand(command, prefix);
                 }
                 catch (AggregateException e)
                 {
@@ -78,7 +82,7 @@ namespace LobotJR.Command
                 {
                     try
                     {
-                        this.AddModule(subModule, prefix);
+                        AddModule(subModule, prefix);
                     }
                     catch (AggregateException ae)
                     {
@@ -95,7 +99,7 @@ namespace LobotJR.Command
 
         private bool CanUserExecute(string commandId, string user)
         {
-            var roles = this.Roles.Read().Where(x => x.CoversCommand(commandId));
+            var roles = Roles.Read().Where(x => x.CoversCommand(commandId));
             return !roles.Any() || roles.Any(x => x.Users.Contains(user));
         }
 
@@ -110,8 +114,9 @@ namespace LobotJR.Command
         /// </summary>
         public void Initialize(string broadcastUser, string chatUser)
         {
-            this.commandStringToIdMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            this.commandIdToExecutorMap = new Dictionary<string, CommandExecutor>();
+            commandStringToIdMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            commandIdToExecutorMap = new Dictionary<string, CommandExecutor>();
+            compactIdToExecutorMap = new Dictionary<string, CompactExecutor>();
         }
 
         /// <summary>
@@ -119,8 +124,9 @@ namespace LobotJR.Command
         /// </summary>
         public void LoadAllModules()
         {
-            this.LoadModules(new AccessControl(this),
-                new FishingModule(this));
+            var context = new SqliteContext();
+            LoadModules(new AccessControl(this),
+                new FishingModule(new SqliteRepository<TournamentResult>(context)));
         }
 
         /// <summary>
@@ -134,7 +140,7 @@ namespace LobotJR.Command
             {
                 try
                 {
-                    this.AddModule(module);
+                    AddModule(module);
                 }
                 catch (AggregateException e)
                 {
@@ -157,9 +163,9 @@ namespace LobotJR.Command
             var index = commandId.IndexOf('*');
             if (index >= 0)
             {
-                return this.Commands.Any(x => x.StartsWith(commandId.Substring(0, index)));
+                return Commands.Any(x => x.StartsWith(commandId.Substring(0, index)));
             }
-            return this.commandIdToExecutorMap.ContainsKey(commandId);
+            return commandIdToExecutorMap.ContainsKey(commandId);
         }
 
         /// <summary>
@@ -174,27 +180,40 @@ namespace LobotJR.Command
             var space = message.IndexOf(' ');
             string commandString;
             string data = null;
+            var compact = false;
             if (space != -1)
             {
                 commandString = message.Substring(0, space);
                 data = message.Substring(space + 1);
+                compact = data.StartsWith("-c");
             }
             else
             {
                 commandString = message;
             }
 
-            if (this.commandStringToIdMap.TryGetValue(commandString, out var commandId))
+            if (commandStringToIdMap.TryGetValue(commandString, out var commandId))
             {
-                if (this.CanUserExecute(commandId, user))
+                if (CanUserExecute(commandId, user))
                 {
-                    var executor = this.commandIdToExecutorMap[commandId];
                     try
                     {
-                        var response = executor.Invoke(data, user);
-                        if (response != null)
+                        if (compact && compactIdToExecutorMap.TryGetValue(commandId, out var compactExecutor))
                         {
-                            return response;
+                            var compactResponse = compactExecutor.Invoke(data, user);
+                            if (compactResponse != null)
+                            {
+                                return new CommandResult(string.Join(";", compactResponse.Select(x => $"{x.Key}={x.Value}")));
+                            }
+                        }
+                        else
+                        {
+                            var executor = commandIdToExecutorMap[commandId];
+                            var response = executor.Invoke(data, user);
+                            if (response != null)
+                            {
+                                return response;
+                            }
                         }
                     }
                     catch (Exception e)

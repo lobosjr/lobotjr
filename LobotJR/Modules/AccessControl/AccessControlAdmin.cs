@@ -10,7 +10,7 @@ namespace LobotJR.Modules
     /// </summary>
     public class AccessControlAdmin : ICommandModule
     {
-        private ICommandManager commandManager;
+        private readonly ICommandManager commandManager;
         /// <summary>
         /// Prefix applied to names of commands within this module.
         /// </summary>
@@ -72,8 +72,8 @@ namespace LobotJR.Modules
             }
 
             return new CommandResult(
-                $"Role \"{data}\" contains the following commands: {string.Join(", ", existingRole.Commands)}",
-                $"Role \"{data}\" contains the following users: {string.Join(", ", existingRole.Users)}"
+                $"Role \"{data}\" contains the following commands: {string.Join(", ", existingRole.Commands)}.",
+                $"Role \"{data}\" contains the following users: {string.Join(", ", existingRole.Users)}."
             );
         }
 
@@ -122,7 +122,7 @@ namespace LobotJR.Modules
 
             if (role.Users.Contains(userToAdd))
             {
-                return new CommandResult($"Error: User \"{userToAdd}\" is already a member of \"{roleName}\"");
+                return new CommandResult($"Error: User \"{userToAdd}\" is already a member of \"{roleName}\".");
             }
             role.AddUser(userToAdd);
             commandManager.Roles.Update(role);

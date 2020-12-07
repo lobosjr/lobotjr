@@ -164,7 +164,7 @@ namespace Fishing
             if (isTournamentActive)
             {
                 var rank = fishingList.Select(x => x.Value.tournamentPoints).OrderByDescending(x => x).ToList().IndexOf(tournamentPoints) + 1;
-                whisperClient.sendChatMessage($".w {username} You caught a {myCatch.name} worth {pointValue} points! You are now at {tournamentPoints} total points, putting you at {rank.ToOrdinal()} place.");
+                whisperClient.sendChatMessage($".w {username} You caught a {myCatch.name} worth {pointValue} points! You are in {rank.ToOrdinal()} place with {tournamentPoints} total points.");
             }
             return myCatch;
         }

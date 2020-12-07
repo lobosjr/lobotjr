@@ -10,7 +10,7 @@ namespace LobotJR.Modules
     /// </summary>
     public class AccessControl : ICommandModule
     {
-        private ICommandManager commandManager;
+        private readonly ICommandManager commandManager;
         /// <summary>
         /// Prefix applied to names of commands within this module.
         /// </summary>
@@ -29,11 +29,11 @@ namespace LobotJR.Modules
         public AccessControl(ICommandManager commandManager)
         {
             this.commandManager = commandManager;
-            this.Commands = new CommandHandler[]
+            Commands = new CommandHandler[]
             {
-                new CommandHandler("CheckAccess", this.CheckAccess, "CheckAccess", "check-access"),
+                new CommandHandler("CheckAccess", CheckAccess, "CheckAccess", "check-access"),
             };
-            this.SubModules = new ICommandModule[] { new AccessControlAdmin(commandManager) };
+            SubModules = new ICommandModule[] { new AccessControlAdmin(commandManager) };
         }
 
         private CommandResult CheckAccess(string data, string user)
@@ -41,7 +41,7 @@ namespace LobotJR.Modules
             var roleName = data;
             if (roleName.Length == 0)
             {
-                var roles = this.commandManager.Roles.Read(x => x.Users.Any(y => y.Equals(user, StringComparison.OrdinalIgnoreCase)));
+                var roles = commandManager.Roles.Read(x => x.Users.Any(y => y.Equals(user, StringComparison.OrdinalIgnoreCase)));
                 if (roles.Any())
                 {
                     var count = roles.Count();
@@ -53,7 +53,7 @@ namespace LobotJR.Modules
                 }
             }
 
-            var role = this.commandManager.Roles.Read(x => x.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            var role = commandManager.Roles.Read(x => x.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             if (role == null)
             {
                 return new CommandResult($"Error: No role with name \"{roleName}\" was found.");
