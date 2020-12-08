@@ -1543,17 +1543,14 @@ namespace TwitchBot
                             }
                             else if (whisperMessage == "!fishleaders" || whisperMessage == "!leaderboards")
                             {
-                                if (whisperMessage.EndsWith("-c"))
+                                foreach (var fish in wolfcoins.fishingLeaderboard)
                                 {
-                                    Whisper(whisperSender, JsonConvert.SerializeObject(wolfcoins.fishingLeaderboard), group);
+                                    Whisper(whisperSender, "Largest " + fish.name + " caught by " + fish.caughtBy + " at " + fish.weight + " lbs.", group);
                                 }
-                                else
-                                {
-                                    foreach (var fish in wolfcoins.fishingLeaderboard)
-                                    {
-                                        Whisper(whisperSender, "Largest " + fish.name + " caught by " + fish.caughtBy + " at " + fish.weight + " lbs.", group);
-                                    }
-                                }
+                            }
+                            else if (whisperMessage == "!fishleaders -c" || whisperMessage == "!leaderboards -c")
+                            {
+                                Whisper(whisperSender, JsonConvert.SerializeObject(wolfcoins.fishingLeaderboard), group);
                             }
                             else if (whisperMessage == "!fish")
                             {
@@ -2139,9 +2136,18 @@ namespace TwitchBot
                                     tourneyTime += (nextTournament - DateTime.Now).Minutes;
                                     Whisper(whisperSender, "Next fishing tournament begins in " + tourneyTime + " minutes.", group);
                                 }
-
-
-
+                            }
+                            else if (whisperMessage == "!nexttournament -c")
+                            {
+                                if (broadcasting)
+                                {
+                                    if (fishingTournamentActive)
+                                    {
+                                        Whisper(whisperSender, "00:00:00", group);
+                                    }
+                                    var toNext = nextTournament - DateTime.Now;
+                                    Whisper(whisperSender, toNext.ToString(), group);
+                                }
                             }
                             else if (whisperMessage == "!debugtournament")
                             {
