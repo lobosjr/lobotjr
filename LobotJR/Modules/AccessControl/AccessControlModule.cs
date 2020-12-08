@@ -42,7 +42,7 @@ namespace LobotJR.Modules.AccessControl
         private CommandResult CheckAccess(string data, string user)
         {
             var roleName = data;
-            if (roleName.Length == 0)
+            if (roleName == null || roleName.Length == 0)
             {
                 var roles = repository.Read(x => x.Users.Any(y => y.Equals(user, StringComparison.OrdinalIgnoreCase)));
                 if (roles.Any())

@@ -580,6 +580,7 @@ namespace TwitchBot
 
             #region Command Manager Setup
             var context = new SqliteContext();
+            context.Database.Initialize(false);
             var repoManager = new SqliteRepositoryManager(context);
             var commandManager = new CommandManager(repoManager);
             commandManager.Initialize(tokenData.BroadcastUser, tokenData.ChatUser);

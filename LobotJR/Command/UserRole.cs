@@ -70,6 +70,13 @@ namespace LobotJR.Command
 
 
         /// <summary>
+        /// Creates an empty user role.
+        /// </summary>
+        public UserRole()
+        {
+        }
+
+        /// <summary>
         /// Creates a user role with a name.
         /// </summary>
         /// <param name="name">The name of the role.</param>
@@ -109,9 +116,9 @@ namespace LobotJR.Command
         /// <param name="user">The name of the user.</param>
         public void AddUser(string user)
         {
-            var temp = this.Users;
+            var temp = Users;
             temp.Add(user);
-            this.Users = temp;
+            Users = temp;
         }
         /// <summary>
         /// Removes a user from this role.
@@ -119,9 +126,9 @@ namespace LobotJR.Command
         /// <param name="user">The name of the user.</param>
         public void RemoveUser(string user)
         {
-            var temp = this.Users;
+            var temp = Users;
             temp.Remove(user);
-            this.Users = temp;
+            Users = temp;
         }
 
         /// <summary>
@@ -130,9 +137,9 @@ namespace LobotJR.Command
         /// <param name="command">The name of the command.</param>
         public void AddCommand(string command)
         {
-            var temp = this.Commands;
+            var temp = Commands;
             temp.Add(command);
-            this.Commands = temp;
+            Commands = temp;
         }
         /// <summary>
         /// Removes a command from this role.
@@ -140,9 +147,9 @@ namespace LobotJR.Command
         /// <param name="command">The name of the command.</param>
         public void RemoveCommand(string command)
         {
-            var temp = this.Commands;
+            var temp = Commands;
             temp.Remove(command);
-            this.Commands = temp;
+            Commands = temp;
         }
 
         /// <summary>

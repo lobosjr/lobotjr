@@ -55,7 +55,7 @@ namespace LobotJR.Test.Modules.AccessControl
         {
             var command = module.Commands.Where(x => x.Name.Equals("CheckAccess")).FirstOrDefault();
             var username = "NewUser";
-            var result = command.Executor("", username);
+            var result = command.Executor(null, username);
             var roles = commandManager.RepositoryManager.UserRoles.Read().Select(x => x.Name);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
@@ -67,7 +67,7 @@ namespace LobotJR.Test.Modules.AccessControl
         {
             var command = module.Commands.Where(x => x.Name.Equals("CheckAccess")).FirstOrDefault();
             var username = "Foo";
-            var result = command.Executor("", username);
+            var result = command.Executor(null, username);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(commandManager.RepositoryManager.UserRoles
