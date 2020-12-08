@@ -10,9 +10,9 @@ namespace LobotJR.Command
     public interface ICommandManager
     {
         /// <summary>
-        /// List of user roles.
+        /// Repository manager for access to data.
         /// </summary>
-        IRepository<UserRole> Roles { get; }
+        IRepositoryManager RepositoryManager { get; }
         /// <summary>
         /// List of ids for registered commands.
         /// </summary>

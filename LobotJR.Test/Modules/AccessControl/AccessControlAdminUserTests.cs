@@ -3,7 +3,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Linq;
 
-namespace LobotJR.Test.Command
+namespace LobotJR.Test.Modules.AccessControl
 {
     [TestClass]
     public class AccessControlAdminUserTests : AccessControlAdminBase
@@ -12,7 +12,7 @@ namespace LobotJR.Test.Command
         public void AddsUserToRole()
         {
             var command = module.Commands.Where(x => x.Name.Equals("EnrollUser")).FirstOrDefault();
-            var role = commandManager.Roles.Read().FirstOrDefault();
+            var role = commandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var result = command.Executor("NewUser TestRole", "");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
@@ -25,7 +25,7 @@ namespace LobotJR.Test.Command
         public void AddUserErrorsOnMissingParameters()
         {
             var command = module.Commands.Where(x => x.Name.Equals("EnrollUser")).FirstOrDefault();
-            var role = commandManager.Roles.Read().FirstOrDefault();
+            var role = commandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var result = command.Executor("BadInput", "");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
@@ -44,7 +44,7 @@ namespace LobotJR.Test.Command
         public void AddUserErrorsOnInvalidRole()
         {
             var command = module.Commands.Where(x => x.Name.Equals("EnrollUser")).FirstOrDefault();
-            var role = commandManager.Roles.Read().FirstOrDefault();
+            var role = commandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var result = command.Executor("NewUser NotTestRole", "");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
@@ -55,7 +55,7 @@ namespace LobotJR.Test.Command
         public void AddUserErrorsOnExistingAssignment()
         {
             var command = module.Commands.Where(x => x.Name.Equals("EnrollUser")).FirstOrDefault();
-            var role = commandManager.Roles.Read().FirstOrDefault();
+            var role = commandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var result = command.Executor("Foo TestRole", "");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
@@ -66,7 +66,7 @@ namespace LobotJR.Test.Command
         public void RemovesUserFromRole()
         {
             var command = module.Commands.Where(x => x.Name.Equals("UnenrollUser")).FirstOrDefault();
-            var role = this.commandManager.Roles.Read().FirstOrDefault();
+            var role = commandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var result = command.Executor("Foo TestRole", "");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
@@ -78,7 +78,7 @@ namespace LobotJR.Test.Command
         public void RemoveUserErrorsOnMissingParameters()
         {
             var command = module.Commands.Where(x => x.Name.Equals("UnenrollUser")).FirstOrDefault();
-            var role = this.commandManager.Roles.Read().FirstOrDefault();
+            var role = commandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var result = command.Executor("BadInput", "");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
@@ -97,7 +97,7 @@ namespace LobotJR.Test.Command
         public void RemoveUserErrorsOnUserNotEnrolled()
         {
             var command = module.Commands.Where(x => x.Name.Equals("UnenrollUser")).FirstOrDefault();
-            var role = this.commandManager.Roles.Read().FirstOrDefault();
+            var role = commandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var result = command.Executor("NewUser TestRole", "");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
@@ -108,7 +108,7 @@ namespace LobotJR.Test.Command
         public void RemoveUserErrorsOnRoleNotFound()
         {
             var command = module.Commands.Where(x => x.Name.Equals("UnenrollUser")).FirstOrDefault();
-            var role = this.commandManager.Roles.Read().FirstOrDefault();
+            var role = commandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var result = command.Executor("Foo NotTestRole", "");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());

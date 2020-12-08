@@ -1,20 +1,19 @@
 ﻿using LobotJR.Command;
-using LobotJR.Modules;
+using LobotJR.Modules.AccessControl;
+using LobotJR.Test.Command;
 using LobotJR.Utils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LobotJR.Test.Command
+namespace LobotJR.Test.Modules.AccessControl
 {
     [TestClass]
     public abstract class AccessControlTests
     {
         protected CommandManager commandManager;
-        protected AccessControl module;
-        protected CommandModule commandModule;
-        protected TestModule testModule;
+        protected AccessControlModule module;
 
         [TestInitialize]
         public void Setup()
@@ -25,12 +24,10 @@ namespace LobotJR.Test.Command
                     new List<string>(new string[] { "Foo", "Bar" }),
                     new List<string>(new string[] { "Command.Foo", "Command.Bar", "Test.*" }))
             });
-            commandManager = new CommandManager(new TestRepository<UserRole>(roles));
+            commandManager = new CommandManager(new TestRepositoryManager(roles));
             commandManager.Initialize("", "");
-            commandModule = new CommandModule();
-            testModule = new TestModule();
-            commandManager.LoadModules(commandModule, testModule);
-            module = new AccessControl(commandManager);
+            module = new AccessControlModule(commandManager);
+            commandManager.LoadModules(module);
         }
 
         [TestMethod]
@@ -59,7 +56,7 @@ namespace LobotJR.Test.Command
             var command = module.Commands.Where(x => x.Name.Equals("CheckAccess")).FirstOrDefault();
             var username = "NewUser";
             var result = command.Executor("", username);
-            var roles = commandManager.Roles.Read().Select(x => x.Name);
+            var roles = commandManager.RepositoryManager.UserRoles.Read().Select(x => x.Name);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsFalse(roles.Any(x => result.Responses.Any(y => y.Contains(x))));
@@ -73,7 +70,7 @@ namespace LobotJR.Test.Command
             var result = command.Executor("", username);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
-            Assert.IsTrue(commandManager.Roles
+            Assert.IsTrue(commandManager.RepositoryManager.UserRoles
                 .Read(x => x.Users.Any(y => y.Equals(username)))
                 .All(x => result.Responses.Any(y => y.Contains(x.Name))));
         }

@@ -1,16 +1,18 @@
 ﻿using LobotJR.Command;
+using LobotJR.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LobotJR.Modules
+namespace LobotJR.Modules.AccessControl
 {
     /// <summary>
     /// Module of access control commands.
     /// </summary>
-    public class AccessControl : ICommandModule
+    public class AccessControlModule : ICommandModule
     {
         private readonly ICommandManager commandManager;
+        private readonly IRepository<UserRole> repository;
         /// <summary>
         /// Prefix applied to names of commands within this module.
         /// </summary>
@@ -26,9 +28,10 @@ namespace LobotJR.Modules
         /// </summary>
         public IEnumerable<ICommandModule> SubModules { get; private set; }
 
-        public AccessControl(ICommandManager commandManager)
+        public AccessControlModule(ICommandManager commandManager)
         {
             this.commandManager = commandManager;
+            repository = commandManager.RepositoryManager.UserRoles;
             Commands = new CommandHandler[]
             {
                 new CommandHandler("CheckAccess", CheckAccess, "CheckAccess", "check-access"),
@@ -41,7 +44,7 @@ namespace LobotJR.Modules
             var roleName = data;
             if (roleName.Length == 0)
             {
-                var roles = commandManager.Roles.Read(x => x.Users.Any(y => y.Equals(user, StringComparison.OrdinalIgnoreCase)));
+                var roles = repository.Read(x => x.Users.Any(y => y.Equals(user, StringComparison.OrdinalIgnoreCase)));
                 if (roles.Any())
                 {
                     var count = roles.Count();
@@ -53,7 +56,7 @@ namespace LobotJR.Modules
                 }
             }
 
-            var role = commandManager.Roles.Read(x => x.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            var role = repository.Read(x => x.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             if (role == null)
             {
                 return new CommandResult($"Error: No role with name \"{roleName}\" was found.");

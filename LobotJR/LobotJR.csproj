@@ -98,6 +98,8 @@
     <Compile Include="Command\CommandResult.cs" />
     <Compile Include="Command\ICommandManager.cs" />
     <Compile Include="Command\UserRole.cs" />
+    <Compile Include="Data\IRepositoryManager.cs" />
+    <Compile Include="Data\SqliteRepositoryManager.cs" />
     <Compile Include="Data\SqliteInitializer.cs" />
     <Compile Include="Data\SqliteRepository.cs" />
     <Compile Include="Data\IRepository.cs" />

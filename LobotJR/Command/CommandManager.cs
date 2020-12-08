@@ -1,6 +1,8 @@
 ﻿using LobotJR.Data;
 using LobotJR.Modules;
+using LobotJR.Modules.AccessControl;
 using LobotJR.Modules.Fishing;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,9 +20,9 @@ namespace LobotJR.Command
         private Dictionary<string, CompactExecutor> compactIdToExecutorMap;
 
         /// <summary>
-        /// Repository access for all user roles.
+        /// Repository manager for access to stored data types.
         /// </summary>
-        public IRepository<UserRole> Roles { get; set; }
+        public IRepositoryManager RepositoryManager { get; set; }
         /// <summary>
         /// List of ids for registered commands.
         /// </summary>
@@ -99,13 +101,13 @@ namespace LobotJR.Command
 
         private bool CanUserExecute(string commandId, string user)
         {
-            var roles = Roles.Read().Where(x => x.CoversCommand(commandId));
+            var roles = RepositoryManager.UserRoles.Read().Where(x => x.CoversCommand(commandId));
             return !roles.Any() || roles.Any(x => x.Users.Contains(user));
         }
 
-        public CommandManager(IRepository<UserRole> roles)
+        public CommandManager(IRepositoryManager repositoryManager)
         {
-            Roles = roles;
+            RepositoryManager = repositoryManager;
         }
 
         /// <summary>
@@ -125,8 +127,8 @@ namespace LobotJR.Command
         public void LoadAllModules()
         {
             var context = new SqliteContext();
-            LoadModules(new AccessControl(this),
-                new FishingModule(new SqliteRepository<TournamentResult>(context)));
+            LoadModules(new AccessControlModule(this),
+                new FishingModule(RepositoryManager.TournamentResults));
         }
 
         /// <summary>
@@ -186,6 +188,10 @@ namespace LobotJR.Command
                 commandString = message.Substring(0, space);
                 data = message.Substring(space + 1);
                 compact = data.StartsWith("-c");
+                if (compact)
+                {
+                    data = data.Substring(2).TrimStart();
+                }
             }
             else
             {
@@ -198,12 +204,19 @@ namespace LobotJR.Command
                 {
                     try
                     {
-                        if (compact && compactIdToExecutorMap.TryGetValue(commandId, out var compactExecutor))
+                        if (compact)
                         {
-                            var compactResponse = compactExecutor.Invoke(data, user);
-                            if (compactResponse != null)
+                            if (compactIdToExecutorMap.TryGetValue(commandId, out var compactExecutor))
                             {
-                                return new CommandResult(string.Join(";", compactResponse.Select(x => $"{x.Key}={x.Value}")));
+                                var compactResponse = compactExecutor.Invoke(data, user);
+                                if (compactResponse != null)
+                                {
+                                    return new CommandResult(JsonConvert.SerializeObject(compactResponse));
+                                }
+                            }
+                            else
+                            {
+                                return new CommandResult($"Command {commandId} does not support compact mode");
                             }
                         }
                         else

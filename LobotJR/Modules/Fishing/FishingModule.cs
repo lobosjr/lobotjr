@@ -3,6 +3,7 @@ using LobotJR.Data;
 using LobotJR.Utils;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace LobotJR.Modules.Fishing
 {
@@ -40,58 +41,98 @@ namespace LobotJR.Modules.Fishing
 
         public CommandResult TournamentResults(string data, string user)
         {
-            var values = TournamentResultsCompact(data, user);
-            var sinceEnded = DateTime.Now - DateTime.Parse(values["ended"]);
-            var responses = new List<string>(new string[] { $"The most recent tournament ended {sinceEnded} ago.",
-                $"The tournament was won by {values["winner"]} with {values["score"]} points." });
-            if (values.ContainsKey("userScore"))
+            var result = TournamentResultsCompact(data, user);
+            var sinceEnded = DateTime.Now - result.Ended;
+            var responses = new List<string>(new string[] { $"The most recent tournament ended {sinceEnded} ago." });
+            if (result.Rank > 0)
             {
-                var rank = int.Parse(values["userRank"]).ToOrdinal();
-                responses.Add($"You placed {rank} with {values["userScore"]}.");
+                if (result.Winner.Equals(user, StringComparison.OrdinalIgnoreCase))
+                {
+                    responses.Add($"You won the tournament with {result.WinnerPoints} points.");
+                }
+                else
+                {
+                    responses.Add($"The tournament was won by {result.Winner} with {result.WinnerPoints} points.");
+                }
+                responses.Add($"You placed {result.Rank.ToOrdinal()} with {result.UserPoints} points.");
+            }
+            else
+            {
+                responses.Add($"The tournament was won by {result.Winner} with {result.WinnerPoints} points.");
             }
             return new CommandResult(responses.ToArray());
         }
 
-        public Dictionary<string, string> TournamentResultsCompact(string data, string user)
+        public TournamentResultsResponse TournamentResultsCompact(string data, string user)
         {
-            var output = new Dictionary<string, string>();
-            output.Add("ended", DateTime.Now.ToString());
-            output.Add("winner", "arfafax");
-            output.Add("score", 2000.ToString());
-            if (true)   // check if the user was a participant in the fishing tournament
+            var tournament = repository.Read().OrderByDescending(x => x.Date).FirstOrDefault();
+            if (tournament != null)
             {
-                output.Add("userScore", 500.ToString());
-                output.Add("userRank", 2.ToString());
+                var winner = tournament.Winner;
+                var output = new TournamentResultsResponse()
+                {
+                    Ended = tournament.Date,
+                    Winner = winner.Name,
+                    WinnerPoints = winner.Points
+                };
+                var userEntry = tournament.GetEntryByName(user);
+                if (userEntry != null)
+                {
+                    output.Rank = tournament.GetRankByName(userEntry.Name);
+                    output.UserPoints = userEntry.Points;
+                }
+                return output;
             }
-            return output;
+            return null;
         }
 
         public CommandResult TournamentRecords(string data, string user)
         {
-            var values = TournamentRecordsCompact(data, user);
-            var topRank = int.Parse(values["topRank"]);
-            if (topRank == -1)
+            var records = TournamentRecordsCompact(data, user);
+            if (records == null)
             {
                 return new CommandResult("You have not entered any fishing tournaments.");
             }
-            var topScoreRank = int.Parse(values["topScoreRank"]);
-            return new CommandResult($"Your highest score in a tournament was {values["topScore"]} points, earning you {topScoreRank.ToOrdinal()} place.",
-                $"Your highest rank in a tournament was {topRank.ToOrdinal()}, with {values["topRankScore"]} points.");
+            return new CommandResult($"Your highest score in a tournament was {records.TopScore} points, earning you {records.TopRank.ToOrdinal()} place.",
+                $"Your best tournament placement was {records.TopRank.ToOrdinal()} place, with {records.TopRankScore} points.");
         }
 
-        public Dictionary<string, string> TournamentRecordsCompact(string data, string user)
+        public TournamentRecordsResponse TournamentRecordsCompact(string data, string user)
         {
             var output = new Dictionary<string, string>();
-            if (false)  //if the user has never entered a tournament
+            var tournaments = repository.Read(x => x.GetEntryByName(user) != null);
+            if (!tournaments.Any())
             {
-                output.Add("topRank", "-1");
-                return output;
+                return null;
             }
-            output.Add("topRank", "1");
-            output.Add("topRankScore", "1000");
-            output.Add("topScore", "2000");
-            output.Add("topScoreRank", "3");
-            return output;
+            var topRank = tournaments.OrderBy(x => x.GetRankByName(user)).First();
+            var topRankAndScore = tournaments.Where(x => x.GetRankByName(user) == topRank.GetRankByName(user)).OrderByDescending(x => x.GetEntryByName(user).Points).First();
+            var topScore = tournaments.OrderByDescending(x => x.GetEntryByName(user).Points).First();
+            var topScoreAndRank = tournaments.Where(x => x.GetEntryByName(user).Points == topScore.GetEntryByName(user).Points).OrderBy(x => x.GetRankByName(user)).First();
+            return new TournamentRecordsResponse()
+            {
+                TopRank = topRankAndScore.GetRankByName(user),
+                TopRankScore = topRankAndScore.GetEntryByName(user).Points,
+                TopScore = topScoreAndRank.GetEntryByName(user).Points,
+                TopScoreRank = topScoreAndRank.GetRankByName(user)
+            };
         }
+    }
+
+    public class TournamentResultsResponse
+    {
+        public DateTime Ended { get; set; }
+        public string Winner { get; set; }
+        public int WinnerPoints { get; set; }
+        public int Rank { get; set; }
+        public int UserPoints { get; set; }
+    }
+
+    public class TournamentRecordsResponse
+    {
+        public int TopRank { get; set; }
+        public int TopRankScore { get; set; }
+        public int TopScore { get; set; }
+        public int TopScoreRank { get; set; }
     }
 }

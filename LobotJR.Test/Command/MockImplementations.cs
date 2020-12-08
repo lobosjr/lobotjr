@@ -1,6 +1,7 @@
 ﻿using LobotJR.Command;
 using LobotJR.Data;
 using LobotJR.Modules;
+using LobotJR.Modules.Fishing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +10,8 @@ namespace LobotJR.Test.Command
 {
     public class TestRepository<T> : IRepository<T>
     {
-        private List<T> data;
+        private readonly List<T> data;
+        private readonly List<T> toRemove;
 
         public TestRepository(IEnumerable<T> content = null)
         {
@@ -21,10 +23,16 @@ namespace LobotJR.Test.Command
             {
                 data = new List<T>();
             }
+            toRemove = new List<T>();
         }
 
         public void Commit()
         {
+            foreach (var entry in toRemove)
+            {
+                data.Remove(entry);
+            }
+            toRemove.Clear();
         }
 
         public T Create(T entry)
@@ -35,8 +43,12 @@ namespace LobotJR.Test.Command
 
         public T Delete(T entry)
         {
-            data.Remove(entry);
-            return entry;
+            if (data.Contains(entry))
+            {
+                toRemove.Add(entry);
+                return entry;
+            }
+            return default(T);
         }
 
         public T DeleteById(int id)
@@ -70,6 +82,37 @@ namespace LobotJR.Test.Command
         }
     }
 
+    public class TestRepositoryManager : IRepositoryManager
+    {
+        public IRepository<UserRole> UserRoles { get; private set; }
+
+        public IRepository<TournamentResult> TournamentResults { get; private set; }
+
+        public TestRepositoryManager()
+        {
+            UserRoles = new TestRepository<UserRole>();
+            TournamentResults = new TestRepository<TournamentResult>();
+        }
+
+        public TestRepositoryManager(IEnumerable<UserRole> roles)
+        {
+            UserRoles = new TestRepository<UserRole>(roles);
+            TournamentResults = new TestRepository<TournamentResult>();
+        }
+
+        public TestRepositoryManager(IEnumerable<TournamentResult> results)
+        {
+            UserRoles = new TestRepository<UserRole>();
+            TournamentResults = new TestRepository<TournamentResult>(results);
+        }
+
+        public TestRepositoryManager(IEnumerable<UserRole> roles, IEnumerable<TournamentResult> results)
+        {
+            UserRoles = new TestRepository<UserRole>(roles);
+            TournamentResults = new TestRepository<TournamentResult>(results);
+        }
+    }
+
     public class CommandModule : ICommandModule
     {
         public string Name => "Command";
@@ -83,7 +126,17 @@ namespace LobotJR.Test.Command
         public CommandModule()
         {
             Commands = new CommandHandler[] {
-                new CommandHandler("Foo", (data, user) => { Calls.Add("Command.Foo"); return new CommandResult(""); }, "Foo"),
+                new CommandHandler("Foo", (data, user) =>
+                {
+                    Calls.Add("Command.Foo");
+                    return new CommandResult("");
+                }, (data, user) =>
+                {
+                    Calls.Add("Command.Foo -c");
+                    var output = new Dictionary<string, string>();
+                    output.Add("Foo", string.IsNullOrWhiteSpace(data) ? "Bar" : data);
+                    return output;
+                }, "Foo"),
                 new CommandHandler("Bar", (data, user) => { Calls.Add("Command.Bar"); return new CommandResult(""); }, "Bar"),
                 new CommandHandler("Unrestricted", (data, user) => { Calls.Add("Command.Unrestricted"); return new CommandResult(""); }, "Unrestricted")
             };

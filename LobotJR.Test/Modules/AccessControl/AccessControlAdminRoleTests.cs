@@ -3,7 +3,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Linq;
 
-namespace LobotJR.Test.Command
+namespace LobotJR.Test.Modules.AccessControl
 {
     [TestClass]
     public class AccessControlAdminRoleTests : AccessControlAdminBase
@@ -15,7 +15,7 @@ namespace LobotJR.Test.Command
             var result = command.Executor("", "");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
-            Assert.IsTrue(result.Responses.Any(x => x.Contains(commandManager.Roles.Read().Count().ToString())));
+            Assert.IsTrue(result.Responses.Any(x => x.Contains(commandManager.RepositoryManager.UserRoles.Read().Count().ToString())));
             Assert.IsTrue(result.Responses.Any(x => x.Contains("TestRole")));
         }
 
@@ -27,8 +27,8 @@ namespace LobotJR.Test.Command
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses.Any(x => x.Contains("success", StringComparison.OrdinalIgnoreCase)));
-            Assert.AreEqual(2, commandManager.Roles.Read().Count());
-            Assert.IsTrue(commandManager.Roles.Read().Any(x => x.Name.Equals("NewTestRole")));
+            Assert.AreEqual(2, commandManager.RepositoryManager.UserRoles.Read().Count());
+            Assert.IsTrue(commandManager.RepositoryManager.UserRoles.Read().Any(x => x.Name.Equals("NewTestRole")));
         }
 
         [TestMethod]
@@ -39,14 +39,14 @@ namespace LobotJR.Test.Command
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses.Any(x => x.Contains("Error", StringComparison.OrdinalIgnoreCase)));
-            Assert.AreEqual(1, commandManager.Roles.Read().Count());
+            Assert.AreEqual(1, commandManager.RepositoryManager.UserRoles.Read().Count());
         }
 
         [TestMethod]
         public void DescribesRole()
         {
             var command = module.Commands.Where(x => x.Name.Equals("DescribeRole")).FirstOrDefault();
-            var role = commandManager.Roles.Read().FirstOrDefault();
+            var role = commandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var result = command.Executor("TestRole", "");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(2, result.Responses.Count());
@@ -76,12 +76,12 @@ namespace LobotJR.Test.Command
         {
             var add = module.Commands.Where(x => x.Name.Equals("CreateRole")).FirstOrDefault();
             add.Executor("NewTestRole", "");
-            Assert.AreEqual(2, commandManager.Roles.Read().Count());
+            Assert.AreEqual(2, commandManager.RepositoryManager.UserRoles.Read().Count());
             var command = module.Commands.Where(x => x.Name.Equals("DeleteRole")).FirstOrDefault();
             var result = command.Executor("NewTestRole", "");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
-            Assert.AreEqual(1, commandManager.Roles.Read().Count());
+            Assert.AreEqual(1, commandManager.RepositoryManager.UserRoles.Read().Count());
             Assert.IsTrue(result.Responses.Any(x => x.Contains("success", StringComparison.OrdinalIgnoreCase)));
         }
 

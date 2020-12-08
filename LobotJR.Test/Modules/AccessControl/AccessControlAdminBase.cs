@@ -1,9 +1,10 @@
 ﻿using LobotJR.Command;
-using LobotJR.Modules;
+using LobotJR.Modules.AccessControl;
+using LobotJR.Test.Command;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
 
-namespace LobotJR.Test.Command
+namespace LobotJR.Test.Modules.AccessControl
 {
     [TestClass]
     public abstract class AccessControlAdminBase
@@ -23,7 +24,7 @@ namespace LobotJR.Test.Command
                     new List<string>(new string[] { "Command.Foo", "Command.Bar", "Test.*" }))
 
             });
-            commandManager = new CommandManager(new TestRepository<UserRole>(roles));
+            commandManager = new CommandManager(new TestRepositoryManager(roles));
             commandManager.Initialize("", "");
             commandModule = new CommandModule();
             testModule = new TestModule();

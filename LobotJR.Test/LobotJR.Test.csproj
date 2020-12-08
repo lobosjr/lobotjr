@@ -52,13 +52,14 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Command\AccessControlTests.cs" />
-    <Compile Include="Command\AccessControlAdminBase.cs" />
-    <Compile Include="Command\AccessControlAdminRoleTests.cs" />
-    <Compile Include="Command\AccessControlAdminUserTests.cs" />
-    <Compile Include="Command\AccessControlAdminCommandTests.cs" />
+    <Compile Include="Modules\AccessControl\AccessControlTests.cs" />
+    <Compile Include="Modules\AccessControl\AccessControlAdminBase.cs" />
+    <Compile Include="Modules\AccessControl\AccessControlAdminRoleTests.cs" />
+    <Compile Include="Modules\AccessControl\AccessControlAdminUserTests.cs" />
+    <Compile Include="Modules\AccessControl\AccessControlAdminCommandTests.cs" />
     <Compile Include="Command\CommandManagerTests.cs" />
     <Compile Include="Command\MockImplementations.cs" />
+    <Compile Include="Modules\Fishing\FishingTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -70,6 +71,7 @@
       <Name>LobotJR</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

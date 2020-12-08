@@ -3,7 +3,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Linq;
 
-namespace LobotJR.Test.Command
+namespace LobotJR.Test.Modules.AccessControl
 {
     [TestClass]
     public class AccessControlAdminCommandTests : AccessControlAdminBase
@@ -12,7 +12,7 @@ namespace LobotJR.Test.Command
         public void AddsCommandToRole()
         {
             var command = module.Commands.Where(x => x.Name.Equals("RestrictCommand")).FirstOrDefault();
-            var role = commandManager.Roles.Read().FirstOrDefault();
+            var role = commandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var result = command.Executor("Command.Unrestricted TestRole", "");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
@@ -25,7 +25,7 @@ namespace LobotJR.Test.Command
         public void AddCommandErrorsOnMissingParameters()
         {
             var command = module.Commands.Where(x => x.Name.Equals("RestrictCommand")).FirstOrDefault();
-            var role = commandManager.Roles.Read().FirstOrDefault();
+            var role = commandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var result = command.Executor("BadInput", "");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
@@ -44,7 +44,7 @@ namespace LobotJR.Test.Command
         public void AddCommandErrorsOnInvalidRole()
         {
             var command = module.Commands.Where(x => x.Name.Equals("RestrictCommand")).FirstOrDefault();
-            var role = commandManager.Roles.Read().FirstOrDefault();
+            var role = commandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var result = command.Executor("Command.Unrestricted NotTestRole", "");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
@@ -55,7 +55,7 @@ namespace LobotJR.Test.Command
         public void AddCommandErrorsOnInvalidCommand()
         {
             var command = module.Commands.Where(x => x.Name.Equals("RestrictCommand")).FirstOrDefault();
-            var role = commandManager.Roles.Read().FirstOrDefault();
+            var role = commandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var result = command.Executor("Command.Not TestRole", "");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
@@ -66,7 +66,7 @@ namespace LobotJR.Test.Command
         public void AddCommandErrorsOnExistingAssignment()
         {
             var command = module.Commands.Where(x => x.Name.Equals("RestrictCommand")).FirstOrDefault();
-            var role = commandManager.Roles.Read().FirstOrDefault();
+            var role = commandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var result = command.Executor("Command.Foo TestRole", "");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
@@ -94,7 +94,7 @@ namespace LobotJR.Test.Command
         public void RemovesCommandFromRole()
         {
             var command = module.Commands.Where(x => x.Name.Equals("UnrestrictCommand")).FirstOrDefault();
-            var role = this.commandManager.Roles.Read().FirstOrDefault();
+            var role = commandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var result = command.Executor("Command.Foo TestRole", "");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
@@ -106,7 +106,7 @@ namespace LobotJR.Test.Command
         public void RemoveCommandErrorsOnMissingParameters()
         {
             var command = module.Commands.Where(x => x.Name.Equals("UnrestrictCommand")).FirstOrDefault();
-            var role = this.commandManager.Roles.Read().FirstOrDefault();
+            var role = commandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var result = command.Executor("BadInput", "");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
@@ -123,7 +123,7 @@ namespace LobotJR.Test.Command
         public void RemoveCommandErrorsOnCommandNotAssigned()
         {
             var command = module.Commands.Where(x => x.Name.Equals("UnrestrictCommand")).FirstOrDefault();
-            var role = this.commandManager.Roles.Read().FirstOrDefault();
+            var role = commandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var result = command.Executor("Command.Unrestricted TestRole", "");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
@@ -134,7 +134,7 @@ namespace LobotJR.Test.Command
         public void RemoveCommandErrorsOnRoleNotFound()
         {
             var command = module.Commands.Where(x => x.Name.Equals("UnrestrictCommand")).FirstOrDefault();
-            var role = this.commandManager.Roles.Read().FirstOrDefault();
+            var role = commandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var result = command.Executor("Command.Unrestricted NotTestRole", "");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
@@ -145,7 +145,7 @@ namespace LobotJR.Test.Command
         public void RemoveCommandErrorsOnCommandNotFound()
         {
             var command = module.Commands.Where(x => x.Name.Equals("UnrestrictCommand")).FirstOrDefault();
-            var role = this.commandManager.Roles.Read().FirstOrDefault();
+            var role = commandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var result = command.Executor("Command.None TestRole", "");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
