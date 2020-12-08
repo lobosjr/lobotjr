@@ -42,6 +42,10 @@ namespace LobotJR.Modules.Fishing
         public CommandResult TournamentResults(string data, string user)
         {
             var result = TournamentResultsCompact(data, user);
+            if (result == null)
+            {
+                return new CommandResult("No fishing tournaments have completed.");
+            }
             var sinceEnded = DateTime.Now - result.Ended;
             var responses = new List<string>(new string[] { $"The most recent tournament ended {sinceEnded} ago." });
             if (result.Rank > 0)
@@ -53,8 +57,8 @@ namespace LobotJR.Modules.Fishing
                 else
                 {
                     responses.Add($"The tournament was won by {result.Winner} with {result.WinnerPoints} points.");
+                    responses.Add($"You placed {result.Rank.ToOrdinal()} with {result.UserPoints} points.");
                 }
-                responses.Add($"You placed {result.Rank.ToOrdinal()} with {result.UserPoints} points.");
             }
             else
             {
@@ -93,7 +97,7 @@ namespace LobotJR.Modules.Fishing
             {
                 return new CommandResult("You have not entered any fishing tournaments.");
             }
-            return new CommandResult($"Your highest score in a tournament was {records.TopScore} points, earning you {records.TopRank.ToOrdinal()} place.",
+            return new CommandResult($"Your highest score in a tournament was {records.TopScore} points, earning you {records.TopScoreRank.ToOrdinal()} place.",
                 $"Your best tournament placement was {records.TopRank.ToOrdinal()} place, with {records.TopRankScore} points.");
         }
 

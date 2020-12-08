@@ -23,11 +23,11 @@ namespace LobotJR.Test.Modules.Fishing
         {
             var results = new List<TournamentResult>(new TournamentResult[]
             {
-                new TournamentResult(DateTime.Now, new TournamentEntry[] { new TournamentEntry("User", 10), new TournamentEntry("Other", 20), new TournamentEntry("Winner", 30) }),
-                new TournamentResult(DateTime.Now - new TimeSpan(0, 30, 0), new TournamentEntry[] { new TournamentEntry("User", 30), new TournamentEntry("Other", 20), new TournamentEntry("Winner", 10) }),
-                new TournamentResult(DateTime.Now - new TimeSpan(1, 0, 0), new TournamentEntry[] { new TournamentEntry("User", 40), new TournamentEntry("Other", 20), new TournamentEntry("Winner", 50) }),
-                new TournamentResult(DateTime.Now - new TimeSpan(1, 30, 0), new TournamentEntry[] { new TournamentEntry("User", 35), new TournamentEntry("Other", 20), new TournamentEntry("Winner", 10) }),
-                new TournamentResult(DateTime.Now - new TimeSpan(2, 0, 0), new TournamentEntry[] { new TournamentEntry("User", 40), new TournamentEntry("Other", 60), new TournamentEntry("Winner", 50) })
+                new TournamentResult(DateTime.Now - new TimeSpan(0, 0, 30), new TournamentEntry[] { new TournamentEntry("User", 10), new TournamentEntry("Other", 20), new TournamentEntry("Winner", 30) }),
+                new TournamentResult(DateTime.Now - new TimeSpan(0, 30, 30), new TournamentEntry[] { new TournamentEntry("User", 30), new TournamentEntry("Other", 20), new TournamentEntry("Winner", 10) }),
+                new TournamentResult(DateTime.Now - new TimeSpan(1, 0, 30), new TournamentEntry[] { new TournamentEntry("User", 40), new TournamentEntry("Other", 20), new TournamentEntry("Winner", 50) }),
+                new TournamentResult(DateTime.Now - new TimeSpan(1, 30, 30), new TournamentEntry[] { new TournamentEntry("User", 35), new TournamentEntry("Other", 20), new TournamentEntry("Winner", 10) }),
+                new TournamentResult(DateTime.Now - new TimeSpan(2, 0, 30), new TournamentEntry[] { new TournamentEntry("User", 40), new TournamentEntry("Other", 60), new TournamentEntry("Winner", 50) })
             });
             commandManager = new CommandManager(new TestRepositoryManager(results));
             commandManager.Initialize("", "");
@@ -36,7 +36,53 @@ namespace LobotJR.Test.Modules.Fishing
         }
 
         [TestMethod]
-        public void TournamentResultsGetsLatestTournament()
+        public void TournamentResultsGetsLatestTournamentWithParticipation()
+        {
+            var results = commandManager.ProcessMessage("tournament-results", "User");
+            Assert.IsNotNull(results.Responses);
+            Assert.AreEqual(3, results.Responses.Count);
+            Assert.IsTrue(results.Responses.Any(x => x.Contains("00:00:30")));
+            Assert.IsTrue(results.Responses.Any(x => x.Contains("Winner") && x.Contains("30")));
+            Assert.IsTrue(results.Responses.Any(x => x.Contains("3rd") && x.Contains("10")));
+        }
+
+        [TestMethod]
+        public void TournamentResultsGetsLatestTournamentWithoutParticipation()
+        {
+            var results = commandManager.ProcessMessage("tournament-results", "NotUser");
+            Assert.IsNotNull(results.Responses);
+            Assert.AreEqual(2, results.Responses.Count);
+            Assert.IsTrue(results.Responses.Any(x => x.Contains("00:00:30")));
+            Assert.IsTrue(results.Responses.Any(x => x.Contains("Winner") && x.Contains("30")));
+        }
+
+        [TestMethod]
+        public void TournamentResultsGetsLatestTournamentForWinner()
+        {
+            var results = commandManager.ProcessMessage("tournament-results", "Winner");
+            Assert.IsNotNull(results.Responses);
+            Assert.AreEqual(2, results.Responses.Count);
+            Assert.IsTrue(results.Responses.Any(x => x.Contains("00:00:30")));
+            Assert.IsFalse(results.Responses.Any(x => x.Contains("Winner")));
+            Assert.IsTrue(results.Responses.Any(x => x.Contains("You") && x.Contains("30")));
+        }
+
+        [TestMethod]
+        public void TournamentResultsGetsErrorMessageWhenNoTournamentHasCompleted()
+        {
+            foreach (var result in commandManager.RepositoryManager.TournamentResults.Read())
+            {
+                commandManager.RepositoryManager.TournamentResults.Delete(result);
+            }
+            commandManager.RepositoryManager.TournamentResults.Commit();
+
+            var results = commandManager.ProcessMessage("tournament-results", "Winner");
+            Assert.IsNotNull(results.Responses);
+            Assert.AreEqual(1, results.Responses.Count);
+        }
+
+        [TestMethod]
+        public void TournamentResultsCompactGetsLatestTournament()
         {
             var results = commandManager.ProcessMessage("tournament-results -c", "NotUser");
             var resultObject = JsonConvert.DeserializeObject<TournamentResultsResponse>(results.Responses.First());
@@ -48,7 +94,7 @@ namespace LobotJR.Test.Modules.Fishing
         }
 
         [TestMethod]
-        public void TournamentResultsIncludesUserData()
+        public void TournamentResultsCompactIncludesUserData()
         {
             var results = commandManager.ProcessMessage("tournament-results -c", "User");
             var resultObject = JsonConvert.DeserializeObject<TournamentResultsResponse>(results.Responses.First());
@@ -60,9 +106,8 @@ namespace LobotJR.Test.Modules.Fishing
         }
 
         [TestMethod]
-        public void TournamentResultsReturnsNullIfNoTournamentsHaveTakenPlace()
-        {
-            
+        public void TournamentResultsCompactReturnsNullIfNoTournamentsHaveTakenPlace()
+        {            
             foreach (var result in commandManager.RepositoryManager.TournamentResults.Read())
             {
                 commandManager.RepositoryManager.TournamentResults.Delete(result);
@@ -74,7 +119,25 @@ namespace LobotJR.Test.Modules.Fishing
         }
 
         [TestMethod]
-        public void TournamentRecordsGetsUserRecords()
+        public void TournamentRecordsGetsUsersRecords()
+        {
+            var results = commandManager.ProcessMessage("tournament-records", "User");
+            Assert.IsNotNull(results.Responses);
+            Assert.AreEqual(2, results.Responses.Count);
+            Assert.IsTrue(results.Responses.Any(x => x.Contains("1st") && x.Contains("35 points")));
+            Assert.IsTrue(results.Responses.Any(x => x.Contains("2nd") && x.Contains("40 points")));
+        }
+
+        [TestMethod]
+        public void TournamentRecordsGetsErrorWhenUserHasNotCompetedInAnyTournaments()
+        {
+            var results = commandManager.ProcessMessage("tournament-records", "NotUser");
+            Assert.IsNotNull(results.Responses);
+            Assert.AreEqual(1, results.Responses.Count);
+        }
+
+        [TestMethod]
+        public void TournamentRecordsCompactGetsUserRecords()
         {
             var results = commandManager.ProcessMessage("tournament-records -c", "User");
             var resultObject = JsonConvert.DeserializeObject<TournamentRecordsResponse>(results.Responses.First());
@@ -86,7 +149,7 @@ namespace LobotJR.Test.Modules.Fishing
         }
 
         [TestMethod]
-        public void TournamentRecordsGetsNullIfUserHasNeverEntered()
+        public void TournamentRecordsCompactGetsNullIfUserHasNeverEntered()
         {
             var results = commandManager.ProcessMessage("tournament-records -c", "NotUser");
             Assert.IsNull(results.Responses);
