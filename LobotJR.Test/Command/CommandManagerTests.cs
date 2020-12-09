@@ -13,7 +13,7 @@ namespace LobotJR.Test.Command
         public void LoadModulesLoadsModules()
         {
             var module = new CommandModule();
-            var commandManager = new CommandManager(new TestDataAccess());
+            var commandManager = new CommandManager(new TestRepositoryManager());
             commandManager.Initialize("", "");
             commandManager.LoadModules(module);
             var commands = commandManager.Commands;
@@ -24,35 +24,17 @@ namespace LobotJR.Test.Command
         }
 
         [TestMethod]
-        public void InitializeCreatesDefaultRoleIfNoDataFileIsFound()
-        {
-            var broadcastUser = "Broadcaster";
-            var chatUser = "Chatter";
-            var dataAccess = new TestDataAccess(null, false);
-            var commandManager = new CommandManager(dataAccess);
-            commandManager.Initialize(broadcastUser, chatUser);
-            Assert.AreEqual(commandManager.Roles, dataAccess.WrittenData);
-            Assert.AreEqual(1, commandManager.Roles.Count);
-            Assert.AreEqual("Streamer", commandManager.Roles[0].Name);
-            Assert.IsTrue(commandManager.Roles[0].Users.Contains(broadcastUser));
-            Assert.IsTrue(commandManager.Roles[0].Users.Contains(chatUser));
-            Assert.IsTrue(commandManager.Roles[0].Commands.Contains("FeatureManagement.*"));
-        }
-
-        [TestMethod]
         public void InitializeLoadsRoleData()
         {
             var roles = new List<UserRole>(new UserRole[]
             {
-                new UserRole("TestRole")
-                {
-                    Users = new List<string>(new string[] { "User1", "User2", "User3" }),
-                    Commands = new List<string>(new string[] { "Command.One", "Test.*" })
-                }
+                new UserRole("TestRole",
+                    new List<string>(new string[] { "User1", "User2", "User3" }),
+                    new List<string>(new string[] { "Command.One", "Test.*" }))
             });
-            var commandManager = new CommandManager(new TestDataAccess(roles));
+            var commandManager = new CommandManager(new TestRepositoryManager(roles));
             commandManager.Initialize(null, null);
-            Assert.AreEqual(JsonConvert.SerializeObject(roles), JsonConvert.SerializeObject(commandManager.Roles));
+            Assert.AreEqual(JsonConvert.SerializeObject(roles), JsonConvert.SerializeObject(commandManager.RepositoryManager.UserRoles.Read()));
         }
 
         [TestMethod]
@@ -60,7 +42,7 @@ namespace LobotJR.Test.Command
         {
             var module = new CommandModule();
             var firstCommand = module.Commands.First();
-            var commandManager = new CommandManager(new TestDataAccess());
+            var commandManager = new CommandManager(new TestRepositoryManager());
             commandManager.Initialize(null, null);
             commandManager.LoadModules(module);
             Assert.IsTrue(commandManager.IsValidCommand($"{module.Name}.{firstCommand.Name}"));
@@ -70,7 +52,7 @@ namespace LobotJR.Test.Command
         public void IsValidCommandMatchesWildcard()
         {
             var module = new CommandModule();
-            var commandManager = new CommandManager(new TestDataAccess());
+            var commandManager = new CommandManager(new TestRepositoryManager());
             commandManager.Initialize(null, null);
             commandManager.LoadModules(module);
             Assert.IsTrue(commandManager.IsValidCommand($"{module.Name}.*"));
@@ -80,7 +62,7 @@ namespace LobotJR.Test.Command
         public void ProcessMessageExecutesCommands()
         {
             var module = new CommandModule();
-            var commandManager = new CommandManager(new TestDataAccess(new List<UserRole>()));
+            var commandManager = new CommandManager(new TestRepositoryManager());
             commandManager.Initialize(null, null);
             commandManager.LoadModules(module);
             var commandStrings = module.Commands.First().CommandStrings;
@@ -92,18 +74,77 @@ namespace LobotJR.Test.Command
         }
 
         [TestMethod]
+        public void ProcessMessageWildcardAllowsAccessToSubModules()
+        {
+            var module = new CommandModule();
+            var subModule = module.SubModules.First() as SubCommandModule;
+            var roles = new List<UserRole>(new UserRole[]
+            {
+                new UserRole("TestRole",
+                    new List<string>(new string[] { "Auth" }),
+                    new List<string>(new string[] { "Command.*" }))
+            });
+            var commandManager = new CommandManager(new TestRepositoryManager(roles));
+            commandManager.Initialize(null, null);
+            commandManager.LoadModules(module);
+            var result = commandManager.ProcessMessage("Foobar", "Auth");
+            Assert.IsTrue(result.Processed);
+            Assert.AreEqual(null, result.Errors);
+            Assert.IsTrue(subModule.Calls.Any(x => x.Equals("Command.Sub.Foobar")));
+        }
+
+        [TestMethod]
+        public void ProcessMessageSubModuleAccessDoesNotAllowParentAccess()
+        {
+            var module = new CommandModule();
+            var roles = new List<UserRole>(new UserRole[]
+            {
+                new UserRole("TestRole",
+                    new List<string>(new string[] { "Auth" }),
+                    new List<string>(new string[] { "Command.Sub.*" })),
+                new UserRole("OtherRole", null, new List<string>(new string[] { "Command.*" }))
+            });
+            var commandManager = new CommandManager(new TestRepositoryManager(roles));
+            commandManager.Initialize(null, null);
+            commandManager.LoadModules(module);
+            var result = commandManager.ProcessMessage("Foo", "Auth");
+            Assert.IsTrue(result.Processed);
+            Assert.IsTrue(result.Errors.Any());
+            Assert.IsFalse(module.Calls.Any(x => x.Equals("Command.Foo")));
+        }
+
+        [TestMethod]
+        public void ProcessMessageAllowsAuthorizedUserWhenWildcardIsRestricted()
+        {
+            var module = new CommandModule();
+            var subModule = module.SubModules.First() as SubCommandModule;
+            var roles = new List<UserRole>(new UserRole[]
+            {
+                new UserRole("TestRole",
+                    new List<string>(new string[] { "Auth" }),
+                    new List<string>(new string[] { "Command.Sub.*" })),
+                new UserRole("OtherRole", null, new List<string>(new string[] { "Command.*" }))
+            });
+            var commandManager = new CommandManager(new TestRepositoryManager(roles));
+            commandManager.Initialize(null, null);
+            commandManager.LoadModules(module);
+            var result = commandManager.ProcessMessage("Foobar", "Auth");
+            Assert.IsTrue(result.Processed);
+            Assert.AreEqual(null, result.Errors);
+            Assert.IsTrue(subModule.Calls.Any(x => x.Equals("Command.Sub.Foobar")));
+        }
+
+        [TestMethod]
         public void ProcessMessageRestrictsAccessToUnauthorizedUsers()
         {
             var module = new CommandModule();
             var roles = new List<UserRole>(new UserRole[]
             {
-                new UserRole("TestRole")
-                {
-                    Users = new List<string>(new string[] { "Auth" }),
-                    Commands = new List<string>(new string[] { "Command.Foo" })
-                }
+                new UserRole("TestRole",
+                    new List<string>(new string[] { "Auth" }),
+                    new List<string>(new string[] { "Command.Foo" }))
             });
-            var commandManager = new CommandManager(new TestDataAccess(roles));
+            var commandManager = new CommandManager(new TestRepositoryManager(roles));
             commandManager.Initialize(null, null);
             commandManager.LoadModules(module);
             var result = commandManager.ProcessMessage("Foo", "NotAuth");
@@ -117,13 +158,11 @@ namespace LobotJR.Test.Command
             var module = new CommandModule();
             var roles = new List<UserRole>(new UserRole[]
             {
-                new UserRole("TestRole")
-                {
-                    Users = new List<string>(new string[] { "Auth" }),
-                    Commands = new List<string>(new string[] { "Command.Foo" })
-                }
+                new UserRole("TestRole",
+                    new List<string>(new string[] { "Auth" }),
+                    new List<string>(new string[] { "Command.Foo" }))
             });
-            var commandManager = new CommandManager(new TestDataAccess(roles));
+            var commandManager = new CommandManager(new TestRepositoryManager(roles));
             commandManager.Initialize(null, null);
             commandManager.LoadModules(module);
             var result = commandManager.ProcessMessage("Foo", "Auth");
@@ -137,13 +176,11 @@ namespace LobotJR.Test.Command
             var module = new CommandModule();
             var roles = new List<UserRole>(new UserRole[]
             {
-                new UserRole("TestRole")
-                {
-                    Users = new List<string>(new string[] { "Auth" }),
-                    Commands = new List<string>(new string[] { "Command.*" })
-                }
+                new UserRole("TestRole",
+                    new List<string>(new string[] { "Auth" }),
+                    new List<string>(new string[] { "Command.*" }))
             });
-            var commandManager = new CommandManager(new TestDataAccess(roles));
+            var commandManager = new CommandManager(new TestRepositoryManager(roles));
             commandManager.Initialize(null, null);
             commandManager.LoadModules(module);
             var result = commandManager.ProcessMessage(module.Commands.First().CommandStrings.First(), "NotAuth");
@@ -152,22 +189,33 @@ namespace LobotJR.Test.Command
         }
 
         [TestMethod]
-        public void UpdateRolesCallsWriteAction()
+        public void ProcessMessageProcessesCompactCommands()
         {
-            var roles = new List<UserRole>(new UserRole[]
-            {
-                new UserRole("TestRole")
-                {
-                    Users = new List<string>(new string[] { "User1", "User2", "User3" }),
-                    Commands = new List<string>(new string[] { "Command.One", "Test.*" })
-                }
-            });
-            var dataAccess = new TestDataAccess(roles);
-            var commandManager = new CommandManager(dataAccess);
-            commandManager.Roles = roles;
-            commandManager.UpdateRoles();
-            Assert.IsTrue(dataAccess.WriteCount > 0);
-            Assert.AreEqual(roles, dataAccess.WrittenData);
+            var module = new CommandModule();
+            var roles = new List<UserRole>();
+            var commandManager = new CommandManager(new TestRepositoryManager(roles));
+            commandManager.Initialize(null, null);
+            commandManager.LoadModules(module);
+            var result = commandManager.ProcessMessage("Foo -c", "");
+            Assert.IsTrue(result.Processed);
+            Assert.IsTrue(module.Calls.Contains("Command.Foo -c"));
+            Assert.AreEqual(@"{""Foo"":""Bar""}", result.Responses.First());
+            Assert.AreEqual(null, result.Errors);
+        }
+
+        [TestMethod]
+        public void ProcessMessageCompactCommandsPassParameters()
+        {
+            var module = new CommandModule();
+            var roles = new List<UserRole>();
+            var commandManager = new CommandManager(new TestRepositoryManager(roles));
+            commandManager.Initialize(null, null);
+            commandManager.LoadModules(module);
+            var result = commandManager.ProcessMessage("Foo -c value", "");
+            Assert.IsTrue(result.Processed);
+            Assert.IsTrue(module.Calls.Contains("Command.Foo -c"));
+            Assert.AreEqual(@"{""Foo"":""value""}", result.Responses.First());
+            Assert.AreEqual(null, result.Errors);
         }
     }
 }

@@ -1,5 +1,8 @@
 ﻿using LobotJR.Data;
 using LobotJR.Modules;
+using LobotJR.Modules.AccessControl;
+using LobotJR.Modules.Fishing;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,35 +14,38 @@ namespace LobotJR.Command
     /// </summary>
     public class CommandManager : ICommandManager
     {
-        private static string _roleDataPath = "content/role.data";
 
-        private IDataAccess<IList<UserRole>> dataAccess;
         private Dictionary<string, string> commandStringToIdMap;
         private Dictionary<string, CommandExecutor> commandIdToExecutorMap;
+        private Dictionary<string, CompactExecutor> compactIdToExecutorMap;
 
         /// <summary>
-        /// List of user roles.
+        /// Repository manager for access to stored data types.
         /// </summary>
-        public IList<UserRole> Roles { get; set; }
+        public IRepositoryManager RepositoryManager { get; set; }
         /// <summary>
         /// List of ids for registered commands.
         /// </summary>
-        public IEnumerable<string> Commands { get { return this.commandIdToExecutorMap.Keys.ToArray(); } }
+        public IEnumerable<string> Commands { get { return commandIdToExecutorMap.Keys.ToArray(); } }
 
         private void AddCommand(CommandHandler command, string prefix)
         {
             var commandId = $"{prefix}.{command.Name}";
-            this.commandIdToExecutorMap.Add(commandId, command.Executor);
+            commandIdToExecutorMap.Add(commandId, command.Executor);
+            if (command.CompactExecutor != null)
+            {
+                compactIdToExecutorMap.Add(commandId, command.CompactExecutor);
+            }
             var exceptions = new List<Exception>();
             foreach (var commandString in command.CommandStrings)
             {
-                if (this.commandStringToIdMap.ContainsKey(commandString))
+                if (commandStringToIdMap.ContainsKey(commandString))
                 {
-                    exceptions.Add(new Exception($"{commandId}: The command string \"{commandString}\" has already been registered by {this.commandStringToIdMap[commandString]}."));
+                    exceptions.Add(new Exception($"{commandId}: The command string \"{commandString}\" has already been registered by {commandStringToIdMap[commandString]}."));
                 }
                 else
                 {
-                    this.commandStringToIdMap.Add(commandString, commandId);
+                    commandStringToIdMap.Add(commandString, commandId);
                 }
             }
             if (exceptions.Count > 0)
@@ -64,7 +70,7 @@ namespace LobotJR.Command
             {
                 try
                 {
-                    this.AddCommand(command, prefix);
+                    AddCommand(command, prefix);
                 }
                 catch (AggregateException e)
                 {
@@ -78,7 +84,7 @@ namespace LobotJR.Command
                 {
                     try
                     {
-                        this.AddModule(subModule, prefix);
+                        AddModule(subModule, prefix);
                     }
                     catch (AggregateException ae)
                     {
@@ -95,18 +101,13 @@ namespace LobotJR.Command
 
         private bool CanUserExecute(string commandId, string user)
         {
-            var roles = this.Roles.Where(x => x.CoversCommand(commandId));
+            var roles = RepositoryManager.UserRoles.Read().Where(x => x.CoversCommand(commandId));
             return !roles.Any() || roles.Any(x => x.Users.Contains(user));
         }
 
-        public CommandManager()
+        public CommandManager(IRepositoryManager repositoryManager)
         {
-            this.dataAccess = new FileDataAccess<IList<UserRole>>();
-        }
-
-        public CommandManager(IDataAccess<IList<UserRole>> dataAccess)
-        {
-            this.dataAccess = dataAccess;
+            RepositoryManager = repositoryManager;
         }
 
         /// <summary>
@@ -115,23 +116,9 @@ namespace LobotJR.Command
         /// </summary>
         public void Initialize(string broadcastUser, string chatUser)
         {
-            if (!this.dataAccess.Exists(_roleDataPath))
-            {
-                this.Roles = new List<UserRole>();
-                this.Roles.Add(new UserRole("Streamer")
-                {
-                    Commands = new List<string>(new string[] { "AccessControl.*" }),
-                    Users = new List<string>(new string[] { broadcastUser, chatUser }),
-                });
-                this.UpdateRoles();
-            }
-            else
-            {
-                this.Roles = this.dataAccess.ReadData(_roleDataPath);
-            }
-
-            this.commandStringToIdMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            this.commandIdToExecutorMap = new Dictionary<string, CommandExecutor>();
+            commandStringToIdMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            commandIdToExecutorMap = new Dictionary<string, CommandExecutor>();
+            compactIdToExecutorMap = new Dictionary<string, CompactExecutor>();
         }
 
         /// <summary>
@@ -139,7 +126,9 @@ namespace LobotJR.Command
         /// </summary>
         public void LoadAllModules()
         {
-            this.LoadModules(new AccessControl(this));
+            var context = new SqliteContext();
+            LoadModules(new AccessControlModule(this),
+                new FishingModule(RepositoryManager.TournamentResults));
         }
 
         /// <summary>
@@ -153,7 +142,7 @@ namespace LobotJR.Command
             {
                 try
                 {
-                    this.AddModule(module);
+                    AddModule(module);
                 }
                 catch (AggregateException e)
                 {
@@ -176,9 +165,9 @@ namespace LobotJR.Command
             var index = commandId.IndexOf('*');
             if (index >= 0)
             {
-                return this.Commands.Any(x => x.StartsWith(commandId.Substring(0, index)));
+                return Commands.Any(x => x.StartsWith(commandId.Substring(0, index)));
             }
-            return this.commandIdToExecutorMap.ContainsKey(commandId);
+            return commandIdToExecutorMap.ContainsKey(commandId);
         }
 
         /// <summary>
@@ -193,27 +182,51 @@ namespace LobotJR.Command
             var space = message.IndexOf(' ');
             string commandString;
             string data = null;
+            var compact = false;
             if (space != -1)
             {
                 commandString = message.Substring(0, space);
                 data = message.Substring(space + 1);
+                compact = data.StartsWith("-c");
+                if (compact)
+                {
+                    data = data.Substring(2).TrimStart();
+                }
             }
             else
             {
                 commandString = message;
             }
 
-            if (this.commandStringToIdMap.TryGetValue(commandString, out var commandId))
+            if (commandStringToIdMap.TryGetValue(commandString, out var commandId))
             {
-                if (this.CanUserExecute(commandId, user))
+                if (CanUserExecute(commandId, user))
                 {
-                    var executor = this.commandIdToExecutorMap[commandId];
                     try
                     {
-                        var response = executor.Invoke(data, user);
-                        if (response != null)
+                        if (compact)
                         {
-                            return response;
+                            if (compactIdToExecutorMap.TryGetValue(commandId, out var compactExecutor))
+                            {
+                                var compactResponse = compactExecutor.Invoke(data, user);
+                                if (compactResponse != null)
+                                {
+                                    return new CommandResult(JsonConvert.SerializeObject(compactResponse));
+                                }
+                            }
+                            else
+                            {
+                                return new CommandResult($"Command {commandId} does not support compact mode");
+                            }
+                        }
+                        else
+                        {
+                            var executor = commandIdToExecutorMap[commandId];
+                            var response = executor.Invoke(data, user);
+                            if (response != null)
+                            {
+                                return response;
+                            }
                         }
                     }
                     catch (Exception e)
@@ -227,14 +240,6 @@ namespace LobotJR.Command
                 }
             }
             return new CommandResult();
-        }
-
-        /// <summary>
-        /// Save role data to the disk.
-        /// </summary>
-        public void UpdateRoles()
-        {
-            this.dataAccess.WriteData(_roleDataPath, this.Roles);
         }
     }
 }

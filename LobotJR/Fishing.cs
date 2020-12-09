@@ -1,5 +1,7 @@
-﻿using System;
+﻿using LobotJR.Utils;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using TwitchBot;
 
 namespace Fishing
@@ -70,7 +72,7 @@ namespace Fishing
         public DateTime timeOfCatch;
         public DateTime timeSinceHook;
 
-        public Fish Catch(Fish tempFish, IrcClient whisperClient, bool isTournamentActive)
+        public Fish Catch(Fish tempFish, IrcClient whisperClient, bool isTournamentActive, Dictionary<string, Fisherman> fishingList)
         {
             // get fish data out of table
             Fish myCatch = new Fish(tempFish);
@@ -161,7 +163,8 @@ namespace Fishing
             myCatch.caughtBy = username;
             if (isTournamentActive)
             {
-                whisperClient.sendChatMessage(".w " + username + " You caught a " + myCatch.name + " worth " + pointValue + " points! You are now at " + tournamentPoints + " total points.");
+                var rank = fishingList.Select(x => x.Value.tournamentPoints).OrderByDescending(x => x).ToList().IndexOf(tournamentPoints) + 1;
+                whisperClient.sendChatMessage($".w {username} You caught a {myCatch.name} worth {pointValue} points! You are in {rank.ToOrdinal()} place with {tournamentPoints} total points.");
             }
             return myCatch;
         }

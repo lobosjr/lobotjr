@@ -5,8 +5,11 @@ using Equipment;
 using Fishing;
 using GroupFinder;
 using LobotJR.Command;
+using LobotJR.Data;
+using LobotJR.Modules.Fishing;
 using LobotJR.Shared.Authentication;
 using LobotJR.Shared.Utility;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -575,9 +578,14 @@ namespace TwitchBot
             // 199.9.253.119
             connected = irc.connected;
 
-            var commandManager = new CommandManager();
+            #region Command Manager Setup
+            var context = new SqliteContext();
+            context.Database.Initialize(false);
+            var repoManager = new SqliteRepositoryManager(context);
+            var commandManager = new CommandManager(repoManager);
             commandManager.Initialize(tokenData.BroadcastUser, tokenData.ChatUser);
             commandManager.LoadAllModules();
+            #endregion
 
             if (connected)
             {
@@ -765,12 +773,15 @@ namespace TwitchBot
                             {
                                 irc.sendChatMessage("The fishing tournament has ended! Out of " + numParticipants + " participants, " + winner + " won with " + topScore + " points!");
                                 Console.WriteLine("Fishing tournament ended at: " + DateTime.Now.ToString() + ". Winner: " + winner + ". Top Score: " + topScore + ".");
+
+                                var entries = wolfcoins.fishingList.Where(x => x.Value.tournamentPoints > 0).Select(x => new TournamentEntry(x.Value.username, x.Value.tournamentPoints));
+                                repoManager.TournamentResults.Create(new TournamentResult(entries));
+                                repoManager.TournamentResults.Commit();
                             }
                             else
                             {
                                 irc.sendChatMessage("Fishing tournament has ended.");
                             }
-
                         }
                     }
 
@@ -1532,11 +1543,14 @@ namespace TwitchBot
                             }
                             else if (whisperMessage == "!fishleaders" || whisperMessage == "!leaderboards")
                             {
-
                                 foreach (var fish in wolfcoins.fishingLeaderboard)
                                 {
                                     Whisper(whisperSender, "Largest " + fish.name + " caught by " + fish.caughtBy + " at " + fish.weight + " lbs.", group);
                                 }
+                            }
+                            else if (whisperMessage == "!fishleaders -c" || whisperMessage == "!leaderboards -c")
+                            {
+                                Whisper(whisperSender, JsonConvert.SerializeObject(wolfcoins.fishingLeaderboard), group);
                             }
                             else if (whisperMessage == "!fish")
                             {
@@ -1552,6 +1566,13 @@ namespace TwitchBot
                                     {
                                         Whisper(whisperSender, "You haven't caught any fish yet!", group);
                                     }
+                                }
+                            }
+                            else if (whisperMessage == "!fish -c")
+                            {
+                                if (wolfcoins.Exists(wolfcoins.fishingList, whisperSender))
+                                {
+                                    Whisper(whisperSender, JsonConvert.SerializeObject(wolfcoins.fishingList[whisperSender].biggestFish), group);
                                 }
                             }
                             else if (whisperMessage.StartsWith("!fish"))
@@ -1998,7 +2019,7 @@ namespace TwitchBot
                                         {
                                             if (fish.ID == wolfcoins.fishingList[whisperSender].hookedFishID)
                                             {
-                                                myCatch = (wolfcoins.fishingList[whisperSender].Catch(new Fish(fish), group, fishingTournamentActive));
+                                                myCatch = (wolfcoins.fishingList[whisperSender].Catch(new Fish(fish), group, fishingTournamentActive, wolfcoins.fishingList));
                                             }
                                         }
 
@@ -2115,9 +2136,18 @@ namespace TwitchBot
                                     tourneyTime += (nextTournament - DateTime.Now).Minutes;
                                     Whisper(whisperSender, "Next fishing tournament begins in " + tourneyTime + " minutes.", group);
                                 }
-
-
-
+                            }
+                            else if (whisperMessage == "!nexttournament -c")
+                            {
+                                if (broadcasting)
+                                {
+                                    if (fishingTournamentActive)
+                                    {
+                                        Whisper(whisperSender, "00:00:00", group);
+                                    }
+                                    var toNext = nextTournament - DateTime.Now;
+                                    Whisper(whisperSender, toNext.ToString(), group);
+                                }
                             }
                             else if (whisperMessage == "!debugtournament")
                             {
@@ -3464,8 +3494,7 @@ namespace TwitchBot
                                 string[] whisperMSG = whispers[1].Split();
                                 if (whisperMSG.Length > 2)
                                 {
-                                    int value = 0;
-                                    if (int.TryParse(whisperMSG[2], out value))
+                                    if (int.TryParse(whisperMSG[2], out int value))
                                     {
                                         int newXp = wolfcoins.SetXP(value, whisperMSG[1], group);
                                         if (newXp != -1)
@@ -3672,8 +3701,7 @@ namespace TwitchBot
                                 string[] whisperMSG = whispers[1].Split();
                                 if (whisperMSG.Length > 2)
                                 {
-                                    int value = 0;
-                                    if (int.TryParse(whisperMSG[2], out value))
+                                    if (int.TryParse(whisperMSG[2], out int value))
                                     {
                                         if (!wolfcoins.Exists(wolfcoins.coinList, whisperMSG[1]))
                                         {
@@ -4001,8 +4029,7 @@ namespace TwitchBot
 
                                 if (whisperMSG[0] != null && whisperMSG[1] != null && whisperMSG[2] != null)
                                 {
-                                    int value = 0;
-                                    if (!(int.TryParse(whisperMSG[2].ToString(), out value)))
+                                    if (!(int.TryParse(whisperMSG[2].ToString(), out int value)))
                                     {
                                         break;
                                     }
@@ -4314,8 +4341,7 @@ namespace TwitchBot
 
                                         if (first.Length >= 3 && first[1] != null && first[2] != null)
                                         {
-                                            int value = 0;
-                                            if (int.TryParse(first[2], out value))
+                                            if (int.TryParse(first[2], out int value))
                                             {
                                                 int newXp = wolfcoins.SetXP(value, first[1], group);
                                                 if (newXp != -1)
@@ -4347,8 +4373,7 @@ namespace TwitchBot
 
                                         if (first[0] != null && first[1] != null)
                                         {
-                                            int value = 0;
-                                            if (int.TryParse(first[1], out value))
+                                            if (int.TryParse(first[1], out int value))
                                             {
                                                 wolfcoins.AwardXP(value, group);
                                             }
