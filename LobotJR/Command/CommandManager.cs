@@ -211,7 +211,7 @@ namespace LobotJR.Command
                                 var compactResponse = compactExecutor.Invoke(data, user);
                                 if (compactResponse != null)
                                 {
-                                    return new CommandResult(JsonConvert.SerializeObject(compactResponse));
+                                    return new CommandResult($"{commandString}: {JsonConvert.SerializeObject(compactResponse)}");
                                 }
                             }
                             else

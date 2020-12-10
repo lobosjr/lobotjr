@@ -1550,7 +1550,7 @@ namespace TwitchBot
                             }
                             else if (whisperMessage == "!fishleaders -c" || whisperMessage == "!leaderboards -c")
                             {
-                                Whisper(whisperSender, JsonConvert.SerializeObject(wolfcoins.fishingLeaderboard), group);
+                                Whisper(whisperSender, $"fishleaders: {JsonConvert.SerializeObject(wolfcoins.fishingLeaderboard)}", group);
                             }
                             else if (whisperMessage == "!fish")
                             {
@@ -1572,7 +1572,7 @@ namespace TwitchBot
                             {
                                 if (wolfcoins.Exists(wolfcoins.fishingList, whisperSender))
                                 {
-                                    Whisper(whisperSender, JsonConvert.SerializeObject(wolfcoins.fishingList[whisperSender].biggestFish), group);
+                                    Whisper(whisperSender, $"fish: {JsonConvert.SerializeObject(wolfcoins.fishingList[whisperSender].biggestFish)}", group);
                                 }
                             }
                             else if (whisperMessage.StartsWith("!fish"))
@@ -2143,10 +2143,10 @@ namespace TwitchBot
                                 {
                                     if (fishingTournamentActive)
                                     {
-                                        Whisper(whisperSender, "00:00:00", group);
+                                        Whisper(whisperSender, "nexttournament: 00:00:00", group);
                                     }
                                     var toNext = nextTournament - DateTime.Now;
-                                    Whisper(whisperSender, toNext.ToString(), group);
+                                    Whisper(whisperSender, $"nexttournament: {toNext.ToString()}", group);
                                 }
                             }
                             else if (whisperMessage == "!debugtournament")
