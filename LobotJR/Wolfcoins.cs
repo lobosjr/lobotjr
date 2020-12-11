@@ -957,7 +957,7 @@ namespace Wolfcoins
             var bytes4 = Encoding.UTF8.GetBytes(json4);
             string backupPath4 = "backup/Fishing";
             var json5 = JsonConvert.SerializeObject(fishingLeaderboard);
-            var bytes5 = Encoding.UTF8.GetBytes(json4);
+            var bytes5 = Encoding.UTF8.GetBytes(json5);
             string backupPath5 = "backup/FishingLeaderboard";
             DateTime now = DateTime.Now;
             backupPath = backupPath + now.Day + now.Month + now.Year + now.Hour + now.Minute + now.Second;
