@@ -24,10 +24,11 @@ namespace LobotJR.Test.Modules.Fishing
             return new TournamentResultsResponse()
             {
                 Ended = DateTime.Parse(data[0]),
-                Winner = data[1],
-                WinnerPoints = int.Parse(data[2]),
-                Rank = int.Parse(data[3]),
-                UserPoints = int.Parse(data[4])
+                Participants = int.Parse(data[1]),
+                Winner = data[2],
+                WinnerPoints = int.Parse(data[3]),
+                Rank = int.Parse(data[4]),
+                UserPoints = int.Parse(data[5])
             };
         }
 
@@ -114,6 +115,7 @@ namespace LobotJR.Test.Modules.Fishing
             var resultObject = ResultsFromCompact(results.Responses.First());
             Assert.IsNotNull(resultObject);
             Assert.AreEqual("Winner", resultObject.Winner);
+            Assert.AreEqual(3, resultObject.Participants);
             Assert.AreEqual(30, resultObject.WinnerPoints);
             Assert.AreEqual(0, resultObject.Rank);
             Assert.AreEqual(0, resultObject.UserPoints);
@@ -126,6 +128,7 @@ namespace LobotJR.Test.Modules.Fishing
             var resultObject = ResultsFromCompact(results.Responses.First());
             Assert.IsNotNull(resultObject);
             Assert.AreEqual("Winner", resultObject.Winner);
+            Assert.AreEqual(3, resultObject.Participants);
             Assert.AreEqual(30, resultObject.WinnerPoints);
             Assert.AreEqual(3, resultObject.Rank);
             Assert.AreEqual(10, resultObject.UserPoints);
