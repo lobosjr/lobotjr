@@ -123,20 +123,30 @@ namespace LobotJR.Modules.Fishing
         }
     }
 
-    public class TournamentResultsResponse
+    public class TournamentResultsResponse : ICompactResponse
     {
         public DateTime Ended { get; set; }
         public string Winner { get; set; }
         public int WinnerPoints { get; set; }
         public int Rank { get; set; }
         public int UserPoints { get; set; }
+
+        public IEnumerable<string> ToCompact()
+        {
+            return new string[] { $"{Ended}|{Winner}|{WinnerPoints}|{Rank}|{UserPoints};" };
+        }
     }
 
-    public class TournamentRecordsResponse
+    public class TournamentRecordsResponse : ICompactResponse
     {
         public int TopRank { get; set; }
         public int TopRankScore { get; set; }
         public int TopScore { get; set; }
         public int TopScoreRank { get; set; }
+
+        public IEnumerable<string> ToCompact()
+        {
+            return new string[] { $"{TopRank}|{TopRankScore}|{TopScore}|{TopScoreRank};" };
+        }
     }
 }

@@ -199,7 +199,7 @@ namespace LobotJR.Test.Command
             var result = commandManager.ProcessMessage("Foo -c", "");
             Assert.IsTrue(result.Processed);
             Assert.IsTrue(module.Calls.Contains("Command.Foo -c"));
-            Assert.AreEqual(@"{""Foo"":""Bar""}", result.Responses.First());
+            Assert.AreEqual(@"Foo: Foo|Bar;", result.Responses.First());
             Assert.AreEqual(null, result.Errors);
         }
 
@@ -214,7 +214,7 @@ namespace LobotJR.Test.Command
             var result = commandManager.ProcessMessage("Foo -c value", "");
             Assert.IsTrue(result.Processed);
             Assert.IsTrue(module.Calls.Contains("Command.Foo -c"));
-            Assert.AreEqual(@"{""Foo"":""value""}", result.Responses.First());
+            Assert.AreEqual(@"Foo: Foo|value;", result.Responses.First());
             Assert.AreEqual(null, result.Errors);
         }
     }

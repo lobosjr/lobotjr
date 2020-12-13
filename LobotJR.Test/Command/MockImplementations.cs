@@ -133,8 +133,8 @@ namespace LobotJR.Test.Command
                 }, (data, user) =>
                 {
                     Calls.Add("Command.Foo -c");
-                    var output = new Dictionary<string, string>();
-                    output.Add("Foo", string.IsNullOrWhiteSpace(data) ? "Bar" : data);
+                    var output = new TestCompactResponse();
+                    output.data.Add("Foo", string.IsNullOrWhiteSpace(data) ? "Bar" : data);
                     return output;
                 }, "Foo"),
                 new CommandHandler("Bar", (data, user) => { Calls.Add("Command.Bar"); return new CommandResult(""); }, "Bar"),
@@ -177,5 +177,14 @@ namespace LobotJR.Test.Command
         };
 
         public IEnumerable<ICommandModule> SubModules => null;
+    }
+
+    public class TestCompactResponse : ICompactResponse
+    {
+        public Dictionary<string, string> data = new Dictionary<string, string>();
+        public IEnumerable<string> ToCompact()
+        {
+            return data.Select(x => $"{x.Key}|{x.Value};");
+        }
     }
 }

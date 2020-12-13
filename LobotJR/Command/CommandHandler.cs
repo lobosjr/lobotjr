@@ -3,7 +3,7 @@
 namespace LobotJR.Command
 {
     public delegate CommandResult CommandExecutor(string data, string user);
-    public delegate object CompactExecutor(string data, string user);
+    public delegate ICompactResponse CompactExecutor(string data, string user);
 
     /// <summary>
     /// Represents a command the bot can execute in response to a message from

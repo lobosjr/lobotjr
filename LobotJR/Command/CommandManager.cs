@@ -2,7 +2,6 @@
 using LobotJR.Modules;
 using LobotJR.Modules.AccessControl;
 using LobotJR.Modules.Fishing;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,6 +13,7 @@ namespace LobotJR.Command
     /// </summary>
     public class CommandManager : ICommandManager
     {
+        private const int MessageLimit = 450;
 
         private Dictionary<string, string> commandStringToIdMap;
         private Dictionary<string, CommandExecutor> commandIdToExecutorMap;
@@ -211,7 +211,21 @@ namespace LobotJR.Command
                                 var compactResponse = compactExecutor.Invoke(data, user);
                                 if (compactResponse != null)
                                 {
-                                    return new CommandResult($"{commandString}: {JsonConvert.SerializeObject(compactResponse)}");
+                                    var entries = compactResponse.ToCompact();
+                                    var prefix = $"{commandString}: ";
+                                    var toSend = prefix;
+                                    var responses = new List<string>();
+                                    foreach (var entry in entries)
+                                    {
+                                        if (toSend.Length + entry.Length > MessageLimit)
+                                        {
+                                            responses.Add(toSend);
+                                            toSend = prefix;
+                                        }
+                                        toSend += entry;
+                                    }
+                                    responses.Add(toSend);
+                                    return new CommandResult(responses.ToArray());
                                 }
                             }
                             else

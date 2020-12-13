@@ -2,7 +2,6 @@
 using LobotJR.Modules.Fishing;
 using LobotJR.Test.Command;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,6 +16,33 @@ namespace LobotJR.Test.Modules.Fishing
     {
         private CommandManager commandManager;
         private FishingModule module;
+
+        private TournamentResultsResponse ResultsFromCompact(string compact)
+        {
+            var index = compact.IndexOf(": ");
+            var data = compact.Substring(index + 2, compact.Length - index - 3).Split('|').ToArray();
+            return new TournamentResultsResponse()
+            {
+                Ended = DateTime.Parse(data[0]),
+                Winner = data[1],
+                WinnerPoints = int.Parse(data[2]),
+                Rank = int.Parse(data[3]),
+                UserPoints = int.Parse(data[4])
+            };
+        }
+
+        private TournamentRecordsResponse RecordsFromCompact(string compact)
+        {
+            var index = compact.IndexOf(": ");
+            var data = compact.Substring(index + 2, compact.Length - index - 3).Split('|').ToArray();
+            return new TournamentRecordsResponse()
+            {
+                TopRank = int.Parse(data[0]),
+                TopRankScore = int.Parse(data[1]),
+                TopScore = int.Parse(data[2]),
+                TopScoreRank = int.Parse(data[3])
+            };
+        }
 
         [TestInitialize]
         public void Setup()
@@ -85,7 +111,7 @@ namespace LobotJR.Test.Modules.Fishing
         public void TournamentResultsCompactGetsLatestTournament()
         {
             var results = commandManager.ProcessMessage("tournament-results -c", "NotUser");
-            var resultObject = JsonConvert.DeserializeObject<TournamentResultsResponse>(results.Responses.First());
+            var resultObject = ResultsFromCompact(results.Responses.First());
             Assert.IsNotNull(resultObject);
             Assert.AreEqual("Winner", resultObject.Winner);
             Assert.AreEqual(30, resultObject.WinnerPoints);
@@ -97,7 +123,7 @@ namespace LobotJR.Test.Modules.Fishing
         public void TournamentResultsCompactIncludesUserData()
         {
             var results = commandManager.ProcessMessage("tournament-results -c", "User");
-            var resultObject = JsonConvert.DeserializeObject<TournamentResultsResponse>(results.Responses.First());
+            var resultObject = ResultsFromCompact(results.Responses.First());
             Assert.IsNotNull(resultObject);
             Assert.AreEqual("Winner", resultObject.Winner);
             Assert.AreEqual(30, resultObject.WinnerPoints);
@@ -140,7 +166,7 @@ namespace LobotJR.Test.Modules.Fishing
         public void TournamentRecordsCompactGetsUserRecords()
         {
             var results = commandManager.ProcessMessage("tournament-records -c", "User");
-            var resultObject = JsonConvert.DeserializeObject<TournamentRecordsResponse>(results.Responses.First());
+            var resultObject = RecordsFromCompact(results.Responses.First());
             Assert.IsNotNull(resultObject);
             Assert.AreEqual(1, resultObject.TopRank);
             Assert.AreEqual(35, resultObject.TopRankScore);
