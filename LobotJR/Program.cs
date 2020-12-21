@@ -9,7 +9,6 @@ using LobotJR.Data;
 using LobotJR.Modules.Fishing;
 using LobotJR.Shared.Authentication;
 using LobotJR.Shared.Utility;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -1550,7 +1549,19 @@ namespace TwitchBot
                             }
                             else if (whisperMessage == "!fishleaders -c" || whisperMessage == "!leaderboards -c")
                             {
-                                Whisper(whisperSender, $"fishleaders: {JsonConvert.SerializeObject(wolfcoins.fishingLeaderboard)}", group);
+                                var compact = wolfcoins.fishingLeaderboard.Select(x => $"{x.name}|{x.length}|{x.weight}|{x.caughtBy};");
+                                var prefix = "fishleaders: ";
+                                var toSend = prefix;
+                                foreach (var entry in compact)
+                                {
+                                    if (toSend.Length + entry.Length > 450)
+                                    {
+                                        Whisper(whisperSender, toSend, group);
+                                        toSend = prefix;
+                                    }
+                                    toSend += entry;
+                                }
+                                Whisper(whisperSender, toSend, group);
                             }
                             else if (whisperMessage == "!fish")
                             {
@@ -1572,7 +1583,19 @@ namespace TwitchBot
                             {
                                 if (wolfcoins.Exists(wolfcoins.fishingList, whisperSender))
                                 {
-                                    Whisper(whisperSender, $"fish: {JsonConvert.SerializeObject(wolfcoins.fishingList[whisperSender].biggestFish)}", group);
+                                    var compact = wolfcoins.fishingList[whisperSender].biggestFish.Select(x => $"{x.name}|{x.length}|{x.weight};");
+                                    var prefix = "fish: ";
+                                    var toSend = prefix;
+                                    foreach (var entry in compact)
+                                    {
+                                        if (toSend.Length + entry.Length > 450)
+                                        {
+                                            Whisper(whisperSender, toSend, group);
+                                            toSend = prefix;
+                                        }
+                                        toSend += entry;
+                                    }
+                                    Whisper(whisperSender, toSend, group);
                                 }
                             }
                             else if (whisperMessage.StartsWith("!fish"))
@@ -2143,10 +2166,16 @@ namespace TwitchBot
                                 {
                                     if (fishingTournamentActive)
                                     {
-                                        Whisper(whisperSender, "nexttournament: 00:00:00", group);
+                                        var maxDuration = new TimeSpan(0, tournamentDuration, 0); // value is in minutes, so convert to seconds to compare against time elapsed
+                                        var currentDuration = DateTime.Now - tournamentStart;
+                                        var left = maxDuration - currentDuration;
+                                        Whisper(whisperSender, $"nexttournament: -{left.ToString("c")}", group);
                                     }
-                                    var toNext = nextTournament - DateTime.Now;
-                                    Whisper(whisperSender, $"nexttournament: {toNext.ToString()}", group);
+                                    else
+                                    {
+                                        var toNext = nextTournament - DateTime.Now;
+                                        Whisper(whisperSender, $"nexttournament: {toNext.ToString("c")}", group);
+                                    }
                                 }
                             }
                             else if (whisperMessage == "!debugtournament")

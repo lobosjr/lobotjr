@@ -47,7 +47,7 @@ namespace LobotJR.Modules.Fishing
                 return new CommandResult("No fishing tournaments have completed.");
             }
             var sinceEnded = DateTime.Now - result.Ended;
-            var responses = new List<string>(new string[] { $"The most recent tournament ended {sinceEnded} ago." });
+            var responses = new List<string>(new string[] { $"The most recent tournament ended {sinceEnded} ago with {result.Participants} participants." });
             if (result.Rank > 0)
             {
                 if (result.Winner.Equals(user, StringComparison.OrdinalIgnoreCase))
@@ -76,8 +76,10 @@ namespace LobotJR.Modules.Fishing
                 var output = new TournamentResultsResponse()
                 {
                     Ended = tournament.Date,
+                    Participants = tournament.Entries.Count,
                     Winner = winner.Name,
                     WinnerPoints = winner.Points
+
                 };
                 var userEntry = tournament.GetEntryByName(user);
                 if (userEntry != null)
@@ -123,20 +125,31 @@ namespace LobotJR.Modules.Fishing
         }
     }
 
-    public class TournamentResultsResponse
+    public class TournamentResultsResponse : ICompactResponse
     {
         public DateTime Ended { get; set; }
+        public int Participants { get; set; }
         public string Winner { get; set; }
         public int WinnerPoints { get; set; }
         public int Rank { get; set; }
         public int UserPoints { get; set; }
+
+        public IEnumerable<string> ToCompact()
+        {
+            return new string[] { $"{Ended}|{Participants}|{Winner}|{WinnerPoints}|{Rank}|{UserPoints};" };
+        }
     }
 
-    public class TournamentRecordsResponse
+    public class TournamentRecordsResponse : ICompactResponse
     {
         public int TopRank { get; set; }
         public int TopRankScore { get; set; }
         public int TopScore { get; set; }
         public int TopScoreRank { get; set; }
+
+        public IEnumerable<string> ToCompact()
+        {
+            return new string[] { $"{TopRank}|{TopRankScore}|{TopScore}|{TopScoreRank};" };
+        }
     }
 }

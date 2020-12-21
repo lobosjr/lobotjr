@@ -97,6 +97,7 @@
     <Compile Include="Command\CommandManager.cs" />
     <Compile Include="Command\CommandResult.cs" />
     <Compile Include="Command\ICommandManager.cs" />
+    <Compile Include="Command\ICompactResponse.cs" />
     <Compile Include="Command\UserRole.cs" />
     <Compile Include="Data\IRepositoryManager.cs" />
     <Compile Include="Data\SqliteRepositoryManager.cs" />
