@@ -1068,14 +1068,6 @@ namespace Wolfcoins
                 }
                 Console.WriteLine("Fishing data loaded.");
             }
-            else
-            {
-#if DEBUG
-                fishingList = new Dictionary<string, Fisherman>();
-                fishingList.Add("empyrealhell", new Fisherman() { username = "empyrealhell", isFishing = false, fishHooked = false, });
-
-#endif
-            }
             if (File.Exists(fishingLeaderboardPath))
             {
                 fishingLeaderboard = JsonConvert.DeserializeObject<List<Fish>>(File.ReadAllText(fishingLeaderboardPath));
