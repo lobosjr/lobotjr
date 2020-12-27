@@ -47,7 +47,12 @@ namespace LobotJR.Modules.Fishing
                 return new CommandResult("No fishing tournaments have completed.");
             }
             var sinceEnded = DateTime.Now - result.Ended;
-            var responses = new List<string>(new string[] { $"The most recent tournament ended {sinceEnded} ago with {result.Participants} participants." });
+            var pluralized = "participant";
+            if (result.Participants > 1)
+            {
+                pluralized += "s";
+            }
+            var responses = new List<string>(new string[] { $"The most recent tournament ended {sinceEnded.ToCommonString()} ago with {result.Participants} {pluralized}." });
             if (result.Rank > 0)
             {
                 if (result.Winner.Equals(user, StringComparison.OrdinalIgnoreCase))
