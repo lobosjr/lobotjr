@@ -39,7 +39,7 @@ namespace Wolfcoins
 
         public void ResetTime()
         {
-            this.lastTime = DateTime.Now;
+            lastTime = DateTime.Now;
         }
 
         public void AddMember(CharClass member)
@@ -85,15 +85,15 @@ namespace Wolfcoins
         List<string> viewerList = new List<string>();
         public HashSet<string> subSet = new HashSet<string>();
         public List<SubscriberData.Subscription> subsList = new List<SubscriberData.Subscription>();
-        private string path = "wolfcoins.json";
-        private string fishingPath = "fishing.json";
-        private string fishingLeaderboardPath = "fishingLeaderboard.json";
-        private string xpPath = "XP.json";
-        private string classPath = "classData.json";
+        private readonly string path = "wolfcoins.json";
+        private readonly string fishingPath = "fishing.json";
+        private readonly string fishingLeaderboardPath = "fishingLeaderboard.json";
+        private readonly string xpPath = "XP.json";
+        private readonly string classPath = "classData.json";
 
-        private ClientData clientData;
+        private readonly ClientData clientData;
 
-        private const int COINMAX = Int32.MaxValue;
+        private const int COINMAX = int.MaxValue;
 
         public const int MAX_XP = 37094;
         public const int MAX_LEVEL = 20;
@@ -237,9 +237,8 @@ namespace Wolfcoins
         {
             if (Exists(coinList, user))
             {
-                int value = 0;
 
-                if (coinList.ContainsKey(user) && int.TryParse(coins.ToString(), out value))
+                if (coinList.ContainsKey(user) && int.TryParse(coins.ToString(), out int value))
                 {
                     try
                     {
@@ -277,8 +276,7 @@ namespace Wolfcoins
                 if (xpList == null)
                     return;
 
-                int value = 0;
-                if (xpList.ContainsKey(user) && int.TryParse(xp.ToString(), out value))
+                if (xpList.ContainsKey(user) && int.TryParse(xp.ToString(), out int value))
                 {
                     try
                     {
@@ -732,11 +730,10 @@ namespace Wolfcoins
 
         public bool AddCoins(string user, string coins)
         {
-            int value = 0;
             if (coinList == null)
                 return false;
 
-            if (coinList.ContainsKey(user) && int.TryParse(coins, out value))
+            if (coinList.ContainsKey(user) && int.TryParse(coins, out int value))
             {
                 try
                 {
@@ -806,8 +803,7 @@ namespace Wolfcoins
             if (xpList == null)
                 return false;
 
-            int value = 0;
-            if (xpList.ContainsKey(user) && int.TryParse(xp, out value))
+            if (xpList.ContainsKey(user) && int.TryParse(xp, out int value))
             {
                 try
                 {
@@ -863,8 +859,7 @@ namespace Wolfcoins
             if (coinList == null)
                 return false;
 
-            int value = 0;
-            if (coinList.ContainsKey(user) && int.TryParse(coins, out value))
+            if (coinList.ContainsKey(user) && int.TryParse(coins, out int value))
             {
                 if (value > 0)
                 {
@@ -1049,10 +1044,6 @@ namespace Wolfcoins
             else
             {
                 coinList = new Dictionary<string, int>();
-#if DEBUG
-                coinList.Add("empyrealhell", 100);
-                coinList.Add("celesteenfer", 1000);
-#endif
                 Console.WriteLine("Path not found. Coins initialized to default.");
             }
 
@@ -1064,10 +1055,6 @@ namespace Wolfcoins
             else
             {
                 xpList = new Dictionary<string, int>();
-#if DEBUG
-                xpList.Add("empyrealhell", 100);
-                xpList.Add("celesteenfer", 1000);
-#endif
                 Console.WriteLine("Path not found. XP file initialized to default.");
             }
 
