@@ -45,5 +45,38 @@ namespace LobotJR.Utils
                     return $"{current}th";
             }
         }
+
+        private static string generateCommonString(int amount, string unit)
+        {
+            var value = unit;
+            if (amount > 1)
+            {
+                value += "s";
+            }
+            return $"{amount} {value}";
+        }
+
+        /// <summary>
+        /// Gets the value of a timespan in the way a person would naturally
+        /// express it.
+        /// </summary>
+        /// <param name="current"></param>
+        /// <returns>A string expressing the amount of the greatest unit of
+        /// time that the timespan covers.</returns>
+        public static string ToCommonString(this TimeSpan current)
+        {
+            var hours = (int)Math.Floor(current.TotalHours);
+            if (hours > 0)
+            {
+                return generateCommonString(hours, "hour");
+            }
+            var minutes = (int)Math.Floor(current.TotalMinutes);
+            if (minutes > 0)
+            {
+                return generateCommonString(minutes, "minute");
+            }
+            var seconds = (int)Math.Floor(current.TotalSeconds);
+            return generateCommonString(seconds, "second");
+        }
     }
 }

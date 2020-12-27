@@ -303,6 +303,7 @@ namespace TwitchBot
                 {
                     new Fish()
                     {
+                        ID = 1,
                         name = "smallfish",
                         sizeCategory = 1,
                         lengthRange = new float[] {5, 10},
@@ -312,6 +313,7 @@ namespace TwitchBot
                     },
                     new Fish()
                     {
+                        ID = 2,
                         name = "mediumfish",
                         sizeCategory = 2,
                         lengthRange = new float[] {10, 20},
@@ -321,6 +323,7 @@ namespace TwitchBot
                     },
                     new Fish()
                     {
+                        ID = 3,
                         name = "largefish",
                         sizeCategory = 3,
                         lengthRange = new float[] {20, 40},
@@ -329,6 +332,7 @@ namespace TwitchBot
                         flavorText = "A large fish."
                     }
                 });
+                return;
 #endif
             }
             fishDatabase = new List<Fish>();
@@ -784,6 +788,7 @@ namespace TwitchBot
                             int topScore = 0;
                             string winner = "";
                             fishingTournamentActive = false;
+                            var entries = wolfcoins.fishingList.Where(x => x.Value.tournamentPoints > 0).Select(x => new TournamentEntry(x.Value.username, x.Value.tournamentPoints)).ToList();
 
                             foreach (var fisher in wolfcoins.fishingList)
                             {
@@ -809,7 +814,6 @@ namespace TwitchBot
                                 irc.sendChatMessage("The fishing tournament has ended! Out of " + numParticipants + " participants, " + winner + " won with " + topScore + " points!");
                                 Console.WriteLine("Fishing tournament ended at: " + DateTime.Now.ToString() + ". Winner: " + winner + ". Top Score: " + topScore + ".");
 
-                                var entries = wolfcoins.fishingList.Where(x => x.Value.tournamentPoints > 0).Select(x => new TournamentEntry(x.Value.username, x.Value.tournamentPoints));
                                 repoManager.TournamentResults.Create(new TournamentResult(entries));
                                 repoManager.TournamentResults.Commit();
                             }
@@ -1185,7 +1189,7 @@ namespace TwitchBot
                                 Whisper(whisperSender, "Here's a list of things you can ask me about: Wolfcoins (1) - Leveling System (2)", group);
 
                             }
-                            else if (whisperMessage == "!cleartesters" && whisperSender == "lobosjr")
+                            else if (whisperMessage == "!cleartesters" && (whisperSender == tokenData.BroadcastUser || whisperSender == tokenData.ChatUser))
                             {
                                 //string[] users = { "lobosjr", "spectrumknight", "floogoss", "shoumpaloumpa", "nemesis_of_green", "donotgogently", "twitchmage", "kidgreen4", "cuddling", "androsv", "jaranous94", "lambchop2559", "hockeyboy1257", "dumj00", "stennisberetheon", "bionicmeech", "blargh201", "arampizzatime"};
                                 //for(int i = 0; i < users.Length; i++)
@@ -1244,7 +1248,7 @@ namespace TwitchBot
                                         System.IO.File.AppendAllText(logPath, "------------------------------------------" + Environment.NewLine);
 
                                         Whisper(whisperSender, "Bug report submitted.", group);
-                                        Whisper("lobosjr", DateTime.Now + ": " + whisperSender + " submitted a bug report.", group);
+                                        Whisper(tokenData.BroadcastUser, DateTime.Now + ": " + whisperSender + " submitted a bug report.", group);
                                         Console.WriteLine(DateTime.Now + ": " + whisperSender + " submitted a bug report.");
                                     }
                                 }
@@ -1292,7 +1296,7 @@ namespace TwitchBot
                             }
                             else if (whisperMessage == "!updateviewers")
                             {
-                                if (whisperSender != "lobosjr")
+                                if (whisperSender != tokenData.BroadcastUser && whisperSender != tokenData.ChatUser)
                                 {
                                     continue;
                                 }
@@ -1301,7 +1305,7 @@ namespace TwitchBot
                             }
                             else if (whisperMessage == "!updateitems")
                             {
-                                if (whisperSender != "lobosjr")
+                                if (whisperSender != tokenData.BroadcastUser && whisperSender != tokenData.ChatUser)
                                     continue;
 
                                 UpdateItems(itemListPath, ref itemList, ref itemDatabase);
@@ -1328,15 +1332,15 @@ namespace TwitchBot
                             }
                             else if (whisperMessage == "!godmode")
                             {
-                                if (whisperSender != "lobosjr")
+                                if (whisperSender != tokenData.BroadcastUser && whisperSender != tokenData.ChatUser)
                                     continue;
 
-                                wolfcoins.classList["lobosjr"].successChance = 1000;
+                                wolfcoins.classList[whisperSender].successChance = 1000;
 
                             }
                             else if (whisperMessage.StartsWith("!addplayer"))
                             {
-                                if (whisperSender != "lobosjr")
+                                if (whisperSender != tokenData.BroadcastUser && whisperSender != tokenData.ChatUser)
                                     continue;
 
                                 string[] msgData = whispers[1].Split(' ');
@@ -1362,12 +1366,12 @@ namespace TwitchBot
                                         toSend += "xp";
                                     }
 
-                                    Whisper("lobosjr", name + " added to the following lists: " + toSend, group);
+                                    Whisper(tokenData.BroadcastUser, name + " added to the following lists: " + toSend, group);
                                 }
                             }
                             else if (whisperMessage.StartsWith("!transfer"))
                             {
-                                if (whisperSender != "lobosjr")
+                                if (whisperSender != tokenData.BroadcastUser && whisperSender != tokenData.ChatUser)
                                     continue;
 
                                 string[] msgData = whispers[1].Split(' ');
@@ -1415,7 +1419,7 @@ namespace TwitchBot
                             }
                             else if (whisperMessage.StartsWith("!checkpets"))
                             {
-                                if (whisperSender != "lobosjr")
+                                if (whisperSender != tokenData.BroadcastUser && whisperSender != tokenData.ChatUser)
                                     continue;
 
                                 string[] msgData = whispers[1].Split(' ');
@@ -1435,7 +1439,7 @@ namespace TwitchBot
                             }
                             else if (whisperMessage.StartsWith("!grantpet"))
                             {
-                                if (whisperSender != "lobosjr")
+                                if (whisperSender != tokenData.BroadcastUser && whisperSender != tokenData.ChatUser)
                                     continue;
 
                                 string[] msgData = whispers[1].Split(' ');
@@ -1475,7 +1479,7 @@ namespace TwitchBot
                             }
                             else if (whisperMessage == "!clearpets")
                             {
-                                if (whisperSender != "lobosjr")
+                                if (whisperSender != tokenData.BroadcastUser && whisperSender != tokenData.ChatUser)
                                     continue;
 
                                 wolfcoins.classList[whisperSender].myPets = new List<Pet>();
@@ -1487,7 +1491,7 @@ namespace TwitchBot
                             }
                             else if (whisperMessage == "!updatedungeons")
                             {
-                                if (whisperSender != "lobosjr")
+                                if (whisperSender != tokenData.BroadcastUser && whisperSender != tokenData.ChatUser)
                                     continue;
 
                                 UpdateDungeons(dungeonListPath, ref dungeonList);
@@ -1719,7 +1723,7 @@ namespace TwitchBot
                             }
                             else if (whisperMessage.StartsWith("!fixpets"))
                             {
-                                if (whisperSender != "lobosjr")
+                                if (whisperSender != tokenData.BroadcastUser && whisperSender != tokenData.ChatUser)
                                     continue;
 
                                 //string[] msgData = whispers[1].Split(' ');
@@ -1825,7 +1829,7 @@ namespace TwitchBot
                             }
                             else if (whisperMessage.StartsWith("!sethunger"))
                             {
-                                if (whisperSender != "lobosjr")
+                                if (whisperSender != tokenData.BroadcastUser && whisperSender != tokenData.ChatUser)
                                     continue;
 
                                 string[] msgData = whispers[1].Split(' ');
@@ -2171,7 +2175,7 @@ namespace TwitchBot
                             else if (whisperMessage == "!debugcast")
                             {
                                 // min/max time, in seconds, before a fish will bite
-                                if (whisperSender == "lobosjr")
+                                if (whisperSender == tokenData.BroadcastUser || whisperSender == tokenData.ChatUser)
                                 {
                                     wolfcoins.fishingList[whisperSender].timeOfCatch = DateTime.Now.AddSeconds(2);
                                     wolfcoins.fishingList[whisperSender].isFishing = true;
@@ -2221,6 +2225,7 @@ namespace TwitchBot
                                 fishingTournamentActive = true;
                                 // set tourney start time i.e. tournamentStart = DateTime.Now 
                                 tournamentStart = DateTime.Now;
+                                tournamentDuration = 1;
                                 irc.sendChatMessage("A fishing tournament has begun! Participate at: https://tinyurl.com/PlayWolfpackRPG");
 
                             }
@@ -2838,7 +2843,7 @@ namespace TwitchBot
                                         Whisper(whisperSender, lastFormed, group);
                                         continue;
                                     }
-                                    if (whisperMessage == "!queuestatus" && whisperSender == "lobosjr")
+                                    if (whisperMessage == "!queuestatus" && (whisperSender == tokenData.BroadcastUser || whisperSender == tokenData.ChatUser))
                                     {
                                         if (groupFinder.queue.Count == 0)
                                         {
@@ -3296,7 +3301,7 @@ namespace TwitchBot
                             }
                             else if (whisperMessage.StartsWith("!clearitems"))
                             {
-                                if (whisperSender != "lobosjr")
+                                if (whisperSender != tokenData.BroadcastUser && whisperSender != tokenData.ChatUser)
                                     continue;
 
                                 string[] whisperMSG = whispers[1].Split();
@@ -3314,7 +3319,7 @@ namespace TwitchBot
                             }
                             else if (whisperMessage == "!fixstats")
                             {
-                                if (whisperSender != "lobosjr")
+                                if (whisperSender != tokenData.BroadcastUser && whisperSender != tokenData.ChatUser)
                                     continue;
 
                                 if (wolfcoins.classList != null)
@@ -3381,7 +3386,7 @@ namespace TwitchBot
                             }
                             else if (whisperMessage.StartsWith("!giveitem"))
                             {
-                                if (whisperSender != "lobosjr")
+                                if (whisperSender != tokenData.BroadcastUser && whisperSender != tokenData.ChatUser)
                                     continue;
 
                                 string[] whisperMSG = whispers[1].Split();
@@ -3521,7 +3526,7 @@ namespace TwitchBot
                             }
                             else if (whisperMessage.StartsWith("!printinfo"))
                             {
-                                if (whisperSender != "lobosjr")
+                                if (whisperSender != tokenData.BroadcastUser && whisperSender != tokenData.ChatUser)
                                     break;
                                 // first[1] is the user to print info for
                                 if (whispers.Length >= 2 && whispers[1] != null)
@@ -3553,7 +3558,7 @@ namespace TwitchBot
                             }
                             else if (whisperMessage.StartsWith("!setxp"))
                             {
-                                if (whisperSender != "lobosjr")
+                                if (whisperSender != tokenData.BroadcastUser && whisperSender != tokenData.ChatUser)
                                     continue;
 
                                 string[] whisperMSG = whispers[1].Split();
@@ -3583,7 +3588,7 @@ namespace TwitchBot
                             }
                             else if (whisperMessage.StartsWith("!setprestige"))
                             {
-                                if (whisperSender != "lobosjr")
+                                if (whisperSender != tokenData.BroadcastUser && whisperSender != tokenData.ChatUser)
                                     continue;
 
                                 string[] whisperMSG = whispers[1].Split();
@@ -3642,7 +3647,7 @@ namespace TwitchBot
                             //
                             else if (whisperMessage == "!patch1")
                             {
-                                if (whisperSender != "lobosjr")
+                                if (whisperSender != tokenData.BroadcastUser && whisperSender != tokenData.ChatUser)
                                     continue;
 
                                 if (wolfcoins.xpList != null)
@@ -3668,7 +3673,7 @@ namespace TwitchBot
                             // command to fix multiple inventory ids and active states
                             else if (whisperMessage == "!fixinventory")
                             {
-                                if (whisperSender != "lobosjr")
+                                if (whisperSender != tokenData.BroadcastUser && whisperSender != tokenData.ChatUser)
                                     continue;
 
                                 foreach (var player in wolfcoins.classList)
@@ -3702,7 +3707,7 @@ namespace TwitchBot
                             }
                             else if (whisperMessage == "!debugcatch")
                             {
-                                if (whisperSender == "lobosjr")
+                                if (whisperSender == tokenData.BroadcastUser || whisperSender == tokenData.ChatUser)
                                 {
                                     for (int i = 0; i < 50; i++)
                                     {
@@ -3713,7 +3718,7 @@ namespace TwitchBot
                             }
                             else if (whisperMessage.StartsWith("!debuglevel5"))
                             {
-                                if (whisperSender == "lobosjr")
+                                if (whisperSender == tokenData.BroadcastUser || whisperSender == tokenData.ChatUser)
                                 {
                                     string[] whisperMSG = whispers[1].Split();
                                     if (whisperMSG.Length > 1)
@@ -3736,7 +3741,7 @@ namespace TwitchBot
 
                             else if (whisperMessage.StartsWith("!clearclass"))
                             {
-                                if (whisperSender == "lobosjr")
+                                if (whisperSender == tokenData.BroadcastUser || whisperSender == tokenData.ChatUser)
                                 {
                                     if (wolfcoins.classList != null)
                                     {
@@ -3760,7 +3765,7 @@ namespace TwitchBot
                             }
                             else if (whisperMessage.StartsWith("!setcoins"))
                             {
-                                if (whisperSender != "lobosjr")
+                                if (whisperSender != tokenData.BroadcastUser && whisperSender != tokenData.ChatUser)
                                     break;
 
                                 string[] whisperMSG = whispers[1].Split();
@@ -4087,7 +4092,7 @@ namespace TwitchBot
                             }
                             else if (whisperMessage.StartsWith("!givexp"))
                             {
-                                if (whisperSender != "lobosjr")
+                                if (whisperSender != tokenData.BroadcastUser && whisperSender != tokenData.ChatUser)
                                     break;
 
                                 string[] whisperMSG = whispers[1].Split();
@@ -4154,7 +4159,7 @@ namespace TwitchBot
                             }
                             else if (whisperMessage.StartsWith("!shutdown"))
                             {
-                                if (whisperSender != "lobosjr")
+                                if (whisperSender != tokenData.BroadcastUser && whisperSender != tokenData.ChatUser)
                                     break;
 
                                 string[] temp = whispers[1].Split(' ');
@@ -4267,7 +4272,7 @@ namespace TwitchBot
                             {
                                 case "!nextaward":
                                     {
-                                        if (sender != "lobosjr")
+                                        if (sender != tokenData.BroadcastUser && sender != tokenData.ChatUser)
                                             break;
                                         double totalSec = (DateTime.Now - awardLast).TotalSeconds;
                                         int timeRemaining = (awardInterval * 60) - (int)(DateTime.Now - awardLast).TotalSeconds;
@@ -4280,7 +4285,7 @@ namespace TwitchBot
 
                                 case "!setinterval":
                                     {
-                                        if (sender != "lobosjr")
+                                        if (sender != tokenData.BroadcastUser && sender != tokenData.ChatUser)
                                             break;
 
                                         int newAmount = 0;
@@ -4298,7 +4303,7 @@ namespace TwitchBot
 
                                 case "!setmultiplier":
                                     {
-                                        if (sender != "lobosjr")
+                                        if (sender != tokenData.BroadcastUser && sender != tokenData.ChatUser)
                                             break;
 
                                         int newAmount = 0;
@@ -4376,7 +4381,7 @@ namespace TwitchBot
                                 case "!xpon":
                                     {
                                         wolfcoins.UpdateViewers(channel);
-                                        if ((wolfcoins.viewers.chatters.moderators.Contains(sender) || sender == "lobosjr" || sender == "lan5432") && !broadcasting)
+                                        if ((wolfcoins.viewers.chatters.moderators.Contains(sender) || sender == tokenData.BroadcastUser || sender == tokenData.ChatUser || sender == "lan5432") && !broadcasting)
                                         {
                                             broadcasting = true;
                                             awardLast = DateTime.Now;
@@ -4390,7 +4395,7 @@ namespace TwitchBot
                                 case "!xpoff":
                                     {
                                         wolfcoins.UpdateViewers(channel);
-                                        if ((wolfcoins.viewers.chatters.moderators.Contains(sender) || sender == "lobosjr" || sender == "lan5432") && broadcasting)
+                                        if ((wolfcoins.viewers.chatters.moderators.Contains(sender) || sender == tokenData.BroadcastUser || sender == tokenData.ChatUser || sender == "lan5432") && broadcasting)
                                         {
                                             broadcasting = false;
                                             irc.sendChatMessage("Wolfcoins & XP will no longer be awarded.");
@@ -4401,7 +4406,7 @@ namespace TwitchBot
 
                                 case "!setxp":
                                     {
-                                        if (sender != "lobosjr")
+                                        if (sender != tokenData.BroadcastUser && sender != tokenData.ChatUser)
                                             break;
 
                                         if (first.Length >= 3 && first[1] != null && first[2] != null)
@@ -4433,7 +4438,7 @@ namespace TwitchBot
 
                                 case "!grantxp":
                                     {
-                                        if (sender != "lobosjr")
+                                        if (sender != tokenData.BroadcastUser && sender != tokenData.ChatUser)
                                             break;
 
                                         if (first[0] != null && first[1] != null)
@@ -4536,7 +4541,7 @@ namespace TwitchBot
                                         string target = first[1];
                                         string coins = first[2];
 
-                                        if (sender == "lobosjr")
+                                        if (sender == tokenData.BroadcastUser || sender == tokenData.ChatUser)
                                         {
                                             if (wolfcoins.RemoveCoins(target, coins))
                                             {
@@ -4572,7 +4577,7 @@ namespace TwitchBot
                                         string target = first[1];
                                         string coins = first[2];
 
-                                        if (sender == "lobosjr")
+                                        if (sender == tokenData.BroadcastUser || sender == tokenData.ChatUser)
                                         {
                                             if (wolfcoins.AddCoins(target, coins))
                                             {
