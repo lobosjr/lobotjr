@@ -294,6 +294,42 @@ namespace TwitchBot
             {
                 fileText = new List<string>();
                 Console.WriteLine($"Failed to load item list file, {fishListPath} not found.");
+#if DEBUG
+                fishList = new Dictionary<int, string>();
+                fishList.Add(0, "content/fishing/smallfish");
+                fishList.Add(1, "content/fishing/mediumfish");
+                fishList.Add(2, "content/fishing/largefish");
+                fishDatabase = new List<Fish>(new Fish[]
+                {
+                    new Fish()
+                    {
+                        name = "smallfish",
+                        sizeCategory = 1,
+                        lengthRange = new float[] {5, 10},
+                        weightRange = new float[] {100, 200},
+                        rarity = 1,
+                        flavorText = "A small fish."
+                    },
+                    new Fish()
+                    {
+                        name = "mediumfish",
+                        sizeCategory = 2,
+                        lengthRange = new float[] {10, 20},
+                        weightRange = new float[] {200, 400},
+                        rarity = 2,
+                        flavorText = "A medium fish."
+                    },
+                    new Fish()
+                    {
+                        name = "largefish",
+                        sizeCategory = 3,
+                        lengthRange = new float[] {20, 40},
+                        weightRange = new float[] {400, 800},
+                        rarity = 3,
+                        flavorText = "A large fish."
+                    }
+                });
+#endif
             }
             fishDatabase = new List<Fish>();
             fishList = new Dictionary<int, string>();

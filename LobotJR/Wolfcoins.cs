@@ -1049,6 +1049,10 @@ namespace Wolfcoins
             else
             {
                 coinList = new Dictionary<string, int>();
+#if DEBUG
+                coinList.Add("empyrealhell", 100);
+                coinList.Add("celesteenfer", 1000);
+#endif
                 Console.WriteLine("Path not found. Coins initialized to default.");
             }
 
@@ -1060,6 +1064,10 @@ namespace Wolfcoins
             else
             {
                 xpList = new Dictionary<string, int>();
+#if DEBUG
+                xpList.Add("empyrealhell", 100);
+                xpList.Add("celesteenfer", 1000);
+#endif
                 Console.WriteLine("Path not found. XP file initialized to default.");
             }
 
@@ -1072,6 +1080,14 @@ namespace Wolfcoins
                     player.Value.fishHooked = false;
                 }
                 Console.WriteLine("Fishing data loaded.");
+            }
+            else
+            {
+#if DEBUG
+                fishingList = new Dictionary<string, Fisherman>();
+                fishingList.Add("empyrealhell", new Fisherman() { username = "empyrealhell", isFishing = false, fishHooked = false, });
+
+#endif
             }
             if (File.Exists(fishingLeaderboardPath))
             {
