@@ -6,7 +6,6 @@ using Fishing;
 using GroupFinder;
 using LobotJR.Command;
 using LobotJR.Data;
-using LobotJR.Modules.Fishing;
 using LobotJR.Shared.Authentication;
 using LobotJR.Shared.Utility;
 using System;

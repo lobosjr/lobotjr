@@ -113,9 +113,14 @@
     <Compile Include="Items.cs" />
     <Compile Include="JSON.cs" />
     <Compile Include="Modules\AccessControl\AccessControlAdmin.cs" />
+    <Compile Include="Modules\Fishing\FishingEngine.cs" />
     <Compile Include="Modules\Fishing\FishingModule.cs" />
     <Compile Include="Modules\AccessControl\AccessControlModule.cs" />
-    <Compile Include="Modules\Fishing\TournamentResult.cs" />
+    <Compile Include="Modules\Fishing\Model\Catch.cs" />
+    <Compile Include="Modules\Fishing\Model\Fish.cs" />
+    <Compile Include="Modules\Fishing\Model\Fisher.cs" />
+    <Compile Include="Modules\Fishing\Model\TournamentEntry.cs" />
+    <Compile Include="Modules\Fishing\Model\TournamentResult.cs" />
     <Compile Include="Modules\ICommandModule.cs" />
     <Compile Include="Pets.cs" />
     <Compile Include="Program.cs" />
@@ -164,6 +169,7 @@
       <Name>LobotJR.Shared</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>

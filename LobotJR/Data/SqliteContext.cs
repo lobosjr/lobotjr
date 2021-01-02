@@ -1,5 +1,5 @@
 ﻿using LobotJR.Command;
-using LobotJR.Modules.Fishing;
+using LobotJR.Modules.Fishing.Model;
 using System.Data.Entity;
 
 namespace LobotJR.Data

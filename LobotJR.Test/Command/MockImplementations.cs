@@ -1,7 +1,7 @@
 ﻿using LobotJR.Command;
 using LobotJR.Data;
 using LobotJR.Modules;
-using LobotJR.Modules.Fishing;
+using LobotJR.Modules.Fishing.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
