@@ -9,8 +9,15 @@ namespace LobotJR.Data
     /// </summary>
     public class SqliteContext : DbContext
     {
-        public DbSet<TournamentResult> FishingTournaments { get; set; }
+        public DbSet<AppSettings> AppSettings { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
+        public DbSet<Fisher> Fishers { get; set; }
+        public DbSet<Catch> FishingLeaderboard { get; set; }
+        public DbSet<TournamentResult> FishingTournaments { get; set; }
+
+        
+        /** Content data */
+        public DbSet<Fish> FishData { get; set; }
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {

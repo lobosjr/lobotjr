@@ -1,35 +1,20 @@
-﻿namespace LobotJR.Modules.Fishing.Model
+﻿using LobotJR.Data;
+
+namespace LobotJR.Modules.Fishing.Model
 {
     /// <summary>
     /// Holds the data used to describe a fish.
     /// </summary>
-    public class Fish
+    public class Fish : TableObject
     {
-        /// <summary>
-        /// Size categories for fish.
-        /// </summary>
-        public enum Size
-        {
-            Unknown,
-            Tiny,
-            Small,
-            Medium,
-            Large,
-            Huge
-        }
-
-        /// <summary>
-        /// Database id.
-        /// </summary>
-        public int Id { get; set; }
         /// <summary>
         /// The size category of this fish.
         /// </summary>
-        public Size SizeCategory { get; set; }
+        public FishSize SizeCategory { get; set; }
         /// <summary>
-        /// 
+        /// Rarity category of the fish.
         /// </summary>
-        public int rarity { get; set; } = -1;
+        public FishRarity Rarity { get; set; }
         /// <summary>
         /// The display name of the fish.
         /// </summary>
@@ -54,16 +39,38 @@
         /// The flavor text given to describe the fish.
         /// </summary>
         public string FlavorText { get; set; }
+    }
 
-        public override bool Equals(object obj)
-        {
-            var other = obj as Fish;
-            return other != null && other.Id == Id;
-        }
+    public class FishRarity : TableObject
+    {
+        /// <summary>
+        /// The name that represents this level of rarity.
+        /// </summary>
+        public string Name { get; set; }
+        /// <summary>
+        /// The relative weight of this rarity.
+        /// </summary>
+        public int Weight { get; set; }
+    }
 
-        public override int GetHashCode()
-        {
-            return Id.GetHashCode();
-        }
+    public class FishSize : TableObject
+    {
+        /// <summary>
+        /// The name that represents this size category.
+        /// </summary>
+        public string Name { get; set; }
+        /// <summary>
+        /// Message given to user when a fish of this size is hooked.
+        /// </summary>
+        public string Message { get; set; }
     }
 }
+
+/**
+* TODO: seed the database with these sizes
+Tiny: "You feel a light tug at your line! Type !catch to reel it in!"
+Small: "Something nibbles at your bait! Type !catch to reel it in!"
+Medium: "A strong tug snags your bait! Type !catch to reel it in!"
+Large: "Whoa! Something big grabs your line! Type !catch to reel it in!"
+Huge: "You're almost pulled into the water! Something HUGE is hooked! Type !catch to reel it in!"
+*/

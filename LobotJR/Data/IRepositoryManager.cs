@@ -8,7 +8,10 @@ namespace LobotJR.Data
     /// </summary>
     public interface IRepositoryManager
     {
+        IRepository<AppSettings> AppSettings { get; }
         IRepository<UserRole> UserRoles { get; }
+        IRepository<Fisher> Fishers { get; }
+        IRepository<Catch> FishingLeaderboard { get; }
         IRepository<TournamentResult> TournamentResults { get; }
     }
 }

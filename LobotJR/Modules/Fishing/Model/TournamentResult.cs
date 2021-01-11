@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LobotJR.Data;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -8,12 +9,8 @@ namespace LobotJR.Modules.Fishing.Model
     /// Holds the results of a fishing tournament, including entries for each
     /// user and their score.
     /// </summary>
-    public class TournamentResult
+    public class TournamentResult : TableObject
     {
-        /// <summary>
-        /// Database id.
-        /// </summary>
-        public int Id { get; set; }
         /// <summary>
         /// Datetime the tournament ended.
         /// </summary>

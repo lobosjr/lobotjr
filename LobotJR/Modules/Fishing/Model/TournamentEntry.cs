@@ -1,14 +1,12 @@
-﻿namespace LobotJR.Modules.Fishing.Model
+﻿using LobotJR.Data;
+
+namespace LobotJR.Modules.Fishing.Model
 {
     /// <summary>
     /// An entry in a fishing tournament.
     /// </summary>
-    public class TournamentEntry
+    public class TournamentEntry : TableObject
     {
-        /// <summary>
-        /// The database id.
-        /// </summary>
-        public int Id { get; set; }
         /// <summary>
         /// The username of the user this entry is for.
         /// </summary>

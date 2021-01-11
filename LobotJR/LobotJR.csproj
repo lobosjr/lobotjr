@@ -99,13 +99,15 @@
     <Compile Include="Command\ICommandManager.cs" />
     <Compile Include="Command\ICompactResponse.cs" />
     <Compile Include="Command\UserRole.cs" />
+    <Compile Include="Data\AppSettings.cs" />
+    <Compile Include="Data\TableObject.cs" />
+    <Compile Include="Data\IContentManager.cs" />
     <Compile Include="Data\IRepositoryManager.cs" />
     <Compile Include="Data\SqliteRepositoryManager.cs" />
     <Compile Include="Data\SqliteInitializer.cs" />
     <Compile Include="Data\SqliteRepository.cs" />
     <Compile Include="Data\IRepository.cs" />
     <Compile Include="Data\SqliteContext.cs" />
-    <Compile Include="Fishing.cs" />
     <Compile Include="Dungeon.cs" />
     <Compile Include="Classes.cs" />
     <Compile Include="GroupFinder.cs" />
@@ -113,7 +115,7 @@
     <Compile Include="Items.cs" />
     <Compile Include="JSON.cs" />
     <Compile Include="Modules\AccessControl\AccessControlAdmin.cs" />
-    <Compile Include="Modules\Fishing\FishingEngine.cs" />
+    <Compile Include="Modules\Fishing\FishingSystem.cs" />
     <Compile Include="Modules\Fishing\FishingModule.cs" />
     <Compile Include="Modules\AccessControl\AccessControlModule.cs" />
     <Compile Include="Modules\Fishing\Model\Catch.cs" />
@@ -121,7 +123,9 @@
     <Compile Include="Modules\Fishing\Model\Fisher.cs" />
     <Compile Include="Modules\Fishing\Model\TournamentEntry.cs" />
     <Compile Include="Modules\Fishing\Model\TournamentResult.cs" />
+    <Compile Include="Modules\Fishing\TournamentSystem.cs" />
     <Compile Include="Modules\ICommandModule.cs" />
+    <Compile Include="Modules\ISystem.cs" />
     <Compile Include="Pets.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

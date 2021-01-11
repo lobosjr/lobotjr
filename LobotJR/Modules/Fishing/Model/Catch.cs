@@ -1,9 +1,11 @@
-﻿namespace LobotJR.Modules.Fishing.Model
+﻿using LobotJR.Data;
+
+namespace LobotJR.Modules.Fishing.Model
 {
     /// <summary>
     /// Data that describes an instance of a fish being caught.
     /// </summary>
-    public class Catch
+    public class Catch : TableObject
     {
         /// <summary>
         /// The user that caught the fish.
