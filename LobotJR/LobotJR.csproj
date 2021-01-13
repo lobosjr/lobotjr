@@ -115,6 +115,8 @@
     <Compile Include="Items.cs" />
     <Compile Include="JSON.cs" />
     <Compile Include="Modules\AccessControl\AccessControlAdmin.cs" />
+    <Compile Include="Modules\Fishing\FishingAdminCompact.cs" />
+    <Compile Include="Modules\Fishing\FishingModuleCompact.cs" />
     <Compile Include="Modules\Fishing\FishingSystem.cs" />
     <Compile Include="Modules\Fishing\FishingModule.cs" />
     <Compile Include="Modules\AccessControl\AccessControlModule.cs" />

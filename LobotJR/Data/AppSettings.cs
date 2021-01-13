@@ -6,16 +6,18 @@
     public class AppSettings
     {
         /// <summary>
-        /// The shortest time, in seconds, it can take to hook a fish.
+        /// The shortest time, in seconds, it can take to hook a fish. Default
+        /// is 60 seconds.
         /// </summary>
         public int FishingCastMinimum { get; set; }
         /// <summary>
-        /// The longest time, in seconds, it can take to hook a fish.
+        /// The longest time, in seconds, it can take to hook a fish. Default
+        /// is 600 seconds.
         /// </summary>        
         public int FishingCastMaximum { get; set; }
         /// <summary>
         /// How long, in seconds, a fish remains on the hook before it gets
-        /// away.
+        /// away. Default is 30 seconds.
         /// </summary>
         public int FishingHookLength { get; set; }
         /// <summary>
@@ -25,22 +27,23 @@
         public bool FishingUseWeights { get; set; }
 
         /// <summary>
-        /// How long, in minutes, a fishing tournament should last.
+        /// How long, in minutes, a fishing tournament should last. Default is
+        /// 15 minutes.
         /// </summary>
         public int FishingTournamentDuration { get; set; }
         /// <summary>
         /// How long, in minutes, between the end of a tournament and the start
-        /// of the next.
+        /// of the next. Default is 15 minutes.
         /// </summary>
         public int FishingTournamentInterval { get; set; }
         /// <summary>
         /// The shortest time, in seconds, it can take to hook a fish during a
-        /// tournament.
+        /// tournament. Default is 15 seconds.
         /// </summary>
         public int FishingTournamentCastMinimum { get; set; }
         /// <summary>
         /// The longest time, in seconds, it can take to hook a fish during a
-        /// tournament.
+        /// tournament. Default is 30 seconds.
         /// </summary>        
         public int FishingTournamentCastMaximum { get; set; }
     }
