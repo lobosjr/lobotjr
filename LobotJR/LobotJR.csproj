@@ -108,6 +108,8 @@
     <Compile Include="Data\SqliteRepository.cs" />
     <Compile Include="Data\IRepository.cs" />
     <Compile Include="Data\SqliteContext.cs" />
+    <Compile Include="Data\User\UserLookup.cs" />
+    <Compile Include="Data\User\UserMap.cs" />
     <Compile Include="Dungeon.cs" />
     <Compile Include="Classes.cs" />
     <Compile Include="GroupFinder.cs" />

@@ -1,4 +1,5 @@
 ﻿using LobotJR.Command;
+using LobotJR.Data.User;
 using LobotJR.Modules.Fishing.Model;
 
 namespace LobotJR.Data
@@ -9,6 +10,7 @@ namespace LobotJR.Data
     public interface IRepositoryManager
     {
         IRepository<AppSettings> AppSettings { get; }
+        IRepository<UserMap> Users { get; }
         IRepository<UserRole> UserRoles { get; }
         IRepository<Fisher> Fishers { get; }
         IRepository<Catch> FishingLeaderboard { get; }
