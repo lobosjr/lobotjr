@@ -40,9 +40,9 @@ namespace LobotJR.Modules.Fishing
             };
         }
 
-        public CommandResult TournamentResults(string data, string user)
+        public CommandResult TournamentResults(string data, string userId)
         {
-            var result = TournamentResultsCompact(data, user);
+            var result = TournamentResultsCompact(data, userId);
             if (result == null)
             {
                 return new CommandResult("No fishing tournaments have completed.");
@@ -56,7 +56,7 @@ namespace LobotJR.Modules.Fishing
             var responses = new List<string>(new string[] { $"The most recent tournament ended {sinceEnded.ToCommonString()} ago with {result.Participants} {pluralized}." });
             if (result.Rank > 0)
             {
-                if (result.Winner.Equals(user, StringComparison.OrdinalIgnoreCase))
+                if (result.Winner.Equals(userId, StringComparison.OrdinalIgnoreCase))
                 {
                     responses.Add($"You won the tournament with {result.WinnerPoints} points.");
                 }
@@ -73,7 +73,7 @@ namespace LobotJR.Modules.Fishing
             return new CommandResult(responses.ToArray());
         }
 
-        public TournamentResultsResponse TournamentResultsCompact(string data, string user)
+        public TournamentResultsResponse TournamentResultsCompact(string data, string userId)
         {
             var tournament = repository.Read().OrderByDescending(x => x.Date).FirstOrDefault();
             if (tournament != null)
@@ -83,14 +83,14 @@ namespace LobotJR.Modules.Fishing
                 {
                     Ended = tournament.Date,
                     Participants = tournament.Entries.Count,
-                    Winner = winner.Name,
+                    Winner = winner.UserId,
                     WinnerPoints = winner.Points
 
                 };
-                var userEntry = tournament.GetEntryByName(user);
+                var userEntry = tournament.GetEntryById(userId);
                 if (userEntry != null)
                 {
-                    output.Rank = tournament.GetRankByName(userEntry.Name);
+                    output.Rank = tournament.GetRankById(userEntry.UserId);
                     output.UserPoints = userEntry.Points;
                 }
                 return output;
@@ -98,9 +98,9 @@ namespace LobotJR.Modules.Fishing
             return null;
         }
 
-        public CommandResult TournamentRecords(string data, string user)
+        public CommandResult TournamentRecords(string data, string userId)
         {
-            var records = TournamentRecordsCompact(data, user);
+            var records = TournamentRecordsCompact(data, userId);
             if (records == null)
             {
                 return new CommandResult("You have not entered any fishing tournaments.");
@@ -109,24 +109,24 @@ namespace LobotJR.Modules.Fishing
                 $"Your best tournament placement was {records.TopRank.ToOrdinal()} place, with {records.TopRankScore} points.");
         }
 
-        public TournamentRecordsResponse TournamentRecordsCompact(string data, string user)
+        public TournamentRecordsResponse TournamentRecordsCompact(string data, string userId)
         {
             var output = new Dictionary<string, string>();
-            var tournaments = repository.Read(x => x.GetEntryByName(user) != null);
+            var tournaments = repository.Read(x => x.GetEntryById(userId) != null);
             if (!tournaments.Any())
             {
                 return null;
             }
-            var topRank = tournaments.OrderBy(x => x.GetRankByName(user)).First();
-            var topRankAndScore = tournaments.Where(x => x.GetRankByName(user) == topRank.GetRankByName(user)).OrderByDescending(x => x.GetEntryByName(user).Points).First();
-            var topScore = tournaments.OrderByDescending(x => x.GetEntryByName(user).Points).First();
-            var topScoreAndRank = tournaments.Where(x => x.GetEntryByName(user).Points == topScore.GetEntryByName(user).Points).OrderBy(x => x.GetRankByName(user)).First();
+            var topRank = tournaments.OrderBy(x => x.GetRankById(userId)).First();
+            var topRankAndScore = tournaments.Where(x => x.GetRankById(userId) == topRank.GetRankById(userId)).OrderByDescending(x => x.GetEntryById(userId).Points).First();
+            var topScore = tournaments.OrderByDescending(x => x.GetEntryById(userId).Points).First();
+            var topScoreAndRank = tournaments.Where(x => x.GetEntryById(userId).Points == topScore.GetEntryById(userId).Points).OrderBy(x => x.GetRankById(userId)).First();
             return new TournamentRecordsResponse()
             {
-                TopRank = topRankAndScore.GetRankByName(user),
-                TopRankScore = topRankAndScore.GetEntryByName(user).Points,
-                TopScore = topScoreAndRank.GetEntryByName(user).Points,
-                TopScoreRank = topScoreAndRank.GetRankByName(user)
+                TopRank = topRankAndScore.GetRankById(userId),
+                TopRankScore = topRankAndScore.GetEntryById(userId).Points,
+                TopScore = topScoreAndRank.GetEntryById(userId).Points,
+                TopScoreRank = topScoreAndRank.GetRankById(userId)
             };
         }
     }

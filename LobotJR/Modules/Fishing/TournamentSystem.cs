@@ -48,7 +48,7 @@ namespace LobotJR.Modules.Fishing
         /// <returns>The user's current point total.</returns>
         public int AddTournamentPoints(string username, int points)
         {
-            var entry = CurrentTournament.Entries.Where(x => x.Name.Equals(username, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            var entry = CurrentTournament.Entries.Where(x => x.UserId.Equals(username, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             if (entry == null)
             {
                 entry = new TournamentEntry(username, 0);

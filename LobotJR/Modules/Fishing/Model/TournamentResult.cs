@@ -61,22 +61,22 @@ namespace LobotJR.Modules.Fishing.Model
         /// <summary>
         /// Gets the entry for a participant by username.
         /// </summary>
-        /// <param name="name">The username of the participant to retrieve.</param>
+        /// <param name="userId">The user id of the participant to retrieve.</param>
         /// <returns>A tournament entry for the user, or null if they did not
         /// participate.</returns>
-        public TournamentEntry GetEntryByName(string name)
+        public TournamentEntry GetEntryById(string userId)
         {
-            return Entries.Where(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            return Entries.Where(x => x.UserId.Equals(userId, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
         }
 
         /// <summary>
         /// Gets the rank of a user in the tournament by username.
         /// </summary>
-        /// <param name="name">The username of the participant to retrieve.</param>
+        /// <param name="userId">The user id of the participant to retrieve.</param>
         /// <returns>A 1-based value indicating the users placement.</returns>
-        public int GetRankByName(string name)
+        public int GetRankById(string userId)
         {
-            return Entries.IndexOf(Entries.FirstOrDefault(x => x.Name.Equals(name))) + 1;
+            return Entries.IndexOf(Entries.FirstOrDefault(x => x.UserId.Equals(userId))) + 1;
         }
     }
 }

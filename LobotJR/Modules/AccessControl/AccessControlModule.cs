@@ -39,12 +39,12 @@ namespace LobotJR.Modules.AccessControl
             SubModules = new ICommandModule[] { new AccessControlAdmin(commandManager) };
         }
 
-        private CommandResult CheckAccess(string data, string user)
+        private CommandResult CheckAccess(string data, string userId)
         {
             var roleName = data;
             if (roleName == null || roleName.Length == 0)
             {
-                var roles = repository.Read(x => x.Users.Any(y => y.Equals(user, StringComparison.OrdinalIgnoreCase)));
+                var roles = repository.Read(x => x.Users.Any(y => y.Equals(userId, StringComparison.OrdinalIgnoreCase)));
                 if (roles.Any())
                 {
                     var count = roles.Count();
@@ -62,7 +62,7 @@ namespace LobotJR.Modules.AccessControl
                 return new CommandResult($"Error: No role with name \"{roleName}\" was found.");
             }
 
-            var access = role.Users.Contains(user) ? "are" : "are not";
+            var access = role.Users.Contains(userId) ? "are" : "are not";
             return new CommandResult($"You {access} a member of \"{role.Name}\"!");
         }
     }

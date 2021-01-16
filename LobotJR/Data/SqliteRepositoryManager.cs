@@ -1,4 +1,5 @@
 ﻿using LobotJR.Command;
+using LobotJR.Data.User;
 using LobotJR.Modules.Fishing.Model;
 
 namespace LobotJR.Data
@@ -9,6 +10,7 @@ namespace LobotJR.Data
     public class SqliteRepositoryManager : IRepositoryManager, IContentManager
     {
         public IRepository<AppSettings> AppSettings { get; private set; }
+        public IRepository<UserMap> Users { get; private set; }
         public IRepository<UserRole> UserRoles { get; private set; }
         public IRepository<Fisher> Fishers { get; }
         public IRepository<Catch> FishingLeaderboard { get; }
@@ -18,6 +20,7 @@ namespace LobotJR.Data
         public SqliteRepositoryManager(SqliteContext context)
         {
             AppSettings = new SqliteRepository<AppSettings>(context);
+            Users = new SqliteRepository<UserMap>(context);
             UserRoles = new SqliteRepository<UserRole>(context);
             Fishers = new SqliteRepository<Fisher>(context);
             FishingLeaderboard = new SqliteRepository<Catch>(context);

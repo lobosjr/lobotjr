@@ -48,12 +48,12 @@ namespace LobotJR.Modules.AccessControl
             };
         }
 
-        private CommandResult ListRoles(string data, string user)
+        private CommandResult ListRoles(string data, string userId)
         {
             return new CommandResult($"There are {repository.Read().Count()} roles: {string.Join(", ", repository.Read().Select(x => x.Name))}");
         }
 
-        private CommandResult CreateRole(string data, string user)
+        private CommandResult CreateRole(string data, string userId)
         {
             var existingRole = repository.Read(x => x.Name.Equals(data)).FirstOrDefault();
             if (existingRole != null)
@@ -66,7 +66,7 @@ namespace LobotJR.Modules.AccessControl
             return new CommandResult($"Role \"{data}\" created successfully!");
         }
 
-        private CommandResult DescribeRole(string data, string user)
+        private CommandResult DescribeRole(string data, string userId)
         {
             var existingRole = repository.Read(x => x.Name.Equals(data)).FirstOrDefault();
             if (existingRole == null)
@@ -80,7 +80,7 @@ namespace LobotJR.Modules.AccessControl
             );
         }
 
-        private CommandResult DeleteRole(string data, string user)
+        private CommandResult DeleteRole(string data, string userId)
         {
             var existingRole = repository.Read(x => x.Name.Equals(data)).FirstOrDefault();
             if (existingRole == null)
@@ -98,7 +98,7 @@ namespace LobotJR.Modules.AccessControl
             return new CommandResult($"Role \"{data}\" deleted successfully!");
         }
 
-        private CommandResult AddUserToRole(string data, string user)
+        private CommandResult AddUserToRole(string data, string userId)
         {
             var space = data.IndexOf(' ');
             if (space == -1)
@@ -134,7 +134,7 @@ namespace LobotJR.Modules.AccessControl
             return new CommandResult($"User \"{userToAdd}\" was added to role \"{role.Name}\" successfully!");
         }
 
-        private CommandResult RemoveUserFromRole(string data, string user)
+        private CommandResult RemoveUserFromRole(string data, string userId)
         {
             var space = data.IndexOf(' ');
             if (space == -1)
@@ -170,7 +170,7 @@ namespace LobotJR.Modules.AccessControl
             return new CommandResult($"User \"{userToRemove}\" was removed from role \"{role.Name}\" successfully!");
         }
 
-        private CommandResult AddCommandToRole(string data, string user)
+        private CommandResult AddCommandToRole(string data, string userId)
         {
             var space = data.IndexOf(' ');
             if (space == -1)
@@ -212,7 +212,7 @@ namespace LobotJR.Modules.AccessControl
             return new CommandResult($"Command \"{commandName}\" was added to the role \"{role.Name}\" successfully!");
         }
 
-        private CommandResult ListCommands(string data, string user)
+        private CommandResult ListCommands(string data, string userId)
         {
             var commands = commandManager.Commands;
             var modules = commands.Where(x => x.IndexOf('.') != -1).Select(x => x.Substring(0, x.IndexOf('.'))).Distinct().ToList();
@@ -225,7 +225,7 @@ namespace LobotJR.Modules.AccessControl
             return new CommandResult(response);
         }
 
-        private CommandResult RemoveCommandFromRole(string data, string user)
+        private CommandResult RemoveCommandFromRole(string data, string userId)
         {
             var space = data.IndexOf(' ');
             if (space == -1)

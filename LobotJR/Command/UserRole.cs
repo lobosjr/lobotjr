@@ -30,7 +30,7 @@ namespace LobotJR.Command
         /// </summary>
         public string Name { get; set; }
         /// <summary>
-        /// A comma-delimited list of usernames.
+        /// A comma-delimited list of user ids.
         /// </summary>
         public string UserList { get; set; }
         /// <summary>
@@ -113,21 +113,22 @@ namespace LobotJR.Command
         /// <summary>
         /// Adds a user to this role.
         /// </summary>
-        /// <param name="user">The name of the user.</param>
-        public void AddUser(string user)
+        /// <param name="id">The id of the user.</param>
+        public void AddUser(string id)
         {
             var temp = Users;
-            temp.Add(user);
+            temp.Add(id);
             Users = temp;
         }
+
         /// <summary>
         /// Removes a user from this role.
         /// </summary>
-        /// <param name="user">The name of the user.</param>
-        public void RemoveUser(string user)
+        /// <param name="id">The id of the user.</param>
+        public void RemoveUser(string id)
         {
             var temp = Users;
-            temp.Remove(user);
+            temp.Remove(id);
             Users = temp;
         }
 

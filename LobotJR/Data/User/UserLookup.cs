@@ -17,6 +17,11 @@ namespace LobotJR.Data.User
 
         public IRepository<UserMap> UserMap { get; private set; }
 
+        public UserLookup(IRepository<UserMap> userMap)
+        {
+            UserMap = userMap;
+        }
+
         /// <summary>
         /// Gets the username associated with a twitch id.
         /// </summary>

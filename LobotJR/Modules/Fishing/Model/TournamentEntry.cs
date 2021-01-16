@@ -8,9 +8,9 @@ namespace LobotJR.Modules.Fishing.Model
     public class TournamentEntry : TableObject
     {
         /// <summary>
-        /// The username of the user this entry is for.
+        /// The id of the user this entry is for.
         /// </summary>
-        public string Name { get; set; }
+        public string UserId { get; set; }  //This needs DB migration to not wipe the data.
         /// <summary>
         /// The total points the user scored.
         /// </summary>
@@ -37,11 +37,11 @@ namespace LobotJR.Modules.Fishing.Model
         /// <summary>
         /// Creates a tournament entry with a username a point value.
         /// </summary>
-        /// <param name="name">The username this entry represents.</param>
+        /// <param name="userId">The user id this entry represents.</param>
         /// <param name="points">The points this user scored in the tournament.</param>
-        public TournamentEntry(string name, int points)
+        public TournamentEntry(string userId, int points)
         {
-            Name = name;
+            UserId = userId;
             Points = points;
         }
     }
