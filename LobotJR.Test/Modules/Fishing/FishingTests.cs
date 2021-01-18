@@ -16,7 +16,7 @@ namespace LobotJR.Test.Modules.Fishing
     public class FishingTests
     {
         private CommandManager commandManager;
-        private FishingModule module;
+        private TournamentModule module;
 
         private TournamentResultsResponse ResultsFromCompact(string compact)
         {
@@ -59,7 +59,7 @@ namespace LobotJR.Test.Modules.Fishing
             });
             commandManager = new CommandManager(new TestRepositoryManager(results));
             commandManager.Initialize("", "");
-            module = new FishingModule(commandManager.RepositoryManager.TournamentResults);
+            module = new TournamentModule(commandManager.RepositoryManager.TournamentResults);
             commandManager.LoadModules(module);
         }
 

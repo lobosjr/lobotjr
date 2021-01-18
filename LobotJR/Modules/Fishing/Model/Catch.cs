@@ -10,7 +10,7 @@ namespace LobotJR.Modules.Fishing.Model
         /// <summary>
         /// The user that caught the fish.
         /// </summary>
-        public string Username { get; set; }
+        public string UserId { get; set; }
         /// <summary>
         /// The fish that was caught.
         /// </summary>

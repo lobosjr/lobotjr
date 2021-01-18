@@ -30,12 +30,10 @@
         /// Parses a command request from a user message.
         /// </summary>
         /// <param name="message">The message sent by the user.</param>
-        /// <param name="userId">The twitch id of the user.</param>
         /// <returns></returns>
-        public static CommandRequest Parse(string message, string userId)
+        public static CommandRequest Parse(string message)
         {
             var output = new CommandRequest();
-            output.UserId = userId;
             var space = message.IndexOf(' ');
             if (space != -1)
             {

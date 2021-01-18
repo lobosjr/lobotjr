@@ -1,7 +1,6 @@
 ﻿using Adventures;
 using Classes;
 using Equipment;
-using Fishing;
 using LobotJR.Shared.Client;
 using LobotJR.Shared.User;
 using Newtonsoft.Json;

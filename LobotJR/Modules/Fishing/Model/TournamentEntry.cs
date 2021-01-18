@@ -44,5 +44,24 @@ namespace LobotJR.Modules.Fishing.Model
             UserId = userId;
             Points = points;
         }
+
+        public override bool Equals(object obj)
+        {
+            var other = obj as TournamentEntry;
+            return other != null && other.UserId == UserId && other.ResultId == ResultId;
+        }
+
+        public override int GetHashCode()
+        {
+            var prime1 = 108301;
+            var prime2 = 150151;
+            unchecked
+            {
+                var hash = prime1; // random big prime number
+                hash = (hash * prime2) ^ UserId.GetHashCode();
+                hash = (hash * prime2) ^ ResultId.GetHashCode();
+                return hash;
+            }
+        }
     }
 }

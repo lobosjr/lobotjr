@@ -97,6 +97,7 @@
     <Compile Include="Command\CommandManager.cs" />
     <Compile Include="Command\CommandRequest.cs" />
     <Compile Include="Command\CommandResult.cs" />
+    <Compile Include="Command\CompactCollection.cs" />
     <Compile Include="Command\ICommandManager.cs" />
     <Compile Include="Command\ICompactResponse.cs" />
     <Compile Include="Command\UserRole.cs" />
@@ -119,9 +120,9 @@
     <Compile Include="JSON.cs" />
     <Compile Include="Modules\AccessControl\AccessControlAdmin.cs" />
     <Compile Include="Modules\Fishing\FishingAdminCompact.cs" />
-    <Compile Include="Modules\Fishing\FishingModuleCompact.cs" />
-    <Compile Include="Modules\Fishing\FishingSystem.cs" />
     <Compile Include="Modules\Fishing\FishingModule.cs" />
+    <Compile Include="Modules\Fishing\FishingSystem.cs" />
+    <Compile Include="Modules\Fishing\TournamentModule.cs" />
     <Compile Include="Modules\AccessControl\AccessControlModule.cs" />
     <Compile Include="Modules\Fishing\Model\Catch.cs" />
     <Compile Include="Modules\Fishing\Model\Fish.cs" />

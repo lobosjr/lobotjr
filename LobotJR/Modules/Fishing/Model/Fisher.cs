@@ -11,9 +11,9 @@ namespace LobotJR.Modules.Fishing.Model
     public class Fisher : TableObject
     {
         /// <summary>
-        /// The display name for the user.
+        /// The twitch id for the user.
         /// </summary>
-        public string Username { get; set; }
+        public string UserId { get; set; }
         /// <summary>
         /// Collection of record catches for this user.
         /// </summary>
@@ -21,6 +21,7 @@ namespace LobotJR.Modules.Fishing.Model
         /// <summary>
         /// Whether the user has their line out to try and catch a fish.
         /// </summary>
+        [NotMapped]
         public bool IsFishing { get; set; }
         /// <summary>
         /// The fish they have hooked, or null if nothing is on the line.

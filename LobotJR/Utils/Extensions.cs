@@ -81,6 +81,31 @@ namespace LobotJR.Utils
             return generateCommonString(seconds, "second");
         }
 
+        private static string capitalizeWord(string word)
+        {
+            if (word.Length < 2)
+            {
+                return word.ToUpper();
+            }
+            return word.Substring(0, 1).ToUpper() + word.Substring(1).ToLower();
+        }
+
+        /// <summary>
+        /// Converts a string to pascal case (each word capitalized).
+        /// </summary>
+        /// <param name="current"></param>
+        /// <param name="separator">The delimiter used to separate words.</param>
+        /// <returns>The string converted to pascal case.</returns>
+        public static string ToPascalCase(this string current, string separator = null)
+        {
+            if (separator != null)
+            {
+                var words = current.Split(new string[] { separator }, StringSplitOptions.RemoveEmptyEntries);
+                return string.Join("", words.Select(x => capitalizeWord(x)));
+            }
+            return capitalizeWord(current);
+        }
+
         /// <summary>
         /// Returns a random floating-point number with a normal distribution.
         /// Of the generated values, 68% will be within one standard
