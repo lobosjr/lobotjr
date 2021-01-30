@@ -9,6 +9,7 @@
         /// <summary>
         /// Called once per frame to process the logic of a system.
         /// </summary>
-        void Process();
+        /// <param name="broadcasting">Whether or not the streamer is broadcasting.</param>
+        void Process(bool broadcasting);
     }
 }

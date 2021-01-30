@@ -28,7 +28,8 @@ namespace LobotJR.Command
         /// <summary>
         /// Loads all registered command modules.
         /// </summary>
-        void LoadAllModules();
+        /// <param name="systemManager">System manager containing all loaded systems.</param>
+        void LoadAllModules(ISystemManager systemManager);
         /// <summary>
         /// Loads all registered command modules.
         /// <param name="modules">An array of modules to load.</param>

@@ -318,7 +318,7 @@ namespace LobotJR.Modules.Fishing
         /// <summary>
         /// Runs all active fishers to process hooking and releasing events.
         /// </summary>
-        public void Process()
+        public void Process(bool broadcasting)
         {
             var messages = new Dictionary<string, IEnumerable<string>>();
             foreach (var fisher in Fishers.Read(x => x.IsFishing))
@@ -343,10 +343,7 @@ namespace LobotJR.Modules.Fishing
                 }
             }
 
-            if (Tournament.IsRunning)
-            {
-                Tournament.Process();
-            }
+            Tournament.Process(broadcasting);
         }
     }
 }

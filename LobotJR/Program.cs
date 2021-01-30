@@ -5,6 +5,8 @@ using Equipment;
 using GroupFinder;
 using LobotJR.Command;
 using LobotJR.Data;
+using LobotJR.Modules;
+using LobotJR.Modules.Fishing;
 using LobotJR.Shared.Authentication;
 using LobotJR.Shared.Utility;
 using System;
@@ -427,14 +429,23 @@ namespace TwitchBot
             // 199.9.253.119
             connected = irc.connected;
 
-            #region Command Manager Setup
+            #region Sql Data Setup
             var context = new SqliteContext();
             context.Database.Initialize(false);
             var repoManager = new SqliteRepositoryManager(context);
+            #endregion
+
+            #region System Setup
+            var systemManager = new SystemManager(repoManager, repoManager);
+            systemManager.LoadAllSystems();
+            #endregion
+
+            #region Command Manager Setup1
             var commandManager = new CommandManager(repoManager);
             commandManager.Initialize(tokenData.BroadcastUser, tokenData.ChatUser);
-            commandManager.LoadAllModules();
+            commandManager.LoadAllModules(systemManager);
             #endregion
+
 
             if (connected)
             {
@@ -494,6 +505,10 @@ namespace TwitchBot
                         }
                         continue;
                     }
+
+                    #region System Processing
+                    systemManager.Process(broadcasting);
+                    #endregion
 
                     // message[0] has username, message[1] has message
                     string[] message = irc.readMessage(wolfcoins, channel);
@@ -3168,48 +3183,6 @@ namespace TwitchBot
                                 }
 
                             }
-                            else if (whisperMessage.StartsWith("!gloatfish") || whisperMessage.StartsWith("!fishgloat"))
-                            {
-                                if (wolfcoins.Exists(wolfcoins.fishingList, whisperSender))
-                                {
-                                    if (wolfcoins.coinList[whisperSender] < gloatCost)
-                                    {
-                                        Whisper(whisperSender, "You don't have enough coins to gloat!", group);
-                                        continue;
-                                    }
-
-                                    if (wolfcoins.fishingList[whisperSender].biggestFish.Count > 0)
-                                    {
-                                        Fish toGloat = new Fish();
-                                        string[] msgData = whispers[1].Split(' ');
-                                        if (msgData.Count() != 2)
-                                        {
-                                            Whisper(whisperSender, "Invalid number of parameters. Syntax: !fish <Fish #>", group);
-                                            continue;
-                                        }
-                                        int fishID = -1;
-                                        if (int.TryParse(msgData[1], out fishID))
-                                        {
-                                            if (fishID <= wolfcoins.fishingList[whisperSender].biggestFish.Count && fishID > 0)
-                                            {
-                                                string temp = gloatCost.ToString();
-                                                wolfcoins.RemoveCoins(whisperSender, temp);
-
-                                                Fish tempFish = new Fish(wolfcoins.fishingList[whisperSender].biggestFish.ElementAt(fishID - 1));
-
-                                                irc.sendChatMessage(whisperSender + " gloats about the time they caught a  " + tempFish.length + " in. long, " + tempFish.weight + " pound " + tempFish.name + " lobosSmug");
-                                                Whisper(whisperSender, "You spent " + temp + " wolfcoins to brag about your biggest" + tempFish.name + ".", group);
-                                            }
-                                        }
-                                    }
-                                    else
-                                    {
-                                        Whisper(whisperSender, "You don't have any fish! Type !cast to try and fish for some!", group);
-                                    }
-
-
-                                }
-                            }
                             else if (whisperMessage.StartsWith("!gloat") || whisperMessage.StartsWith("gloat"))
                             {
                                 if (wolfcoins.coinList != null && wolfcoins.xpList != null)
@@ -3694,7 +3667,8 @@ namespace TwitchBot
                                         {
                                             broadcasting = true;
                                             awardLast = DateTime.Now;
-                                            nextTournament = DateTime.Now.AddMinutes(15);
+                                            var fishingSystem = systemManager.Get<FishingSystem>();
+                                            fishingSystem.Tournament.NextTournament = DateTime.Now.AddMinutes(15);
 
                                             irc.sendChatMessage("Wolfcoins & XP will be awarded.");
                                         }

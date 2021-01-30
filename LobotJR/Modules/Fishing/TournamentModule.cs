@@ -14,6 +14,7 @@ namespace LobotJR.Modules.Fishing
     public class TournamentModule : ICommandModule
     {
         private readonly IRepository<TournamentResult> repository;
+        private readonly TournamentSystem system;
 
         /// <summary>
         /// Prefix applied to names of commands within this module.
@@ -30,13 +31,15 @@ namespace LobotJR.Modules.Fishing
         /// </summary>
         public IEnumerable<ICommandModule> SubModules => null;
 
-        public TournamentModule(IRepository<TournamentResult> repository)
+        public TournamentModule(TournamentSystem system, IRepository<TournamentResult> repository)
         {
+            this.system = system;
             this.repository = repository;
             Commands = new CommandHandler[]
             {
                 new CommandHandler("TournamentResults", TournamentResults, TournamentResultsCompact, "TournamentResults", "tournament-results"),
-                new CommandHandler("TournamentRecords", TournamentRecords, TournamentRecordsCompact, "TournamentRecords", "tournament-records")
+                new CommandHandler("TournamentRecords", TournamentRecords, TournamentRecordsCompact, "TournamentRecords", "tournament-records"),
+                new CommandHandler("NextTournament", NextTournament, NextTournamentCompact, "NextTournament", "next-tournament")
             };
         }
 
@@ -132,48 +135,30 @@ namespace LobotJR.Modules.Fishing
 
         public CommandResult NextTournament(string data)
         {
-            /*
-            else if (whisperMessage == "!nexttournament")
+            var compact = NextTournamentCompact(data, null);
+            if (compact.Items.Count() == 0)
             {
-                if (!broadcasting)
-                {
-                    Whisper(whisperSender, "Stream is offline. Next fishing tournament will begin 15m after the beginning of next stream.", group);
-                }
-                else
-                {
-                    if (fishingTournamentActive)
-                    {
-                        Whisper(whisperSender, "A fishing tournament is active now! Go catch fish at: https://tinyurl.com/PlayWolfpackRPG !", group);
-                    }
-                    string tourneyTime = "";
-                    tourneyTime += (nextTournament - DateTime.Now).Minutes;
-                    Whisper(whisperSender, "Next fishing tournament begins in " + tourneyTime + " minutes.", group);
-                }
+                return new CommandResult("Stream is offline. Next fishing tournament will begin 15m after the beginning of next stream.");
             }
-            else if (whisperMessage == "!nexttournament -c")
+            var toNext = compact.Items.FirstOrDefault();
+            if (toNext.TotalMilliseconds > 0)
             {
-                if (broadcasting)
-                {
-                    if (fishingTournamentActive)
-                    {
-                        var maxDuration = new TimeSpan(0, tournamentDuration, 0); // value is in minutes, so convert to seconds to compare against time elapsed
-                        var currentDuration = DateTime.Now - tournamentStart;
-                        var left = maxDuration - currentDuration;
-                        Whisper(whisperSender, $"nexttournament: -{left.ToString("c")}", group);
-                    }
-                    else
-                    {
-                        var toNext = nextTournament - DateTime.Now;
-                        Whisper(whisperSender, $"nexttournament: {toNext.ToString("c")}", group);
-                    }
-                }
+                return new CommandResult($"Next fishing tournament begins in {toNext.TotalMinutes} minutes.");
             }
-             */
+            return new CommandResult($"A fishing tournament is active now! Go catch fish at: https://tinyurl.com/PlayWolfpackRPG !");
         }
 
-        public CompactCollection<DateTime> NextTournamentCompact(string data, string userId)
+        public CompactCollection<TimeSpan> NextTournamentCompact(string data, string userId)
         {
-
+            if (system.NextTournament == null)
+            {
+                return new CompactCollection<TimeSpan>(new TimeSpan[0], null);
+            }
+            else
+            {
+                var toNext = (DateTime)system.NextTournament - DateTime.Now;
+                return new CompactCollection<TimeSpan>(new TimeSpan[] { toNext }, x => x.ToString("c"));
+            }
         }
     }
 

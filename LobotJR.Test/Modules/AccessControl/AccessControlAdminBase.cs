@@ -11,7 +11,7 @@ namespace LobotJR.Test.Modules.AccessControl
     {
         protected CommandManager commandManager;
         protected AccessControlAdmin module;
-        protected CommandModule commandModule;
+        protected TestCommandModule commandModule;
         protected TestModule testModule;
 
         [TestInitialize]
@@ -26,7 +26,7 @@ namespace LobotJR.Test.Modules.AccessControl
             });
             commandManager = new CommandManager(new TestRepositoryManager(roles));
             commandManager.Initialize("", "");
-            commandModule = new CommandModule();
+            commandModule = new TestCommandModule();
             testModule = new TestModule();
             commandManager.LoadModules(commandModule, testModule);
             module = new AccessControlAdmin(commandManager);

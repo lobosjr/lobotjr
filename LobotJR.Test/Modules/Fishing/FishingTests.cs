@@ -59,7 +59,7 @@ namespace LobotJR.Test.Modules.Fishing
             });
             commandManager = new CommandManager(new TestRepositoryManager(results));
             commandManager.Initialize("", "");
-            module = new TournamentModule(commandManager.RepositoryManager.TournamentResults);
+            module = new TournamentModule(null, commandManager.RepositoryManager.TournamentResults);
             commandManager.LoadModules(module);
         }
 

@@ -12,7 +12,7 @@ namespace LobotJR.Test.Command
         [TestMethod]
         public void LoadModulesLoadsModules()
         {
-            var module = new CommandModule();
+            var module = new TestCommandModule();
             var commandManager = new CommandManager(new TestRepositoryManager());
             commandManager.Initialize("", "");
             commandManager.LoadModules(module);
@@ -40,7 +40,7 @@ namespace LobotJR.Test.Command
         [TestMethod]
         public void IsValidCommandMatchesFullId()
         {
-            var module = new CommandModule();
+            var module = new TestCommandModule();
             var firstCommand = module.Commands.First();
             var commandManager = new CommandManager(new TestRepositoryManager());
             commandManager.Initialize(null, null);
@@ -49,9 +49,9 @@ namespace LobotJR.Test.Command
         }
 
         [TestMethod]
-        public void IsValidCommandMatchesWildcard()
+        public void IsValidCommandMatchesWildcardAtStart()
         {
-            var module = new CommandModule();
+            var module = new TestCommandModule();
             var commandManager = new CommandManager(new TestRepositoryManager());
             commandManager.Initialize(null, null);
             commandManager.LoadModules(module);
@@ -59,9 +59,19 @@ namespace LobotJR.Test.Command
         }
 
         [TestMethod]
+        public void IsValidCommandMatchesWildcardAtEnd()
+        {
+            var module = new TestCommandModule();
+            var commandManager = new CommandManager(new TestRepositoryManager());
+            commandManager.Initialize(null, null);
+            commandManager.LoadModules(module);
+            Assert.IsTrue(commandManager.IsValidCommand($"*.{module.SubModules.FirstOrDefault().Name}"));
+        }
+
+        [TestMethod]
         public void ProcessMessageExecutesCommands()
         {
-            var module = new CommandModule();
+            var module = new TestCommandModule();
             var commandManager = new CommandManager(new TestRepositoryManager());
             commandManager.Initialize(null, null);
             commandManager.LoadModules(module);
@@ -76,8 +86,8 @@ namespace LobotJR.Test.Command
         [TestMethod]
         public void ProcessMessageWildcardAllowsAccessToSubModules()
         {
-            var module = new CommandModule();
-            var subModule = module.SubModules.First() as SubCommandModule;
+            var module = new TestCommandModule();
+            var subModule = module.SubModules.First() as TestSubCommandModule;
             var roles = new List<UserRole>(new UserRole[]
             {
                 new UserRole("TestRole",
@@ -96,7 +106,7 @@ namespace LobotJR.Test.Command
         [TestMethod]
         public void ProcessMessageSubModuleAccessDoesNotAllowParentAccess()
         {
-            var module = new CommandModule();
+            var module = new TestCommandModule();
             var roles = new List<UserRole>(new UserRole[]
             {
                 new UserRole("TestRole",
@@ -116,8 +126,8 @@ namespace LobotJR.Test.Command
         [TestMethod]
         public void ProcessMessageAllowsAuthorizedUserWhenWildcardIsRestricted()
         {
-            var module = new CommandModule();
-            var subModule = module.SubModules.First() as SubCommandModule;
+            var module = new TestCommandModule();
+            var subModule = module.SubModules.First() as TestSubCommandModule;
             var roles = new List<UserRole>(new UserRole[]
             {
                 new UserRole("TestRole",
@@ -137,7 +147,7 @@ namespace LobotJR.Test.Command
         [TestMethod]
         public void ProcessMessageRestrictsAccessToUnauthorizedUsers()
         {
-            var module = new CommandModule();
+            var module = new TestCommandModule();
             var roles = new List<UserRole>(new UserRole[]
             {
                 new UserRole("TestRole",
@@ -155,7 +165,7 @@ namespace LobotJR.Test.Command
         [TestMethod]
         public void ProcessMessageAllowsAccessToAuthorizedUsers()
         {
-            var module = new CommandModule();
+            var module = new TestCommandModule();
             var roles = new List<UserRole>(new UserRole[]
             {
                 new UserRole("TestRole",
@@ -173,7 +183,7 @@ namespace LobotJR.Test.Command
         [TestMethod]
         public void ProcessMessageRestrictsCommandsWithWildcardRoles()
         {
-            var module = new CommandModule();
+            var module = new TestCommandModule();
             var roles = new List<UserRole>(new UserRole[]
             {
                 new UserRole("TestRole",
@@ -191,7 +201,7 @@ namespace LobotJR.Test.Command
         [TestMethod]
         public void ProcessMessageProcessesCompactCommands()
         {
-            var module = new CommandModule();
+            var module = new TestCommandModule();
             var roles = new List<UserRole>();
             var commandManager = new CommandManager(new TestRepositoryManager(roles));
             commandManager.Initialize(null, null);
@@ -206,7 +216,7 @@ namespace LobotJR.Test.Command
         [TestMethod]
         public void ProcessMessageCompactCommandsPassParameters()
         {
-            var module = new CommandModule();
+            var module = new TestCommandModule();
             var roles = new List<UserRole>();
             var commandManager = new CommandManager(new TestRepositoryManager(roles));
             commandManager.Initialize(null, null);

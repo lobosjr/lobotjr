@@ -1,5 +1,6 @@
 ﻿using LobotJR.Command;
 using LobotJR.Data;
+using LobotJR.Data.User;
 using LobotJR.Modules;
 using LobotJR.Modules.Fishing.Model;
 using System;
@@ -88,6 +89,14 @@ namespace LobotJR.Test.Command
 
         public IRepository<TournamentResult> TournamentResults { get; private set; }
 
+        public IRepository<AppSettings> AppSettings { get; private set; }
+
+        public IRepository<UserMap> Users { get; private set; }
+
+        public IRepository<Fisher> Fishers { get; private set; }
+
+        public IRepository<Catch> FishingLeaderboard { get; private set; }
+
         public TestRepositoryManager()
         {
             UserRoles = new TestRepository<UserRole>();
@@ -113,7 +122,7 @@ namespace LobotJR.Test.Command
         }
     }
 
-    public class CommandModule : ICommandModule
+    public class TestCommandModule : ICommandModule
     {
         public string Name => "Command";
 
@@ -123,7 +132,7 @@ namespace LobotJR.Test.Command
 
         public IEnumerable<ICommandModule> SubModules { get; private set; }
 
-        public CommandModule()
+        public TestCommandModule()
         {
             Commands = new CommandHandler[] {
                 new CommandHandler("Foo", (data, user) =>
@@ -142,12 +151,12 @@ namespace LobotJR.Test.Command
             };
             SubModules = new ICommandModule[]
             {
-                new SubCommandModule()
+                new TestSubCommandModule()
             };
         }
     }
 
-    public class SubCommandModule : ICommandModule
+    public class TestSubCommandModule : ICommandModule
     {
         public string Name => "Sub";
         public List<string> Calls { get; set; } = new List<string>();
@@ -156,7 +165,7 @@ namespace LobotJR.Test.Command
 
         public IEnumerable<ICommandModule> SubModules => null;
 
-        public SubCommandModule()
+        public TestSubCommandModule()
         {
             Commands = new CommandHandler[]
             {

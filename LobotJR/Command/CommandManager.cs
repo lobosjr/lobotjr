@@ -143,11 +143,12 @@ namespace LobotJR.Command
         /// <summary>
         /// Loads all registered command modules.
         /// </summary>
-        public void LoadAllModules()
+        /// <param name="systemManager">System manager containing all loaded systems.</param>
+        public void LoadAllModules(ISystemManager systemManager)
         {
             var context = new SqliteContext();
             LoadModules(new AccessControlModule(this),
-                new TournamentModule(RepositoryManager.TournamentResults));
+                new FishingModule(userLookup, systemManager.Get<FishingSystem>(), RepositoryManager.TournamentResults));
         }
 
         /// <summary>

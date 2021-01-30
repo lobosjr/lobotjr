@@ -45,7 +45,7 @@ namespace LobotJR.Modules.Fishing
                 new CommandHandler("CatchFish", CatchFish, "catch", "reel"),
                 new CommandHandler("CastLine", Cast, "cast"),
             };
-            SubModules = new ICommandModule[] { new TournamentModule(tournamentResults) };
+            SubModules = new ICommandModule[] { new FishingAdmin(fishingSystem), new TournamentModule(fishingSystem.Tournament, tournamentResults) };
         }
 
         public CompactCollection<Catch> PlayerLeaderboardCompact(string data, string userId)
@@ -198,6 +198,53 @@ namespace LobotJR.Modules.Fishing
             }
             FishingSystem.Cast(userId);
             return new CommandResult("You cast your line out into the water.");
+        }
+
+        public CommandResult Gloat(string data, string userId)
+        {
+            return null;
+            /*
+            else if (whisperMessage.StartsWith("!gloatfish") || whisperMessage.StartsWith("!fishgloat"))
+            {
+                if (wolfcoins.Exists(wolfcoins.fishingList, whisperSender))
+                {
+                    if (wolfcoins.coinList[whisperSender] < gloatCost)
+                    {
+                        Whisper(whisperSender, "You don't have enough coins to gloat!", group);
+                        continue;
+                    }
+
+                    if (wolfcoins.fishingList[whisperSender].biggestFish.Count > 0)
+                    {
+                        Fish toGloat = new Fish();
+                        string[] msgData = whispers[1].Split(' ');
+                        if (msgData.Count() != 2)
+                        {
+                            Whisper(whisperSender, "Invalid number of parameters. Syntax: !fish <Fish #>", group);
+                            continue;
+                        }
+                        int fishID = -1;
+                        if (int.TryParse(msgData[1], out fishID))
+                        {
+                            if (fishID <= wolfcoins.fishingList[whisperSender].biggestFish.Count && fishID > 0)
+                            {
+                                string temp = gloatCost.ToString();
+                                wolfcoins.RemoveCoins(whisperSender, temp);
+
+                                Fish tempFish = new Fish(wolfcoins.fishingList[whisperSender].biggestFish.ElementAt(fishID - 1));
+
+                                irc.sendChatMessage(whisperSender + " gloats about the time they caught a  " + tempFish.length + " in. long, " + tempFish.weight + " pound " + tempFish.name + " lobosSmug");
+                                Whisper(whisperSender, "You spent " + temp + " wolfcoins to brag about your biggest" + tempFish.name + ".", group);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Whisper(whisperSender, "You don't have any fish! Type !cast to try and fish for some!", group);
+                    }
+                }
+            }
+             */
         }
     }
 }

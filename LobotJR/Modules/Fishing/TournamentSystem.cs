@@ -21,7 +21,7 @@ namespace LobotJR.Modules.Fishing
         /// <summary>
         /// The date and time of the next scheduled tournament.
         /// </summary>
-        public DateTime NextTournament { get; set; }
+        public DateTime? NextTournament { get; set; }
         /// <summary>
         /// Whether or not a tournament is currently running.
         /// </summary>
@@ -88,17 +88,26 @@ namespace LobotJR.Modules.Fishing
         /// <summary>
         /// Processes the tournament system, starting or ending the tournament as necessary.
         /// </summary>
-        public void Process()
+        public void Process(bool broadcasting)
         {
-            var broadcasting = true;
-            if (CurrentTournament != null
-                && (!broadcasting || DateTime.Now >= CurrentTournament.Date))
+            if (!broadcasting)
             {
-                EndTournament();
+                if (CurrentTournament != null)
+                {
+                    EndTournament();
+                }
+                NextTournament = null;
             }
-            else if (CurrentTournament == null && DateTime.Now >= NextTournament)
+            else
             {
-                StartTournament();
+                if (CurrentTournament != null && DateTime.Now >= CurrentTournament.Date)
+                {
+                    EndTournament();
+                }
+                else if (CurrentTournament == null && DateTime.Now >= NextTournament)
+                {
+                    StartTournament();
+                }
             }
         }
     }

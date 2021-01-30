@@ -118,8 +118,9 @@
     <Compile Include="IrcClient.cs" />
     <Compile Include="Items.cs" />
     <Compile Include="JSON.cs" />
+    <Compile Include="Migrations\FishingMigration.cs" />
     <Compile Include="Modules\AccessControl\AccessControlAdmin.cs" />
-    <Compile Include="Modules\Fishing\FishingAdminCompact.cs" />
+    <Compile Include="Modules\Fishing\FishingAdmin.cs" />
     <Compile Include="Modules\Fishing\FishingModule.cs" />
     <Compile Include="Modules\Fishing\FishingSystem.cs" />
     <Compile Include="Modules\Fishing\TournamentModule.cs" />
@@ -132,6 +133,8 @@
     <Compile Include="Modules\Fishing\TournamentSystem.cs" />
     <Compile Include="Modules\ICommandModule.cs" />
     <Compile Include="Modules\ISystem.cs" />
+    <Compile Include="Modules\ISystemManager.cs" />
+    <Compile Include="Modules\SystemManager.cs" />
     <Compile Include="Pets.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

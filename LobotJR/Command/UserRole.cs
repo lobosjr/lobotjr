@@ -10,6 +10,17 @@ namespace LobotJR.Command
     /// </summary>
     public class UserRole
     {
+        private readonly static Dictionary<string, Regex> CommandMap = new Dictionary<string, Regex>();
+
+        private static Regex RegexFromCommand(string command)
+        {
+            if (!CommandMap.ContainsKey(command))
+            {
+                CommandMap.Add(command, new Regex(command.Replace("*", ".*")));
+            }
+            return CommandMap[command];
+        }
+
         private static string ListToString(IEnumerable<string> collection)
         {
             return string.Join(",", collection.Select(x => x.Replace(",", "\\,")));
@@ -65,8 +76,12 @@ namespace LobotJR.Command
             private set
             {
                 CommandList = ListToString(value);
+
             }
         }
+
+        [NotMapped]
+        public Dictionary<string, bool> CheckedCommands { get; private set; } = new Dictionary<string, bool>();
 
 
         /// <summary>
@@ -160,15 +175,12 @@ namespace LobotJR.Command
         /// <returns>Whether or not the command is covered.</returns>
         public bool CoversCommand(string commandId)
         {
-            return Commands.Any((command) =>
+            if (!CheckedCommands.ContainsKey(commandId))
             {
-                var index = command.IndexOf('*');
-                if (index >= 0)
-                {
-                    return commandId.StartsWith(command.Substring(0, index));
-                }
-                return command.Equals(commandId);
-            });
+                var covers = Commands.Any(command => RegexFromCommand(command).IsMatch(commandId));
+                CheckedCommands.Add(commandId, covers);
+            }
+            return CheckedCommands[commandId];
         }
     }
 }

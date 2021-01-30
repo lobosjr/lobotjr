@@ -11,7 +11,6 @@ namespace LobotJR.Modules.AccessControl
     /// </summary>
     public class AccessControlModule : ICommandModule
     {
-        private readonly ICommandManager commandManager;
         private readonly IRepository<UserRole> repository;
         /// <summary>
         /// Prefix applied to names of commands within this module.
@@ -30,7 +29,6 @@ namespace LobotJR.Modules.AccessControl
 
         public AccessControlModule(ICommandManager commandManager)
         {
-            this.commandManager = commandManager;
             repository = commandManager.RepositoryManager.UserRoles;
             Commands = new CommandHandler[]
             {
