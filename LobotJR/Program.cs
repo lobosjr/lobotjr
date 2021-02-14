@@ -440,12 +440,6 @@ namespace TwitchBot
             systemManager.LoadAllSystems();
             #endregion
 
-            #region Command Manager Setup1
-            var commandManager = new CommandManager(repoManager);
-            commandManager.Initialize(tokenData.BroadcastUser, tokenData.ChatUser);
-            commandManager.LoadAllModules(systemManager);
-            #endregion
-
 
             if (connected)
             {
@@ -467,6 +461,12 @@ namespace TwitchBot
                 Currency wolfcoins = new Currency(clientData);
                 wolfcoins.UpdateViewers(channel);
                 wolfcoins.UpdateSubs(tokenData.BroadcastToken.AccessToken, clientData.ClientId);
+
+                #region Command Manager Setup1
+                var commandManager = new CommandManager(repoManager);
+                commandManager.Initialize(tokenData.BroadcastUser, tokenData.ChatUser);
+                commandManager.LoadAllModules(systemManager, wolfcoins);
+                #endregion
 
 
                 UpdateDungeons(dungeonListPath, ref dungeonList);
@@ -789,14 +789,21 @@ namespace TwitchBot
                                 var result = commandManager.ProcessMessage(whisperMessage.Substring(1), whisperSender);
                                 if (result != null && result.Processed)
                                 {
-                                    if (result.Responses != null && result.Responses.Count > 0)
+                                    if (result.Responses?.Count > 0)
                                     {
                                         foreach (var response in result.Responses)
                                         {
                                             Whisper(whisperSender, response, group);
                                         }
                                     }
-                                    if (result.Errors != null && result.Errors.Count > 0)
+                                    if (result.Messages?.Count > 0)
+                                    {
+                                        foreach(var broadcastMessage in result.Messages)
+                                        {
+                                            irc.sendChatMessage(broadcastMessage);
+                                        }
+                                    }
+                                    if (result.Errors?.Count > 0)
                                     {
                                         Console.WriteLine($"Errors encountered while processing command \"{whisperMessage}\" from user {whisperSender}");
                                         foreach (var error in result.Errors)

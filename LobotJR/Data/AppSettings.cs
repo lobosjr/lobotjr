@@ -25,6 +25,11 @@
         /// rarity, or a standard normal distribution.
         /// </summary>
         public bool FishingUseWeights { get; set; }
+        /// <summary>
+        /// The wolfcoin cost for a user to have the bot post a message about
+        /// their fishing records.
+        /// </summary>
+        public int FishingGloatCost { get; set; }
 
         /// <summary>
         /// How long, in minutes, a fishing tournament should last. Default is

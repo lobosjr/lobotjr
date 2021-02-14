@@ -14,7 +14,7 @@ using TwitchBot;
 
 namespace Wolfcoins
 {
-    class Party
+    public class Party
     {
         public Dungeon myDungeon;
         public HashSet<CharClass> members = new HashSet<CharClass>();
@@ -71,7 +71,7 @@ namespace Wolfcoins
         }
     }
 
-    class Currency
+    public class Currency
     {
 
         public Dictionary<string, int> coinList = new Dictionary<string, int>();

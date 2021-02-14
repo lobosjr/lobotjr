@@ -6,6 +6,7 @@ using LobotJR.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Wolfcoins;
 
 namespace LobotJR.Modules.Fishing
 {
@@ -16,6 +17,7 @@ namespace LobotJR.Modules.Fishing
     {
         private readonly UserLookup UserLookup;
         private readonly FishingSystem FishingSystem;
+        private readonly Currency Wolfcoins;
 
         /// <summary>
         /// Prefix applied to names of commands within this module.
@@ -32,10 +34,11 @@ namespace LobotJR.Modules.Fishing
         /// </summary>
         public IEnumerable<ICommandModule> SubModules { get; private set; }
 
-        public FishingModule(UserLookup userLookup, FishingSystem fishingSystem, IRepository<TournamentResult> tournamentResults)
+        public FishingModule(UserLookup userLookup, FishingSystem fishingSystem, IRepository<TournamentResult> tournamentResults, Currency wolfcoins)
         {
             FishingSystem = fishingSystem;
             UserLookup = userLookup;
+            Wolfcoins = wolfcoins;
             Commands = new CommandHandler[]
             {
                 new CommandHandler("PlayerLeaderboard", PlayerLeaderboard, PlayerLeaderboardCompact, "fish"),
@@ -202,6 +205,34 @@ namespace LobotJR.Modules.Fishing
 
         public CommandResult Gloat(string data, string userId)
         {
+            if (Wolfcoins.coinList.TryGetValue(UserLookup.GetUsername(userId), out var currency))
+            {
+                if (currency < FishingSystem.GloatCost)
+                {
+                    return new CommandResult("You don't have enough coins to gloat!");
+                }
+                var fisher = FishingSystem.GetFisherById(userId);
+                if (fisher.Records.Any())
+                {
+                    if (int.TryParse(data, out var id))
+                    {
+                        if (id > 0 && id <= fisher.Records.Count)
+                        {
+                            var fish = fisher.Records[id];
+                            // How do we trigger chat messages? Is this part of the command result, or as a pub/sub function?
+                            return new CommandResult($"You spent {FishingSystem.GloatCost} wolfcoins to brag about your biggest {fish.Fish.Name}.")
+                            {
+                                Messages = new string[] { $"{UserLookup.GetUsername(userId)} gloats about the time they caught a {fish.Length} in. long, {fish.Weight} pound {fish.Fish.Name} lobosSmug" }
+                            };
+                        }
+                    }
+                    return new CommandResult("Invalid request. Syntax: !gloatfish <Fish #>");
+                }
+                else
+                {
+                    return new CommandResult("You don't have any fish! Type !cast to try and fish for some!");
+                }
+            }
             return null;
             /*
             else if (whisperMessage.StartsWith("!gloatfish") || whisperMessage.StartsWith("!fishgloat"))

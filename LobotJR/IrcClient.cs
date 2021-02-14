@@ -1,18 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Net;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
-using System.IO;
 using Wolfcoins;
-using Adventures;
 
 namespace TwitchBot
 {
-    class IrcClient
+    public class IrcClient
     {
         public DateTime timeLast;
         public DateTime dungeonTimeLast;
@@ -21,12 +17,12 @@ namespace TwitchBot
         public Queue<string> messageQueue = new Queue<string>();
         public Queue<Dictionary<Party,string>> dungeonQueue = new Queue<Dictionary<Party,string>>();
         //private int dungeonCooldown = 7500;
-        private int cooldown = 65;
-        private string username;
+        private readonly int cooldown = 65;
+        private readonly string username;
         private string channel;
-        private string myIp;
-        private int myPort;
-        private string myPassword;
+        private readonly string myIp;
+        private readonly int myPort;
+        private readonly string myPassword;
 
         private TcpClient tcpClient;
         private StreamReader inputStream;
@@ -38,11 +34,11 @@ namespace TwitchBot
             dungeonTimeLast = DateTime.Now;
             lastReconnect = DateTime.Now;
             this.username = username;
-            this.myIp = ip;
-            this.myPort = port;
-            this.myPassword = password;
+            myIp = ip;
+            myPort = port;
+            myPassword = password;
             tcpClient = new TcpClient(ip, port);
-            this.connected = tcpClient.Connected;
+            connected = tcpClient.Connected;
 
             if (connected)
             {
@@ -179,24 +175,24 @@ namespace TwitchBot
 
             if ((DateTime.Now - lastReconnect).TotalSeconds > 5)
             {
-                tcpClient = new TcpClient(this.myIp, this.myPort);
-                this.connected = tcpClient.Connected;
+                tcpClient = new TcpClient(myIp, myPort);
+                connected = tcpClient.Connected;
 
                 if (connected)
                 {
                     connected = true;
-                    Console.WriteLine("Successfully reconnected to IRC server: " + this.myIp);
+                    Console.WriteLine("Successfully reconnected to IRC server: " + myIp);
                     inputStream = new StreamReader(tcpClient.GetStream());
                     outputStream = new StreamWriter(tcpClient.GetStream());
 
-                    outputStream.WriteLine("PASS " + this.myPassword);
+                    outputStream.WriteLine("PASS " + myPassword);
                     outputStream.WriteLine("NICK " + username);
                     outputStream.WriteLine("USER " + username + " 8 * :" + username);
                     outputStream.Flush();
                 }
                 else
                 {
-                    Console.WriteLine("Failed to reconnect to IRC server: " + this.myIp);
+                    Console.WriteLine("Failed to reconnect to IRC server: " + myIp);
                     lastReconnect = DateTime.Now;
                 }
                 lastReconnect = DateTime.Now;

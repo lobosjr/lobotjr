@@ -6,6 +6,7 @@ using LobotJR.Modules.Fishing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Wolfcoins;
 
 namespace LobotJR.Command
 {
@@ -144,11 +145,11 @@ namespace LobotJR.Command
         /// Loads all registered command modules.
         /// </summary>
         /// <param name="systemManager">System manager containing all loaded systems.</param>
-        public void LoadAllModules(ISystemManager systemManager)
+        public void LoadAllModules(ISystemManager systemManager, Currency wolfcoins)
         {
             var context = new SqliteContext();
             LoadModules(new AccessControlModule(this),
-                new FishingModule(userLookup, systemManager.Get<FishingSystem>(), RepositoryManager.TournamentResults));
+                new FishingModule(userLookup, systemManager.Get<FishingSystem>(), RepositoryManager.TournamentResults, wolfcoins));
         }
 
         /// <summary>
@@ -243,7 +244,7 @@ namespace LobotJR.Command
             }
             catch (Exception e)
             {
-                return new CommandResult(true, null, new Exception[] { e });
+                return new CommandResult(true, new Exception[] { e });
             }
             return new CommandResult();
         }
@@ -270,7 +271,7 @@ namespace LobotJR.Command
                 {
                     return TryExecuteCommand(request);
                 }
-                return new CommandResult(true, null, new Exception[] { new UnauthorizedAccessException($"User \"{user}\" attempted to execute unauthorized command \"{message}\"") });
+                return new CommandResult(true, new Exception[] { new UnauthorizedAccessException($"User \"{user}\" attempted to execute unauthorized command \"{message}\"") });
             }
             return new CommandResult();
         }

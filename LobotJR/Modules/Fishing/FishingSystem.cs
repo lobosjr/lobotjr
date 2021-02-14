@@ -49,6 +49,11 @@ namespace LobotJR.Modules.Fishing
         /// </summary>
         public TournamentSystem Tournament { get; set; }
 
+        /// <summary>
+        /// The cost in wolfcoins for a user to gloat about their fishing.
+        /// </summary>
+        public int GloatCost { get { return Settings != null ? Settings.FishingGloatCost : -1; } }
+
         public FishingSystem(
             IRepository<Fish> fishData,
             IRepository<Fisher> fishers,

@@ -1,21 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Threading;
-using System.IO;
-using System.Net;
-using System.Web;
-using Newtonsoft.Json;
-using TwitchBot;
-using Classes;
-using Wolfcoins;
-using Adventures;
-
-namespace Equipment
+﻿namespace Equipment
 {
-    class Item
+    public class Item
     {
         public const int QUALITY_UNCOMMON = 1;
         public const int QUALITY_RARE = 2;
