@@ -53,7 +53,7 @@ namespace LobotJR.Modules.Fishing
 
         public CompactCollection<Catch> PlayerLeaderboardCompact(string data, string userId)
         {
-            Func<Catch, string> selectFunc = x => $"{x.Fish.Name}|{x.Length}|{x.Weight}";
+            Func<Catch, string> selectFunc = x => $"{x.Fish.Name}|{x.Length}|{x.Weight};";
             var fisher = FishingSystem.GetFisherById(userId);
             if (string.IsNullOrWhiteSpace(data))
             {

@@ -19,10 +19,10 @@ namespace LobotJR.Command
 
         private readonly UserLookup userLookup;
 
-        private Dictionary<string, string> commandStringToIdMap;
-        private Dictionary<string, CommandExecutor> commandIdToExecutorMap;
-        private Dictionary<string, AnonymousExecutor> anonymousIdToExecutorMap;
-        private Dictionary<string, CompactExecutor> compactIdToExecutorMap;
+        private readonly Dictionary<string, string> commandStringToIdMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, CommandExecutor> commandIdToExecutorMap = new Dictionary<string, CommandExecutor>();
+        private readonly Dictionary<string, AnonymousExecutor> anonymousIdToExecutorMap = new Dictionary<string, AnonymousExecutor>();
+        private readonly Dictionary<string, CompactExecutor> compactIdToExecutorMap = new Dictionary<string, CompactExecutor>();
 
         /// <summary>
         /// Repository manager for access to stored data types.
@@ -114,7 +114,7 @@ namespace LobotJR.Command
         private bool CanUserExecute(string commandId, string userId)
         {
             var roles = RepositoryManager.UserRoles.Read().Where(x => x.CoversCommand(commandId));
-            return !roles.Any() || roles.Any(x => x.Users.Contains(userId));
+            return !roles.Any() || roles.Any(x => x.UserIds.Contains(userId));
         }
 
         private bool CanExecuteAnonymously(string commandId)
@@ -127,18 +127,6 @@ namespace LobotJR.Command
         {
             RepositoryManager = repositoryManager;
             userLookup = new UserLookup(repositoryManager.Users);
-        }
-
-        /// <summary>
-        /// Initialize the command manager, loading role data and registering
-        /// the commands.
-        /// </summary>
-        public void Initialize(string broadcastUser, string chatUser)
-        {
-            commandStringToIdMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            commandIdToExecutorMap = new Dictionary<string, CommandExecutor>();
-            compactIdToExecutorMap = new Dictionary<string, CompactExecutor>();
-            anonymousIdToExecutorMap = new Dictionary<string, AnonymousExecutor>();
         }
 
         /// <summary>

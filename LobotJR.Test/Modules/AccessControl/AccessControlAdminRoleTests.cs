@@ -55,7 +55,7 @@ namespace LobotJR.Test.Modules.AccessControl
             {
                 Assert.IsTrue(result.Responses.Any(x => x.Contains(commandString)));
             }
-            foreach (var user in role.Users)
+            foreach (var user in role.UserIds)
             {
                 Assert.IsTrue(result.Responses.Any(x => x.Contains(user)));
             }

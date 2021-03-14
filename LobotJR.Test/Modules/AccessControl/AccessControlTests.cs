@@ -25,7 +25,6 @@ namespace LobotJR.Test.Modules.AccessControl
                     new List<string>(new string[] { "Command.Foo", "Command.Bar", "Test.*" }))
             });
             commandManager = new CommandManager(new TestRepositoryManager(roles));
-            commandManager.Initialize("", "");
             module = new AccessControlModule(commandManager);
             commandManager.LoadModules(module);
         }
@@ -71,7 +70,7 @@ namespace LobotJR.Test.Modules.AccessControl
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(commandManager.RepositoryManager.UserRoles
-                .Read(x => x.Users.Any(y => y.Equals(username)))
+                .Read(x => x.UserIds.Any(y => y.Equals(username)))
                 .All(x => result.Responses.Any(y => y.Contains(x.Name))));
         }
 

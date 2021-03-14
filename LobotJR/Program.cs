@@ -464,7 +464,6 @@ namespace TwitchBot
 
                 #region Command Manager Setup1
                 var commandManager = new CommandManager(repoManager);
-                commandManager.Initialize(tokenData.BroadcastUser, tokenData.ChatUser);
                 commandManager.LoadAllModules(systemManager, wolfcoins);
                 #endregion
 

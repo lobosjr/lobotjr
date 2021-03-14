@@ -20,13 +20,6 @@ namespace LobotJR.Command
         IEnumerable<string> Commands { get; }
 
         /// <summary>
-        /// Initialize the command manager, loading role data and registering
-        /// the commands.
-        /// </summary>
-        /// <param name="broadcastUser">The name of the channel the bot is in.</param>
-        /// <param name="chatUser">The name of the bot user.</param>
-        void Initialize(string broadcastUser, string chatUser);
-        /// <summary>
         /// Loads all registered command modules.
         /// </summary>
         /// <param name="systemManager">System manager containing all loaded systems.</param>

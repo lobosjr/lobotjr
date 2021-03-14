@@ -48,7 +48,7 @@ namespace LobotJR.Command
         /// A list of users who are members of the role.
         /// </summary>
         [NotMapped]
-        public List<string> Users
+        public List<string> UserIds
         {
             get
             {
@@ -104,16 +104,16 @@ namespace LobotJR.Command
         /// Creates a user role with a name.
         /// </summary>
         /// <param name="name">The name of the role.</param>
-        public UserRole(string name, IEnumerable<string> users, IEnumerable<string> commands)
+        public UserRole(string name, IEnumerable<string> userIds, IEnumerable<string> commands)
         {
             Name = name;
-            if (users != null)
+            if (userIds != null)
             {
-                Users = new List<string>(users);
+                UserIds = new List<string>(userIds);
             }
             else
             {
-                Users = new List<string>();
+                UserIds = new List<string>();
             }
             if (commands != null)
             {
@@ -131,9 +131,9 @@ namespace LobotJR.Command
         /// <param name="id">The id of the user.</param>
         public void AddUser(string id)
         {
-            var temp = Users;
+            var temp = UserIds;
             temp.Add(id);
-            Users = temp;
+            UserIds = temp;
         }
 
         /// <summary>
@@ -142,9 +142,9 @@ namespace LobotJR.Command
         /// <param name="id">The id of the user.</param>
         public void RemoveUser(string id)
         {
-            var temp = Users;
+            var temp = UserIds;
             temp.Remove(id);
-            Users = temp;
+            UserIds = temp;
         }
 
         /// <summary>

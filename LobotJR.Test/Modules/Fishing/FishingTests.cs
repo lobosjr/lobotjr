@@ -58,7 +58,6 @@ namespace LobotJR.Test.Modules.Fishing
                 new TournamentResult(DateTime.Now - new TimeSpan(2, 0, 30), new TournamentEntry[] { new TournamentEntry("User", 40), new TournamentEntry("Other", 60), new TournamentEntry("Winner", 50) })
             });
             commandManager = new CommandManager(new TestRepositoryManager(results));
-            commandManager.Initialize("", "");
             module = new TournamentModule(null, commandManager.RepositoryManager.TournamentResults);
             commandManager.LoadModules(module);
         }

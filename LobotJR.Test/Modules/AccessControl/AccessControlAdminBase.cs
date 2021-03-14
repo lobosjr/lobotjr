@@ -25,7 +25,6 @@ namespace LobotJR.Test.Modules.AccessControl
 
             });
             commandManager = new CommandManager(new TestRepositoryManager(roles));
-            commandManager.Initialize("", "");
             commandModule = new TestCommandModule();
             testModule = new TestModule();
             commandManager.LoadModules(commandModule, testModule);

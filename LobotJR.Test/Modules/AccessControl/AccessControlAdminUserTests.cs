@@ -17,8 +17,8 @@ namespace LobotJR.Test.Modules.AccessControl
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses.Any(x => x.Contains("success", StringComparison.OrdinalIgnoreCase)));
-            Assert.AreEqual(3, role.Users.Count);
-            Assert.IsTrue(role.Users.Contains("NewUser"));
+            Assert.AreEqual(3, role.UserIds.Count);
+            Assert.IsTrue(role.UserIds.Contains("NewUser"));
         }
 
         [TestMethod]
@@ -71,7 +71,7 @@ namespace LobotJR.Test.Modules.AccessControl
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses.Any(x => x.Contains("success", StringComparison.OrdinalIgnoreCase)));
-            Assert.IsFalse(role.Users.Contains("Foo"));
+            Assert.IsFalse(role.UserIds.Contains("Foo"));
         }
 
         [TestMethod]

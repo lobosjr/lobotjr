@@ -76,7 +76,7 @@ namespace LobotJR.Modules.AccessControl
 
             return new CommandResult(
                 $"Role \"{data}\" contains the following commands: {string.Join(", ", existingRole.Commands)}.",
-                $"Role \"{data}\" contains the following users: {string.Join(", ", existingRole.Users)}."
+                $"Role \"{data}\" contains the following users: {string.Join(", ", existingRole.UserIds)}."
             );
         }
 
@@ -123,7 +123,7 @@ namespace LobotJR.Modules.AccessControl
                 return new CommandResult($"Error: No role with name \"{roleName}\" was found.");
             }
 
-            if (role.Users.Contains(userToAdd))
+            if (role.UserIds.Contains(userToAdd))
             {
                 return new CommandResult($"Error: User \"{userToAdd}\" is already a member of \"{roleName}\".");
             }
@@ -159,7 +159,7 @@ namespace LobotJR.Modules.AccessControl
                 return new CommandResult($"Error: No role with name \"{roleName}\" was found.");
             }
 
-            if (!role.Users.Contains(userToRemove))
+            if (!role.UserIds.Contains(userToRemove))
             {
                 return new CommandResult($"Error: User \"{userToRemove}\" is not a member of \"{roleName}\".");
             }
