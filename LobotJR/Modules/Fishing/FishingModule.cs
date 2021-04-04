@@ -6,7 +6,6 @@ using LobotJR.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Wolfcoins;
 
 namespace LobotJR.Modules.Fishing
 {
@@ -17,7 +16,7 @@ namespace LobotJR.Modules.Fishing
     {
         private readonly UserLookup UserLookup;
         private readonly FishingSystem FishingSystem;
-        private readonly Currency Wolfcoins;
+        private readonly Dictionary<string, int> Wolfcoins;
 
         /// <summary>
         /// Prefix applied to names of commands within this module.
@@ -34,7 +33,7 @@ namespace LobotJR.Modules.Fishing
         /// </summary>
         public IEnumerable<ICommandModule> SubModules { get; private set; }
 
-        public FishingModule(UserLookup userLookup, FishingSystem fishingSystem, IRepository<TournamentResult> tournamentResults, Currency wolfcoins)
+        public FishingModule(UserLookup userLookup, FishingSystem fishingSystem, IRepository<TournamentResult> tournamentResults, Dictionary<string, int> wolfcoins)
         {
             FishingSystem = fishingSystem;
             UserLookup = userLookup;
@@ -205,7 +204,7 @@ namespace LobotJR.Modules.Fishing
 
         public CommandResult Gloat(string data, string userId)
         {
-            if (Wolfcoins.coinList.TryGetValue(UserLookup.GetUsername(userId), out var currency))
+            if (Wolfcoins.TryGetValue(UserLookup.GetUsername(userId), out var currency))
             {
                 if (currency < FishingSystem.GloatCost)
                 {

@@ -134,7 +134,6 @@ namespace LobotJR.Test.Command
         {
             var role = UserRoles.First();
             role.CommandList = "CommandMock.*";
-            var module = new TestCommandModule();
             var result = CommandManager.ProcessMessage("Foo", "NotAuth");
             Assert.IsTrue(result.Processed);
             Assert.IsTrue(result.Errors.Any());

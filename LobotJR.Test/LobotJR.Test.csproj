@@ -66,14 +66,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Command\CommandManagerTestBase.cs" />
+    <Compile Include="Mocks\ListRepository.cs" />
     <Compile Include="Modules\AccessControl\AccessControlTests.cs" />
     <Compile Include="Modules\AccessControl\AccessControlAdminBase.cs" />
     <Compile Include="Modules\AccessControl\AccessControlAdminRoleTests.cs" />
     <Compile Include="Modules\AccessControl\AccessControlAdminUserTests.cs" />
     <Compile Include="Modules\AccessControl\AccessControlAdminCommandTests.cs" />
     <Compile Include="Command\CommandManagerTests.cs" />
-    <Compile Include="Command\MockImplementations.cs" />
+    <Compile Include="Modules\Fishing\FishingTestBase.cs" />
     <Compile Include="Modules\Fishing\FishingTests.cs" />
+    <Compile Include="Modules\Fishing\FishingTournamentTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

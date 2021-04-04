@@ -150,7 +150,7 @@ namespace LobotJR.Command
         {
             var context = new SqliteContext();
             LoadModules(new AccessControlModule(this),
-                new FishingModule(UserLookup, systemManager.Get<FishingSystem>(), RepositoryManager.TournamentResults, wolfcoins));
+                new FishingModule(UserLookup, systemManager.Get<FishingSystem>(), RepositoryManager.TournamentResults, wolfcoins.coinList));
         }
 
         /// <summary>
