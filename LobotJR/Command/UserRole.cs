@@ -10,15 +10,10 @@ namespace LobotJR.Command
     /// </summary>
     public class UserRole
     {
-        private readonly static Dictionary<string, Regex> CommandMap = new Dictionary<string, Regex>();
-
         private static Regex RegexFromCommand(string command)
         {
-            if (!CommandMap.ContainsKey(command))
-            {
-                CommandMap.Add(command, new Regex(command.Replace("*", ".*")));
-            }
-            return CommandMap[command];
+            var commandString = command.Replace(".", "\\.").Replace("*", ".*");
+            return new Regex($"^{commandString}$");
         }
 
         private static string ListToString(IEnumerable<string> collection)

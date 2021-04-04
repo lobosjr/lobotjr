@@ -13,6 +13,7 @@ namespace LobotJR.Modules.AccessControl
     {
         private readonly ICommandManager commandManager;
         private readonly IRepository<UserRole> repository;
+
         /// <summary>
         /// Prefix applied to names of commands within this module.
         /// </summary>
@@ -111,6 +112,11 @@ namespace LobotJR.Modules.AccessControl
             {
                 return new CommandResult("Error: Username cannot be empty.");
             }
+            var userId = commandManager.UserLookup.GetId(userToAdd);
+            if (userId == null)
+            {
+                return new CommandResult("Error: User id not present in id cache, please try again in a few minutes.");
+            }
             var roleName = data.Substring(space + 1);
             if (roleName.Length == 0)
             {
@@ -122,12 +128,11 @@ namespace LobotJR.Modules.AccessControl
             {
                 return new CommandResult($"Error: No role with name \"{roleName}\" was found.");
             }
-
-            if (role.UserIds.Contains(userToAdd))
+            if (role.UserIds.Contains(userId))
             {
                 return new CommandResult($"Error: User \"{userToAdd}\" is already a member of \"{roleName}\".");
             }
-            role.AddUser(userToAdd);
+            role.AddUser(userId);
             repository.Update(role);
             repository.Commit();
 
@@ -147,6 +152,7 @@ namespace LobotJR.Modules.AccessControl
             {
                 return new CommandResult("Error: Username cannot be empty.");
             }
+            var userId = commandManager.UserLookup.GetId(userToRemove);
             var roleName = data.Substring(space + 1);
             if (roleName.Length == 0)
             {
@@ -159,11 +165,11 @@ namespace LobotJR.Modules.AccessControl
                 return new CommandResult($"Error: No role with name \"{roleName}\" was found.");
             }
 
-            if (!role.UserIds.Contains(userToRemove))
+            if (!role.UserIds.Contains(userId))
             {
                 return new CommandResult($"Error: User \"{userToRemove}\" is not a member of \"{roleName}\".");
             }
-            role.RemoveUser(userToRemove);
+            role.RemoveUser(userId);
             repository.Update(role);
             repository.Commit();
 
@@ -215,7 +221,7 @@ namespace LobotJR.Modules.AccessControl
         private CommandResult ListCommands(string data)
         {
             var commands = commandManager.Commands;
-            var modules = commands.Where(x => x.IndexOf('.') != -1).Select(x => x.Substring(0, x.IndexOf('.'))).Distinct().ToList();
+            var modules = commands.Where(x => x.LastIndexOf('.') != -1).Select(x => x.Substring(0, x.LastIndexOf('.'))).Distinct().ToList();
             var response = new string[modules.Count + 1];
             response[0] = $"There are {commands.Count()} commands across {modules.Count} modules.";
             for (var i = 0; i < modules.Count; i++)

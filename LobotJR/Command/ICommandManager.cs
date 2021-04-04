@@ -1,4 +1,5 @@
 ﻿using LobotJR.Data;
+using LobotJR.Data.User;
 using LobotJR.Modules;
 using System.Collections.Generic;
 using Wolfcoins;
@@ -14,6 +15,10 @@ namespace LobotJR.Command
         /// Repository manager for access to data.
         /// </summary>
         IRepositoryManager RepositoryManager { get; }
+        /// <summary>
+        /// User lookup service used to translate between usernames and user ids.
+        /// </summary>
+        UserLookup UserLookup { get; }
         /// <summary>
         /// List of ids for registered commands.
         /// </summary>

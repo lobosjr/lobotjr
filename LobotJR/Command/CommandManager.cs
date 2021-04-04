@@ -6,6 +6,7 @@ using LobotJR.Modules.Fishing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Wolfcoins;
 
 namespace LobotJR.Command
@@ -17,21 +18,33 @@ namespace LobotJR.Command
     {
         private const int MessageLimit = 450;
 
-        private readonly UserLookup userLookup;
-
         private readonly Dictionary<string, string> commandStringToIdMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, CommandExecutor> commandIdToExecutorMap = new Dictionary<string, CommandExecutor>();
         private readonly Dictionary<string, AnonymousExecutor> anonymousIdToExecutorMap = new Dictionary<string, AnonymousExecutor>();
         private readonly Dictionary<string, CompactExecutor> compactIdToExecutorMap = new Dictionary<string, CompactExecutor>();
+        private readonly Dictionary<string, Regex> commandStringRegexMap = new Dictionary<string, Regex>();
 
         /// <summary>
         /// Repository manager for access to stored data types.
         /// </summary>
         public IRepositoryManager RepositoryManager { get; set; }
         /// <summary>
+        /// User lookup service used to translate between usernames and user ids.
+        /// </summary>
+        public UserLookup UserLookup { get; private set; }
+        /// <summary>
         /// List of ids for registered commands.
         /// </summary>
-        public IEnumerable<string> Commands { get { return commandIdToExecutorMap.Keys.ToArray(); } }
+        public IEnumerable<string> Commands
+        {
+            get
+            {
+                return commandIdToExecutorMap.Keys
+                    .Union(compactIdToExecutorMap.Keys)
+                    .Union(anonymousIdToExecutorMap.Keys)
+                    .ToArray();
+            }
+        }
 
         private void AddCommand(CommandHandler command, string prefix)
         {
@@ -126,7 +139,7 @@ namespace LobotJR.Command
         public CommandManager(IRepositoryManager repositoryManager)
         {
             RepositoryManager = repositoryManager;
-            userLookup = new UserLookup(repositoryManager.Users);
+            UserLookup = new UserLookup(repositoryManager.Users);
         }
 
         /// <summary>
@@ -137,7 +150,7 @@ namespace LobotJR.Command
         {
             var context = new SqliteContext();
             LoadModules(new AccessControlModule(this),
-                new FishingModule(userLookup, systemManager.Get<FishingSystem>(), RepositoryManager.TournamentResults, wolfcoins));
+                new FishingModule(UserLookup, systemManager.Get<FishingSystem>(), RepositoryManager.TournamentResults, wolfcoins));
         }
 
         /// <summary>
@@ -174,9 +187,15 @@ namespace LobotJR.Command
             var index = commandId.IndexOf('*');
             if (index >= 0)
             {
-                return Commands.Any(x => x.StartsWith(commandId.Substring(0, index)));
+                if (!commandStringRegexMap.ContainsKey(commandId))
+                {
+                    var commandString = commandId.Replace(".", "\\.").Replace("*", ".*");
+                    commandStringRegexMap.Add(commandId, new Regex($"^{commandString}$"));
+                }
+                var commandRegex = commandStringRegexMap[commandId];
+                return Commands.Any(x => commandRegex.IsMatch(x));
             }
-            return commandIdToExecutorMap.ContainsKey(commandId);
+            return Commands.Any(x => x.Equals(commandId));
         }
 
         private CommandResult PrepareCompactResponse(CommandRequest request, ICompactResponse response)
@@ -249,7 +268,7 @@ namespace LobotJR.Command
             if (commandStringToIdMap.TryGetValue(request.CommandString, out var commandId))
             {
                 request.CommandId = commandId;
-                request.UserId = userLookup.GetId(user);
+                request.UserId = UserLookup.GetId(user);
                 if (request.UserId == null && !CanExecuteAnonymously(request.CommandId))
                 {
                     return new CommandResult("User ID not found in cache, please try again in a few minutes. "

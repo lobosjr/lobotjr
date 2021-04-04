@@ -65,6 +65,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Command\CommandManagerTestBase.cs" />
     <Compile Include="Modules\AccessControl\AccessControlTests.cs" />
     <Compile Include="Modules\AccessControl\AccessControlAdminBase.cs" />
     <Compile Include="Modules\AccessControl\AccessControlAdminRoleTests.cs" />
