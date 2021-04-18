@@ -13,5 +13,35 @@ namespace LobotJR.Test.Modules.Fishing
         {
             InitializeFishingModule();
         }
+
+        public void RespondsWithGlobalLeaderboard()
+        {
+
+        }
+
+        public void RespondsWithCompactGlobalLeaderboard()
+        {
+
+        }
+
+        public void RespondsWithPlayerLeaderboard()
+        {
+
+        }
+
+        public void RespondsWithCompactPlayerLeaderboard()
+        {
+
+        }
+
+        public void PlayerLeaderboardUserHasNoFishRecords()
+        {
+
+        }
+
+        public void PlayerLeaderboardProvidesSpecificFishDetails()
+        {
+
+        }
     }
 }

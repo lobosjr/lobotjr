@@ -506,6 +506,10 @@ namespace TwitchBot
                     }
 
                     #region System Processing
+                    if (commandManager.UserLookup.IsUpdateTime(DateTime.Now))
+                    {
+                        commandManager.UserLookup.UpdateCache(tokenData.BroadcastToken.AccessToken, clientData.ClientId);
+                    }
                     systemManager.Process(broadcasting);
                     #endregion
 

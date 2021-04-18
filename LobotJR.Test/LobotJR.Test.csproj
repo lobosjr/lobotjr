@@ -74,6 +74,7 @@
     <Compile Include="Modules\AccessControl\AccessControlAdminCommandTests.cs" />
     <Compile Include="Command\CommandManagerTests.cs" />
     <Compile Include="Modules\Fishing\FishingTestBase.cs" />
+    <Compile Include="Modules\Fishing\FishingAdminTests.cs" />
     <Compile Include="Modules\Fishing\FishingTests.cs" />
     <Compile Include="Modules\Fishing\FishingTournamentTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -6,6 +6,12 @@
     public class AppSettings
     {
         /// <summary>
+        /// The amount of time, in minutes, to wait between calls to fetch the
+        /// ids for users not found in the id cache.
+        /// </summary>
+        public int GeneralCacheUpdateTime { get; set; }
+
+        /// <summary>
         /// The shortest time, in seconds, it can take to hook a fish. Default
         /// is 60 seconds.
         /// </summary>

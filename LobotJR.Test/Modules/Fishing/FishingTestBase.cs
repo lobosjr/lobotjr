@@ -31,6 +31,7 @@ namespace LobotJR.Test.Modules.Fishing
         protected FishingModule Module;
         protected FishingAdmin AdminModule;
         protected TournamentModule TournamentModule;
+        protected AppSettings AppSettings;
 
         private Fish createFish(int id, string name, string flavorText, int minLength, int maxLength, int minWeight, int maxWeight, int sizeId, string sizeName, string sizeMessage, int rarityId, string rarityName, int rarityWeight)
         {
@@ -121,7 +122,8 @@ namespace LobotJR.Test.Modules.Fishing
                 new UserMap() { Id = "03", Username = "Buzz"}
             }.ToList();
             UserMapMock = new ListRepository<UserMap>(UserMapData);
-            UserLookup = new UserLookup(UserMapMock);
+            AppSettings = new AppSettings() { GeneralCacheUpdateTime = 2 };
+            UserLookup = new UserLookup(UserMapMock, AppSettings);
 
             TournamentResultsData = new TournamentResult[]
             {
