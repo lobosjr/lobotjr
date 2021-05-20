@@ -139,7 +139,8 @@ namespace LobotJR.Command
         public CommandManager(IRepositoryManager repositoryManager)
         {
             RepositoryManager = repositoryManager;
-            UserLookup = new UserLookup(repositoryManager.Users);
+            var appSettings = repositoryManager.AppSettings.Read().First();
+            UserLookup = new UserLookup(repositoryManager.Users, appSettings);
         }
 
         /// <summary>

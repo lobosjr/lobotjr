@@ -80,7 +80,7 @@ namespace LobotJR.Test.Command
             role.UserList = "12345";
             var result = CommandManager.ProcessMessage("Foobar", "Auth");
             Assert.IsTrue(result.Processed);
-            Assert.AreEqual(null, result.Errors);
+            Assert.IsNull(result.Errors);
             ExecutorMocks["Foobar"].Verify(x => x(It.IsAny<string>(), It.IsAny<string>()),
                 Times.Once());
         }
@@ -107,7 +107,7 @@ namespace LobotJR.Test.Command
             UserRoles.Add(new UserRole("OtherRole", null, new List<string>(new string[] { "CommandMock.*" })));
             var result = CommandManager.ProcessMessage("Foobar", "Auth");
             Assert.IsTrue(result.Processed);
-            Assert.AreEqual(null, result.Errors);
+            Assert.IsNull(result.Errors);
             ExecutorMocks["Foobar"].Verify(x => x(It.IsAny<string>(), It.IsAny<string>()), Times.Once);
         }
 
@@ -125,7 +125,7 @@ namespace LobotJR.Test.Command
         {
             var result = CommandManager.ProcessMessage("Foo", "Auth");
             Assert.IsTrue(result.Processed);
-            Assert.AreEqual(null, result.Errors);
+            Assert.IsNull(result.Errors);
             ExecutorMocks["Foo"].Verify(x => x(It.IsAny<string>(), It.IsAny<string>()), Times.Once());
         }
 
@@ -146,7 +146,7 @@ namespace LobotJR.Test.Command
             var result = CommandManager.ProcessMessage("Foo -c", "Auth");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(@"Foo: Foo|Bar;", result.Responses.First());
-            Assert.AreEqual(null, result.Errors);
+            Assert.IsNull(result.Errors);
         }
 
         [TestMethod]
@@ -155,7 +155,7 @@ namespace LobotJR.Test.Command
             var result = CommandManager.ProcessMessage("Foo -c value", "Auth");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(@"Foo: Foo|value;", result.Responses.First());
-            Assert.AreEqual(null, result.Errors);
+            Assert.IsNull(result.Errors);
         }
 
         [TestMethod]

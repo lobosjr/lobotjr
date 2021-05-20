@@ -69,7 +69,7 @@ namespace LobotJR.Modules.Fishing
                     var fish = fisher.Records.ToList();
                     if (id > 0 && id <= fish.Count)
                     {
-                        return new CompactCollection<Catch>(new Catch[] { fish[id] }, selectFunc);
+                        return new CompactCollection<Catch>(new Catch[] { fish[id - 1] }, selectFunc);
                     }
                 }
                 return null;
@@ -105,7 +105,7 @@ namespace LobotJR.Modules.Fishing
                 responses.Add($"Name - {fishCatch.Fish.Name}");
                 responses.Add($"Length - {fishCatch.Length} in.");
                 responses.Add($"Weight - {fishCatch.Weight} lbs.");
-                responses.Add($"Size Category - {Enum.GetName(typeof(FishSize), fishCatch.Fish.SizeCategory).ToPascalCase()}");
+                responses.Add($"Size Category - {fishCatch.Fish.SizeCategory.Name}");
                 responses.Add($"Description - {fishCatch.Fish.FlavorText}");
                 return new CommandResult(responses.ToArray());
             }
@@ -133,7 +133,7 @@ namespace LobotJR.Modules.Fishing
                 }
                 if (param > 0 && param <= fisher.Records.Count)
                 {
-                    var fish = fisher.Records[param];
+                    var fish = fisher.Records[param - 1];
                     FishingSystem.DeleteFish(fisher, fish);
                     return new CommandResult($"You released your {fish.Fish.Name}. Bye bye!");
                 }
@@ -146,7 +146,7 @@ namespace LobotJR.Modules.Fishing
             var fisher = FishingSystem.GetFisherById(userId);
             if (fisher != null && fisher.IsFishing)
             {
-                FishingSystem.CatchFish(fisher);
+                FishingSystem.UnhookFish(fisher);
                 return new CommandResult("You reel in the empty line.");
             }
             return new CommandResult("Your line has not been cast.");
@@ -155,7 +155,7 @@ namespace LobotJR.Modules.Fishing
         public CommandResult CatchFish(string data, string userId)
         {
             var fisher = FishingSystem.GetFisherById(userId);
-            if (fisher != null)
+            if (fisher != null && fisher.IsFishing)
             {
                 var catchData = FishingSystem.CatchFish(fisher);
                 if (catchData == null)
@@ -181,7 +181,7 @@ namespace LobotJR.Modules.Fishing
                     return new CommandResult($"Congratulations! You caught a {catchData.Length} inch, {catchData.Weight} pound {catchData.Fish.Name}!");
                 }
             }
-            return new CommandResult($"Your line has not been cast.");
+            return new CommandResult($"Your line has not been cast. Use !cast to start fishing");
         }
 
         public CommandResult Cast(string data, string userId)
@@ -189,13 +189,13 @@ namespace LobotJR.Modules.Fishing
             var fisher = FishingSystem.GetFisherById(userId);
             if (fisher != null)
             {
-                if (fisher.IsFishing)
-                {
-                    return new CommandResult("Your line is already cast! I'm sure a fish'll be along soon...");
-                }
                 if (fisher.Hooked != null)
                 {
                     return new CommandResult("Something's already bit your line! Quick, type !catch to snag it!");
+                }
+                if (fisher.IsFishing)
+                {
+                    return new CommandResult("Your line is already cast! I'm sure a fish'll be along soon...");
                 }
             }
             FishingSystem.Cast(userId);
@@ -206,33 +206,31 @@ namespace LobotJR.Modules.Fishing
         {
             if (Wolfcoins.TryGetValue(UserLookup.GetUsername(userId), out var currency))
             {
-                if (currency < FishingSystem.GloatCost)
+                if (currency >= FishingSystem.GloatCost)
                 {
-                    return new CommandResult("You don't have enough coins to gloat!");
-                }
-                var fisher = FishingSystem.GetFisherById(userId);
-                if (fisher.Records.Any())
-                {
-                    if (int.TryParse(data, out var id))
+                    var fisher = FishingSystem.GetFisherById(userId);
+                    if (fisher.Records.Any())
                     {
-                        if (id > 0 && id <= fisher.Records.Count)
+                        if (int.TryParse(data, out var id))
                         {
-                            var fish = fisher.Records[id];
-                            // How do we trigger chat messages? Is this part of the command result, or as a pub/sub function?
-                            return new CommandResult($"You spent {FishingSystem.GloatCost} wolfcoins to brag about your biggest {fish.Fish.Name}.")
+                            if (id > 0 && id <= fisher.Records.Count)
                             {
-                                Messages = new string[] { $"{UserLookup.GetUsername(userId)} gloats about the time they caught a {fish.Length} in. long, {fish.Weight} pound {fish.Fish.Name} lobosSmug" }
-                            };
+                                var fish = fisher.Records[id - 1];
+                                return new CommandResult($"You spent {FishingSystem.GloatCost} wolfcoins to brag about your biggest {fish.Fish.Name}.")
+                                {
+                                    Messages = new string[] { $"{UserLookup.GetUsername(userId)} gloats about the time they caught a {fish.Length} in. long, {fish.Weight} pound {fish.Fish.Name} lobosSmug" }
+                                };
+                            }
                         }
+                        return new CommandResult("Invalid request. Syntax: !gloatfish <Fish #>");
                     }
-                    return new CommandResult("Invalid request. Syntax: !gloatfish <Fish #>");
-                }
-                else
-                {
-                    return new CommandResult("You don't have any fish! Type !cast to try and fish for some!");
+                    else
+                    {
+                        return new CommandResult("You don't have any fish! Type !cast to try and fish for some!");
+                    }
                 }
             }
-            return null;
+            return new CommandResult("You don't have enough coins to gloat!");
         }
     }
 }

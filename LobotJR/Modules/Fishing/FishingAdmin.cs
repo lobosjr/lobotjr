@@ -1,7 +1,5 @@
 ﻿using LobotJR.Command;
 using LobotJR.Modules.Fishing.Model;
-using LobotJR.Utils;
-using System;
 using System.Collections.Generic;
 
 namespace LobotJR.Modules.Fishing
@@ -29,19 +27,20 @@ namespace LobotJR.Modules.Fishing
         public CommandResult DebugTournament(string data)
         {
             FishingSystem.Tournament.StartTournament();
-            return null;
+            return new CommandResult() { Processed = true };
         }
 
         public CommandResult DebugCatch(string data)
         {
             var fisher = new Fisher();
+            var output = new List<string>();
             for (var i = 0; i < 50; i++)
             {
                 FishingSystem.HookFish(fisher);
                 var fish = FishingSystem.CalculateFishSizes(fisher);
-                Console.WriteLine($"{fish.Fish.Name} ({Enum.GetName(typeof(FishRarity), fish.Fish.Rarity).ToPascalCase()}) caght.");
+                output.Add($"{fish.Fish.Name} ({fish.Fish.Rarity.Name}) caght.");
             }
-            return null;
+            return new CommandResult() { Processed = true, Debug = output };
         }
     }
 }

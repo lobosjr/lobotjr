@@ -52,6 +52,7 @@ namespace LobotJR.Modules.Fishing
             if (entry == null)
             {
                 entry = new TournamentEntry(username, 0);
+                CurrentTournament.Entries.Add(entry);
             }
             entry.Points += points;
             return entry.Points;

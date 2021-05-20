@@ -78,6 +78,8 @@
     <Compile Include="Modules\Fishing\FishingTests.cs" />
     <Compile Include="Modules\Fishing\FishingTournamentTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Systems\Fishing\FishingSystemTests.cs" />
+    <Compile Include="Systems\Fishing\TournamentSystemTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

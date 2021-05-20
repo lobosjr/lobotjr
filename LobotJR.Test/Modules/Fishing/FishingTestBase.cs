@@ -108,7 +108,7 @@ namespace LobotJR.Test.Modules.Fishing
                 createFisher(0, "00", 0, FishData),
                 createFisher(1, "01", FishData.Count, FishData),
                 createFisher(2, "02", FishData.Count * 2, FishData),
-                createFisher(3, "03", FishData.Count * 3, FishData),
+                createFisher(3, "03", FishData.Count * 3, new List<Fish>()),
             }.ToList();
             FishersMock = new ListRepository<Fisher>(FisherData);
 
