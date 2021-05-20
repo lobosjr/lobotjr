@@ -3,7 +3,6 @@ using LobotJR.Data;
 using LobotJR.Data.User;
 using LobotJR.Modules.Fishing.Model;
 using LobotJR.Utils;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -24,6 +23,12 @@ namespace LobotJR.Modules.Fishing
         public string Name => "Fishing";
 
         /// <summary>
+        /// Invoked to notify users of fish being hooked or getting away, and
+        /// for notifying chat when a user sets a new record.
+        /// </summary>
+        public event PushNotificationHandler PushNotification;
+
+        /// <summary>
         /// A collection of commands for managing access to commands.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
@@ -36,6 +41,9 @@ namespace LobotJR.Modules.Fishing
         public FishingModule(UserLookup userLookup, FishingSystem fishingSystem, IRepository<TournamentResult> tournamentResults, Dictionary<string, int> wolfcoins)
         {
             FishingSystem = fishingSystem;
+            FishingSystem.FishHooked += FishingSystem_FishHooked;
+            FishingSystem.FishGotAway += FishingSystem_FishGotAway;
+            FishingSystem.NewGlobalRecord += FishingSystem_NewGlobalRecord;
             UserLookup = userLookup;
             Wolfcoins = wolfcoins;
             Commands = new CommandHandler[]
@@ -50,9 +58,26 @@ namespace LobotJR.Modules.Fishing
             SubModules = new ICommandModule[] { new FishingAdmin(fishingSystem), new TournamentModule(fishingSystem.Tournament, tournamentResults) };
         }
 
+        private void FishingSystem_FishHooked(Fisher fisher)
+        {
+            var hookMessage = $"{fisher.Hooked.SizeCategory.Message} Type !catch to reel it in!";
+            PushNotification?.Invoke(fisher.UserId, new CommandResult(hookMessage));
+        }
+
+        private void FishingSystem_FishGotAway(Fisher fisher)
+        {
+            PushNotification?.Invoke(fisher.UserId, new CommandResult("Heck! The fish got away. Maybe next time..."));
+        }
+
+        private void FishingSystem_NewGlobalRecord(Catch catchData)
+        {
+            var recordMessage = $"{UserLookup.GetUsername(catchData.UserId)} just caught the heaviest {catchData.Fish.Name} ever! It weighs {catchData.Weight} pounds!";
+            PushNotification?.Invoke(null, new CommandResult() { Messages = new string[] { recordMessage } });
+        }
+
         public CompactCollection<Catch> PlayerLeaderboardCompact(string data, string userId)
         {
-            Func<Catch, string> selectFunc = x => $"{x.Fish.Name}|{x.Length}|{x.Weight};";
+            string selectFunc(Catch x) => $"{x.Fish.Name}|{x.Length}|{x.Weight};";
             var fisher = FishingSystem.GetFisherById(userId);
             if (string.IsNullOrWhiteSpace(data))
             {
@@ -84,8 +109,10 @@ namespace LobotJR.Modules.Fishing
             {
                 if (items.Count > 0)
                 {
-                    var responses = new List<string>();
-                    responses.Add($"You've caught {items.Count} different types of fish: ");
+                    var responses = new List<string>
+                    {
+                        $"You've caught {items.Count} different types of fish: "
+                    };
                     responses.AddRange(items.Select((x, i) => $"{i}: {x.Fish.Name}"));
                     return new CommandResult(responses.ToArray());
                 }
@@ -101,12 +128,14 @@ namespace LobotJR.Modules.Fishing
                     return new CommandResult($"Invalid request. Syntax: !fish <Fish #>");
                 }
                 var fishCatch = compact.Items.FirstOrDefault();
-                var responses = new List<string>();
-                responses.Add($"Name - {fishCatch.Fish.Name}");
-                responses.Add($"Length - {fishCatch.Length} in.");
-                responses.Add($"Weight - {fishCatch.Weight} lbs.");
-                responses.Add($"Size Category - {fishCatch.Fish.SizeCategory.Name}");
-                responses.Add($"Description - {fishCatch.Fish.FlavorText}");
+                var responses = new List<string>
+                {
+                    $"Name - {fishCatch.Fish.Name}",
+                    $"Length - {fishCatch.Length} in.",
+                    $"Weight - {fishCatch.Weight} lbs.",
+                    $"Size Category - {fishCatch.Fish.SizeCategory.Name}",
+                    $"Description - {fishCatch.Fish.FlavorText}"
+                };
                 return new CommandResult(responses.ToArray());
             }
         }

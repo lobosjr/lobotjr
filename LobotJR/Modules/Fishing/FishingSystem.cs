@@ -71,26 +71,17 @@ namespace LobotJR.Modules.Fishing
 
         private void OnFishHooked(Fisher fisher)
         {
-            if (FishHooked != null)
-            {
-                FishHooked(fisher);
-            }
+            FishHooked?.Invoke(fisher);
         }
 
         private void OnFishGotAway(Fisher fisher)
         {
-            if (FishGotAway!= null)
-            {
-                FishGotAway(fisher);
-            }
+            FishGotAway?.Invoke(fisher);
         }
 
         private void OnNewGlobalRecord(Catch catchData)
         {
-            if (NewGlobalRecord != null)
-            {
-                NewGlobalRecord(catchData);
-            }
+            NewGlobalRecord?.Invoke(catchData);
         }
 
         /// <summary>
@@ -146,9 +137,11 @@ namespace LobotJR.Modules.Fishing
         /// <returns>The catch object with the calculated data values.</returns>
         public Catch CalculateFishSizes(Fisher fisher)
         {
-            var catchData = new Catch();
-            catchData.UserId = fisher.UserId;
-            catchData.Fish = fisher.Hooked;
+            var catchData = new Catch
+            {
+                UserId = fisher.UserId,
+                Fish = fisher.Hooked
+            };
 
             var weightRange = (catchData.Fish.MaximumWeight - catchData.Fish.MinimumWeight) / 5;
             var lengthRange = (catchData.Fish.MaximumLength - catchData.Fish.MaximumLength) / 5;

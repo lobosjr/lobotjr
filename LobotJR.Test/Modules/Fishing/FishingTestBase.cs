@@ -33,7 +33,7 @@ namespace LobotJR.Test.Modules.Fishing
         protected TournamentModule TournamentModule;
         protected AppSettings AppSettings;
 
-        private Fish createFish(int id, string name, string flavorText, int minLength, int maxLength, int minWeight, int maxWeight, int sizeId, string sizeName, string sizeMessage, int rarityId, string rarityName, int rarityWeight)
+        private Fish CreateFish(int id, string name, string flavorText, int minLength, int maxLength, int minWeight, int maxWeight, int sizeId, string sizeName, string sizeMessage, int rarityId, string rarityName, int rarityWeight)
         {
             return new Fish()
             {
@@ -59,7 +59,7 @@ namespace LobotJR.Test.Modules.Fishing
             };
         }
 
-        private Fisher createFisher(int dbId, string userId, int catchIdStart, List<Fish> fish)
+        private Fisher CreateFisher(int dbId, string userId, int catchIdStart, List<Fish> fish)
         {
             var records = new List<Catch>();
             for (var i = 0; i < fish.Count; i++)
@@ -81,7 +81,7 @@ namespace LobotJR.Test.Modules.Fishing
             };
         }
 
-        private List<Catch> createLeaderboardFromFishers(List<Fish> fishData, List<Fisher> fisherData)
+        private List<Catch> CreateLeaderboardFromFishers(List<Fish> fishData, List<Fisher> fisherData)
         {
             var output = new List<Catch>();
             var records = fisherData.Select(x => x.Records);
@@ -98,21 +98,21 @@ namespace LobotJR.Test.Modules.Fishing
         {
             FishData = new Fish[]
             {
-                createFish(1, "SmallTestFish", "It's a small fish.", 10, 20, 50, 60, 1, "Small", "Light tug", 1, "Common", 1),
-                createFish(2, "BigTestFish", "It's a big fish.", 100, 200, 500, 600, 2, "Big", "Heavy tug", 2, "Uncommon", 2)
+                CreateFish(1, "SmallTestFish", "It's a small fish.", 10, 20, 50, 60, 1, "Small", "Light tug", 1, "Common", 1),
+                CreateFish(2, "BigTestFish", "It's a big fish.", 100, 200, 500, 600, 2, "Big", "Heavy tug", 2, "Uncommon", 2)
             }.ToList();
             FishDataMock = new ListRepository<Fish>(FishData);
 
             FisherData = new Fisher[]
             {
-                createFisher(0, "00", 0, FishData),
-                createFisher(1, "01", FishData.Count, FishData),
-                createFisher(2, "02", FishData.Count * 2, FishData),
-                createFisher(3, "03", FishData.Count * 3, new List<Fish>()),
+                CreateFisher(0, "00", 0, FishData),
+                CreateFisher(1, "01", FishData.Count, FishData),
+                CreateFisher(2, "02", FishData.Count * 2, FishData),
+                CreateFisher(3, "03", FishData.Count * 3, new List<Fish>()),
             }.ToList();
             FishersMock = new ListRepository<Fisher>(FisherData);
 
-            LeaderboardMock = new ListRepository<Catch>(createLeaderboardFromFishers(FishData, FisherData));
+            LeaderboardMock = new ListRepository<Catch>(CreateLeaderboardFromFishers(FishData, FisherData));
 
             UserMapData = new UserMap[]
             {
@@ -122,7 +122,19 @@ namespace LobotJR.Test.Modules.Fishing
                 new UserMap() { Id = "03", Username = "Buzz"}
             }.ToList();
             UserMapMock = new ListRepository<UserMap>(UserMapData);
-            AppSettings = new AppSettings() { GeneralCacheUpdateTime = 2 };
+            AppSettings = new AppSettings()
+            {
+                FishingCastMaximum = 20,
+                FishingCastMinimum = 10,
+                FishingGloatCost = 10,
+                FishingHookLength = 10,
+                FishingTournamentCastMaximum = 2,
+                FishingTournamentCastMinimum = 1,
+                FishingTournamentDuration = 5,
+                FishingTournamentInterval = 10,
+                FishingUseWeights = true,
+                GeneralCacheUpdateTime = 2
+            };
             UserLookup = new UserLookup(UserMapMock, AppSettings);
 
             TournamentResultsData = new TournamentResult[]
@@ -135,23 +147,13 @@ namespace LobotJR.Test.Modules.Fishing
             }.ToList();
             TournamentResultsMock = new ListRepository<TournamentResult>(TournamentResultsData);
 
-            var appSettings = new AppSettings()
-            {
-                FishingCastMaximum = 20,
-                FishingCastMinimum = 10,
-                FishingGloatCost = 10,
-                FishingHookLength = 10,
-                FishingTournamentCastMaximum = 2,
-                FishingTournamentCastMinimum = 1,
-                FishingTournamentDuration = 5,
-                FishingTournamentInterval = 10,
-                FishingUseWeights = true
-            };
-            AppSettingsMock = new ListRepository<AppSettings>(new AppSettings[] { appSettings }.ToList());
+            AppSettingsMock = new ListRepository<AppSettings>(new AppSettings[] { AppSettings }.ToList());
 
-            WolfcoinList = new Dictionary<string, int>();
-            WolfcoinList.Add("Foo", 100);
-            WolfcoinList.Add("Bar", 1);
+            WolfcoinList = new Dictionary<string, int>
+            {
+                { "Foo", 100 },
+                { "Bar", 1 }
+            };
 
             System = new FishingSystem(
                 FishDataMock,

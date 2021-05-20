@@ -1,5 +1,8 @@
-﻿using LobotJR.Utils;
+﻿using LobotJR.Command;
+using LobotJR.Modules;
+using LobotJR.Utils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 using System;
 using System.Linq;
 
@@ -15,6 +18,53 @@ namespace LobotJR.Test.Modules.Fishing
         public void Initialize()
         {
             InitializeFishingModule();
+        }
+
+        [TestMethod]
+        public void PushesNotificationOnFishHooked()
+        {
+            var handlerMock = new Mock<PushNotificationHandler>();
+            Module.PushNotification += handlerMock.Object;
+            var fisher = FisherData.FirstOrDefault(x => x.UserId.Equals("00"));
+            fisher.IsFishing = true;
+            fisher.HookedTime = DateTime.Now;
+            System.Process(true);
+            handlerMock.Verify(x => x(It.IsAny<string>(), It.IsAny<CommandResult>()), Times.Once);
+            var result = handlerMock.Invocations[0].Arguments[1] as CommandResult;
+            Assert.IsTrue(result.Responses.Any(x => x.Contains("!catch")));
+        }
+
+        [TestMethod]
+        public void PushesNotificationOnFishGotAway()
+        {
+            var handlerMock = new Mock<PushNotificationHandler>();
+            Module.PushNotification += handlerMock.Object;
+            var fisher = FisherData.FirstOrDefault(x => x.UserId.Equals("00"));
+            fisher.IsFishing = true;
+            fisher.Hooked = FishData[0];
+            fisher.HookedTime = DateTime.Now.AddSeconds(-AppSettings.FishingHookLength);
+            System.Process(true);
+            handlerMock.Verify(x => x(It.IsAny<string>(), It.IsAny<CommandResult>()), Times.Once);
+            var result = handlerMock.Invocations[0].Arguments[1] as CommandResult;
+            Assert.IsFalse(result.Responses.Any(x => x.Contains("!catch")));
+        }
+
+        [TestMethod]
+        public void PushesNotificationOnNewGlobalRecord()
+        {
+            var handlerMock = new Mock<PushNotificationHandler>();
+            Module.PushNotification += handlerMock.Object;
+            LeaderboardMock.Data.Clear();
+            System.Tournament.StartTournament();
+            var fisher = FisherData.FirstOrDefault(x => x.UserId.Equals("00"));
+            fisher.IsFishing = true;
+            fisher.Hooked = FishData[0];
+            fisher.HookedTime = DateTime.Now;
+            Module.CatchFish("", fisher.UserId);
+            handlerMock.Verify(x => x(It.IsAny<string>(), It.IsAny<CommandResult>()), Times.Once);
+            var result = handlerMock.Invocations[0].Arguments[1] as CommandResult;
+            Assert.IsNull(result.Responses);
+            Assert.IsTrue(result.Messages.Any(x => x.Contains(UserLookup.GetUsername(fisher.UserId))));
         }
 
         [TestMethod]

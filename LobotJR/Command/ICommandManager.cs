@@ -12,6 +12,11 @@ namespace LobotJR.Command
     public interface ICommandManager
     {
         /// <summary>
+        /// Event raised when a module sends a push notification.
+        /// </summary>
+        event PushNotificationHandler PushNotifications;
+
+        /// <summary>
         /// Repository manager for access to data.
         /// </summary>
         IRepositoryManager RepositoryManager { get; }

@@ -10,6 +10,8 @@ namespace LobotJR.Modules.Fishing
 
         public string Name => "Admin";
 
+        public event PushNotificationHandler PushNotification;
+
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
         public IEnumerable<ICommandModule> SubModules => null;

@@ -13,13 +13,18 @@ namespace LobotJR.Modules.Fishing
     /// </summary>
     public class TournamentModule : ICommandModule
     {
-        private readonly IRepository<TournamentResult> repository;
-        private readonly TournamentSystem system;
+        private readonly IRepository<TournamentResult> Repository;
+        private readonly TournamentSystem TournamentSystem;
 
         /// <summary>
         /// Prefix applied to names of commands within this module.
         /// </summary>
         public string Name => "Tournament";
+
+        /// <summary>
+        /// This module does not issue any push notifications.
+        /// </summary>
+        public event PushNotificationHandler PushNotification;
 
         /// <summary>
         /// A collection of commands for managing access to commands.
@@ -33,8 +38,8 @@ namespace LobotJR.Modules.Fishing
 
         public TournamentModule(TournamentSystem system, IRepository<TournamentResult> repository)
         {
-            this.system = system;
-            this.repository = repository;
+            TournamentSystem = system;
+            Repository = repository;
             Commands = new CommandHandler[]
             {
                 new CommandHandler("TournamentResults", TournamentResults, TournamentResultsCompact, "TournamentResults", "tournament-results"),
@@ -78,7 +83,7 @@ namespace LobotJR.Modules.Fishing
 
         public TournamentResultsResponse TournamentResultsCompact(string data, string userId)
         {
-            var tournament = repository.Read().OrderByDescending(x => x.Date).FirstOrDefault();
+            var tournament = Repository.Read().OrderByDescending(x => x.Date).FirstOrDefault();
             if (tournament != null)
             {
                 var winner = tournament.Winner;
@@ -115,7 +120,7 @@ namespace LobotJR.Modules.Fishing
         public TournamentRecordsResponse TournamentRecordsCompact(string data, string userId)
         {
             var output = new Dictionary<string, string>();
-            var tournaments = repository.Read(x => x.GetEntryById(userId) != null);
+            var tournaments = Repository.Read(x => x.GetEntryById(userId) != null);
             if (!tournaments.Any())
             {
                 return null;
@@ -150,13 +155,13 @@ namespace LobotJR.Modules.Fishing
 
         public CompactCollection<TimeSpan> NextTournamentCompact(string data, string userId)
         {
-            if (system.NextTournament == null)
+            if (TournamentSystem.NextTournament == null)
             {
                 return new CompactCollection<TimeSpan>(new TimeSpan[0], null);
             }
             else
             {
-                var toNext = (DateTime)system.NextTournament - DateTime.Now;
+                var toNext = (DateTime)TournamentSystem.NextTournament - DateTime.Now;
                 return new CompactCollection<TimeSpan>(new TimeSpan[] { toNext }, x => x.ToString("c"));
             }
         }

@@ -25,6 +25,11 @@ namespace LobotJR.Command
         private readonly Dictionary<string, Regex> commandStringRegexMap = new Dictionary<string, Regex>();
 
         /// <summary>
+        /// Event raised when a module sends a push notification.
+        /// </summary>
+        public event PushNotificationHandler PushNotifications;
+
+        /// <summary>
         /// Repository manager for access to stored data types.
         /// </summary>
         public IRepositoryManager RepositoryManager { get; set; }
@@ -90,6 +95,8 @@ namespace LobotJR.Command
                 prefix = module.Name;
             }
 
+            module.PushNotification += Module_PushNotification;
+
             var exceptions = new List<Exception>();
             foreach (var command in module.Commands)
             {
@@ -107,6 +114,7 @@ namespace LobotJR.Command
             {
                 foreach (var subModule in module.SubModules)
                 {
+                    subModule.PushNotification += Module_PushNotification;
                     try
                     {
                         AddModule(subModule, prefix);
@@ -122,6 +130,11 @@ namespace LobotJR.Command
             {
                 throw new AggregateException("Failed to load module", exceptions);
             }
+        }
+
+        private void Module_PushNotification(string userId, CommandResult commandResult)
+        {
+            PushNotifications?.Invoke(userId, commandResult);
         }
 
         private bool CanUserExecute(string commandId, string userId)
@@ -149,7 +162,6 @@ namespace LobotJR.Command
         /// <param name="systemManager">System manager containing all loaded systems.</param>
         public void LoadAllModules(ISystemManager systemManager, Currency wolfcoins)
         {
-            var context = new SqliteContext();
             LoadModules(new AccessControlModule(this),
                 new FishingModule(UserLookup, systemManager.Get<FishingSystem>(), RepositoryManager.TournamentResults, wolfcoins.coinList));
         }

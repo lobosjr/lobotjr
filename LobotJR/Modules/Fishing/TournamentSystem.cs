@@ -71,8 +71,10 @@ namespace LobotJR.Modules.Fishing
             }
             Fishers.Commit();
 
-            CurrentTournament = new TournamentResult();
-            CurrentTournament.Date = DateTime.Now.AddMinutes(Settings.FishingTournamentDuration);
+            CurrentTournament = new TournamentResult
+            {
+                Date = DateTime.Now.AddMinutes(Settings.FishingTournamentDuration)
+            };
         }
 
         /// <summary>

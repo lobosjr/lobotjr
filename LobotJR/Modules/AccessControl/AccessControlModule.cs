@@ -18,6 +18,11 @@ namespace LobotJR.Modules.AccessControl
         public string Name => "AccessControl";
 
         /// <summary>
+        /// This module does not issue any push notifications.
+        /// </summary>
+        public event PushNotificationHandler PushNotification;
+
+        /// <summary>
         /// A collection of commands for managing access to commands.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
