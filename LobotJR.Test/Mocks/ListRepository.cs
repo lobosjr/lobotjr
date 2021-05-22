@@ -77,9 +77,13 @@ namespace LobotJR.Test.Mocks
 
         public T Update(T entry)
         {
-            Data.Remove(entry);
-            Data.Add(entry);
-            return entry;
+            if (Data.Contains(entry))
+            {
+                Data.Remove(entry);
+                Data.Add(entry);
+                return entry;
+            }
+            return default(T);
         }
     }
 }

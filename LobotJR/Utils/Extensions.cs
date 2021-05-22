@@ -137,11 +137,27 @@ namespace LobotJR.Utils
         }
 
         /// <summary>
-        /// Returns a random integer between min and max, inclusive, with a
-        /// normal distribution. This allows for normal distributions of items
-        /// in a list, using a standard deviation of 1/3 the range of values and
-        /// mapping everything beyond 3 standard deviations to the last item in
-        /// the list.
+        /// Returns a random floating-point number between min and max,
+        /// inclusive, with a normal distribution. Values beyond 3 standard
+        /// deviations are assigned the max value.
+        /// </summary>
+        /// <param name="current"></param>
+        /// <param name="min"></param>
+        /// <param name="max"></param>
+        /// <returns></returns>
+        public static double NextNormalBounded(this Random current, double min, double max)
+        {
+            var median = (max - min) / 2 + min;
+            var value = current.NextNormal(median, (max - min) / 6d);
+            return Math.Min(Math.Max(value, min), max);
+        }
+
+        /// <summary>
+        /// Returns a random integer between min (inclusive) and max
+        /// (exclusive), with a normal distribution. This allows for normal
+        /// distributions of items in a list, using a standard deviation of 1/3
+        /// the range of values and mapping everything beyond 3 standard
+        /// deviations to the last item in the list.
         /// </summary>
         /// <param name="current"></param>
         /// <param name="min">The lowest value possible.</param>
@@ -151,15 +167,15 @@ namespace LobotJR.Utils
         public static int NextNormalIndex(this Random current, int min, int max)
         {
             var roll = current.NextNormal(0, (double)(max - min) / 3d);
-            return (int)Math.Min(Math.Floor(Math.Abs(roll)) + min, max);
+            return (int)Math.Floor(Math.Min(Math.Floor(Math.Abs(roll)) + min, max - 1));
         }
 
         /// <summary>
-        /// Returns a random integer between zero and max, inclusive, with a
-        /// normal distribution. This allows for normal distributions of items
-        /// in a list, using a standard deviation of 1/3 the range of values and
-        /// mapping everything beyond 3 standard deviations to the last item in
-        /// the list.
+        /// Returns a random integer between zero (inclusive) and max
+        /// (exclusive), with a normal distribution. This allows for normal
+        /// distributions of items in a list, using a standard deviation of 1/3
+        /// the range of values and mapping everything beyond 3 standard
+        /// deviations to the last item in the list.
         /// </summary>
         /// <param name="current"></param>
         /// <param name="max">The highest value possible.</param>

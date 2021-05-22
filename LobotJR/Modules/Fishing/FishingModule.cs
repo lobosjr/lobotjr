@@ -156,7 +156,7 @@ namespace LobotJR.Modules.Fishing
             if (int.TryParse(data, out var param))
             {
                 var fisher = FishingSystem.GetFisherById(userId);
-                if (fisher.Records.Count == 0)
+                if (fisher == null || fisher.Records.Count == 0)
                 {
                     return new CommandResult("You don't have any fish! Type !cast to try and fish for some!");
                 }

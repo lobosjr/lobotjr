@@ -180,6 +180,7 @@ namespace LobotJR.Test.Modules.Fishing
             Assert.IsNull(response.Errors);
             Assert.AreEqual(1, responses.Count);
             Assert.IsTrue(responses[0].Contains(fish.Fish.Name));
+            Assert.IsFalse(fisher.Records.Any(x => x.Fish.Id.Equals(fish.Fish.Id)));
         }
 
         [TestMethod]

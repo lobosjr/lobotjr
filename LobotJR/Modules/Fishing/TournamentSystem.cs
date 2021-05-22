@@ -43,15 +43,15 @@ namespace LobotJR.Modules.Fishing
         /// Adds points to a user in a tournament. If this is their first catch
         /// of the tournament, it will add an entry for them as well.
         /// </summary>
-        /// <param name="username">The user to update.</param>
+        /// <param name="userId">The user to update.</param>
         /// <param name="points">The amount of points to add.</param>
         /// <returns>The user's current point total.</returns>
-        public int AddTournamentPoints(string username, int points)
+        public int AddTournamentPoints(string userId, int points)
         {
-            var entry = CurrentTournament.Entries.Where(x => x.UserId.Equals(username, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            var entry = CurrentTournament.Entries.Where(x => x.UserId.Equals(userId, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             if (entry == null)
             {
-                entry = new TournamentEntry(username, 0);
+                entry = new TournamentEntry(userId, 0);
                 CurrentTournament.Entries.Add(entry);
             }
             entry.Points += points;

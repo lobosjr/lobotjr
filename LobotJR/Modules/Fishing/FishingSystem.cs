@@ -94,18 +94,6 @@ namespace LobotJR.Modules.Fishing
             return Fishers.Read(x => x.UserId.Equals(userId)).FirstOrDefault();
         }
 
-        public Fisher CreateFisher(string userId)
-        {
-            var fisher = new Fisher()
-            {
-                UserId = userId,
-                Records = new List<Catch>()
-            };
-            Fishers.Create(fisher);
-            Fishers.Commit();
-            return fisher;
-        }
-
         /// <summary>
         /// Gets the global leaderboard records.
         /// </summary>
@@ -123,9 +111,12 @@ namespace LobotJR.Modules.Fishing
         /// <param name="fish">The catch data for the record to remove.</param>
         public void DeleteFish(Fisher fisher, Catch fish)
         {
-            fisher.Records.Remove(fish);
-            Fishers.Update(fisher);
-            Fishers.Commit();
+            if (fisher != null && fish != null)
+            {
+                fisher.Records?.Remove(fish);
+                Fishers.Update(fisher);
+                Fishers.Commit();
+            }
         }
 
         /// <summary>
@@ -137,22 +128,42 @@ namespace LobotJR.Modules.Fishing
         /// <returns>The catch object with the calculated data values.</returns>
         public Catch CalculateFishSizes(Fisher fisher)
         {
+            if (fisher == null || fisher.Hooked == null)
+            {
+                return null;
+            }
+
+            var fish = fisher.Hooked;
             var catchData = new Catch
             {
                 UserId = fisher.UserId,
-                Fish = fisher.Hooked
+                Fish = fish
             };
 
-            var weightRange = (catchData.Fish.MaximumWeight - catchData.Fish.MinimumWeight) / 5;
-            var lengthRange = (catchData.Fish.MaximumLength - catchData.Fish.MaximumLength) / 5;
-            var weightVariance = Random.NextDouble() * weightRange;
-            var lengthVariance = Random.NextDouble() * lengthRange;
+            if (Settings.FishingUseNormalSizes)
+            {
+                catchData.Weight = (float)Random.NextNormalBounded(fish.MinimumWeight, fish.MaximumWeight);
+                catchData.Length = (float)Random.NextNormalBounded(fish.MinimumLength, fish.MaximumLength);
 
-            var size = Random.NextDouble() * 100;
-            var category = Chances.Where(x => size > x).Count();
-            catchData.Length = (float)Math.Round(catchData.Fish.MinimumLength + lengthRange * category + lengthVariance, 2);
-            catchData.Weight = (float)Math.Round(catchData.Fish.MinimumWeight + weightRange * category + weightVariance, 2);
-            catchData.Points = (int)Math.Max(Math.Round(size), 1);
+                var weightRange = fish.MaximumWeight - fish.MinimumWeight;
+                var lengthRange = fish.MaximumLength - fish.MinimumLength;
+                catchData.Points = (int)Math.Round(
+                    (catchData.Weight - fish.MinimumWeight) / weightRange * 50f +
+                    (catchData.Length - fish.MinimumLength) / lengthRange * 50f);
+            }
+            else
+            {
+                var weightRange = (fish.MaximumWeight - fish.MinimumWeight) / 5;
+                var lengthRange = (fish.MaximumLength - fish.MinimumLength) / 5;
+                var weightVariance = Random.NextDouble() * weightRange;
+                var lengthVariance = Random.NextDouble() * lengthRange;
+
+                var size = Random.NextDouble() * 100;
+                var category = Chances.Where(x => size > x).Count();
+                catchData.Length = (float)Math.Round(fish.MinimumLength + lengthRange * category + lengthVariance, 2);
+                catchData.Weight = (float)Math.Round(fish.MinimumWeight + weightRange * category + weightVariance, 2);
+                catchData.Points = (int)Math.Max(Math.Round(size), 1);
+            }
 
             return catchData;
         }
@@ -168,7 +179,12 @@ namespace LobotJR.Modules.Fishing
         /// <returns>Whether or not the leaderboard was updated.</returns>
         public bool UpdatePersonalLeaderboard(Fisher fisher, Catch catchData)
         {
-            var record = fisher.Records.Where(x => x.Fish.Equals(catchData.Fish)).FirstOrDefault();
+            if (fisher == null || catchData == null)
+            {
+                return false;
+            }
+
+            var record = fisher.Records?.Where(x => x.Fish.Equals(catchData.Fish)).FirstOrDefault();
             if (record == null || record.Weight < catchData.Weight)
             {
                 if (record == null)
@@ -195,6 +211,11 @@ namespace LobotJR.Modules.Fishing
         /// <returns>Whether or not the leaderboard was updated.</returns>
         public bool UpdateGlobalLeaderboard(Catch catchData)
         {
+            if (catchData == null)
+            {
+                return false;
+            }
+
             var record = Leaderboard.Read(x => x.Fish.Equals(catchData.Fish)).FirstOrDefault();
             if (record == null || record.Weight < catchData.Weight)
             {
@@ -224,11 +245,11 @@ namespace LobotJR.Modules.Fishing
             var hookTime = DateTime.Now;
             if (Tournament.IsRunning)
             {
-                hookTime.AddSeconds(Random.Next(Settings.FishingTournamentCastMinimum, Settings.FishingTournamentCastMaximum + 1));
+                hookTime = hookTime.AddSeconds(Random.Next(Settings.FishingTournamentCastMinimum, Settings.FishingTournamentCastMaximum + 1));
             }
             else
             {
-                hookTime.AddSeconds(Random.Next(Settings.FishingCastMinimum, Settings.FishingCastMaximum + 1));
+                hookTime = hookTime.AddSeconds(Random.Next(Settings.FishingCastMinimum, Settings.FishingCastMaximum + 1));
             }
             if (fisher == null)
             {
@@ -258,13 +279,13 @@ namespace LobotJR.Modules.Fishing
         {
             var index = -1;
             var rarities = FishData.Read().Select(x => x.Rarity).Distinct().ToList();
-            if (Settings.FishingUseWeights)
+            if (Settings.FishingUseNormalRarity)
             {
-                index = Random.WeightedRandom(rarities.Select(x => (double)x.Weight).ToList());
+                index = Random.NextNormalIndex(rarities.Count);
             }
             else
             {
-                index = Random.NextNormalIndex(rarities.Count);
+                index = Random.WeightedRandom(rarities.Select(x => (double)x.Weight).ToList());
             }
             if (index >= 0)
             {
@@ -297,19 +318,19 @@ namespace LobotJR.Modules.Fishing
         public Catch CatchFish(Fisher fisher)
         {
             var catchData = default(Catch);
-            if (fisher != null && fisher.Hooked != null)
+            if (fisher != null)
             {
                 catchData = CalculateFishSizes(fisher);
-                if (Tournament.IsRunning)
+                if (catchData != null && Tournament.IsRunning)
                 {
                     UpdatePersonalLeaderboard(fisher, catchData);
                     UpdateGlobalLeaderboard(catchData);
                     Tournament.AddTournamentPoints(fisher.UserId, catchData.Points);
                 }
+                fisher.IsFishing = false;
+                fisher.Hooked = null;
+                fisher.HookedTime = null;
             }
-            fisher.IsFishing = false;
-            fisher.Hooked = null;
-            fisher.HookedTime = null;
             return catchData;
         }
 

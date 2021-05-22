@@ -98,8 +98,9 @@ namespace LobotJR.Test.Modules.Fishing
         {
             FishData = new Fish[]
             {
-                CreateFish(1, "SmallTestFish", "It's a small fish.", 10, 20, 50, 60, 1, "Small", "Light tug", 1, "Common", 1),
-                CreateFish(2, "BigTestFish", "It's a big fish.", 100, 200, 500, 600, 2, "Big", "Heavy tug", 2, "Uncommon", 2)
+                CreateFish(1, "SmallTestFish", "It's a small fish.", 10, 20, 50, 60, 1, "Small", "Light tug", 1, "Common", 3),
+                CreateFish(2, "BigTestFish", "It's a big fish.", 100, 200, 500, 600, 2, "Big", "Heavy tug", 2, "Uncommon", 2),
+                CreateFish(2, "RareTestFish", "It's a rare fish.", 1000, 2000, 5000, 6000, 3, "Rare", "Mystical tug", 3, "Rare", 1)
             }.ToList();
             FishDataMock = new ListRepository<Fish>(FishData);
 
@@ -132,7 +133,8 @@ namespace LobotJR.Test.Modules.Fishing
                 FishingTournamentCastMinimum = 1,
                 FishingTournamentDuration = 5,
                 FishingTournamentInterval = 10,
-                FishingUseWeights = true,
+                FishingUseNormalRarity = false,
+                FishingUseNormalSizes = false,
                 GeneralCacheUpdateTime = 2
             };
             UserLookup = new UserLookup(UserMapMock, AppSettings);

@@ -30,7 +30,13 @@
         /// Determines whether to use the weights associated with each fish
         /// rarity, or a standard normal distribution.
         /// </summary>
-        public bool FishingUseWeights { get; set; }
+        public bool FishingUseNormalRarity { get; set; }
+        /// <summary>
+        /// Determines whether to use distribute the fish weight and length
+        /// using a normal distribution, or to use a stepped distribution of
+        /// five size bands.
+        /// </summary>
+        public bool FishingUseNormalSizes { get; set; }
         /// <summary>
         /// The wolfcoin cost for a user to have the bot post a message about
         /// their fishing records.
