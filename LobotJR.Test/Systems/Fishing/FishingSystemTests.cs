@@ -235,7 +235,7 @@ namespace LobotJR.Test.Systems.Fishing
                 Weight = 10
             };
             var result = System.UpdatePersonalLeaderboard(fisher, catchData);
-            Assert.IsTrue(result);
+            Assert.IsFalse(result);
             Assert.AreEqual(1, fisher.Records.Count);
             Assert.AreNotEqual(catchData.Weight, fisher.Records[0].Weight);
         }

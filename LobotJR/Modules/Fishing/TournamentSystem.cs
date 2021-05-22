@@ -48,14 +48,18 @@ namespace LobotJR.Modules.Fishing
         /// <returns>The user's current point total.</returns>
         public int AddTournamentPoints(string userId, int points)
         {
-            var entry = CurrentTournament.Entries.Where(x => x.UserId.Equals(userId, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-            if (entry == null)
+            if (CurrentTournament != null)
             {
-                entry = new TournamentEntry(userId, 0);
-                CurrentTournament.Entries.Add(entry);
+                var entry = CurrentTournament.Entries.Where(x => x.UserId.Equals(userId, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                if (entry == null)
+                {
+                    entry = new TournamentEntry(userId, 0);
+                    CurrentTournament.Entries.Add(entry);
+                }
+                entry.Points += points;
+                return entry.Points;
             }
-            entry.Points += points;
-            return entry.Points;
+            return -1;
         }
 
         /// <summary>
@@ -63,18 +67,24 @@ namespace LobotJR.Modules.Fishing
         /// </summary>
         public void StartTournament()
         {
-            foreach (var fisher in Fishers.Read(x => x.IsFishing))
+            if (CurrentTournament == null)
             {
-                fisher.IsFishing = false;
-                fisher.Hooked = null;
-                Fishers.Update(fisher);
-            }
-            Fishers.Commit();
+                var fishers = Fishers.Read(x => x.IsFishing).ToList();
+                foreach (var fisher in fishers)
+                {
+                    fisher.IsFishing = false;
+                    fisher.Hooked = null;
+                    fisher.HookedTime = null;
+                    Fishers.Update(fisher);
+                }
+                Fishers.Commit();
 
-            CurrentTournament = new TournamentResult
-            {
-                Date = DateTime.Now.AddMinutes(Settings.FishingTournamentDuration)
-            };
+                CurrentTournament = new TournamentResult
+                {
+                    Date = DateTime.Now.AddMinutes(Settings.FishingTournamentDuration)
+                };
+                NextTournament = null;
+            }
         }
 
         /// <summary>
@@ -82,10 +92,13 @@ namespace LobotJR.Modules.Fishing
         /// </summary>
         public void EndTournament()
         {
-            TournamentResults.Create(CurrentTournament);
-            TournamentResults.Commit();
-            NextTournament = CurrentTournament.Date.AddMinutes(Settings.FishingTournamentDuration + Settings.FishingTournamentInterval);
-            CurrentTournament = null;
+            if (CurrentTournament != null)
+            {
+                TournamentResults.Create(CurrentTournament);
+                TournamentResults.Commit();
+                NextTournament = CurrentTournament.Date.AddMinutes(Settings.FishingTournamentDuration + Settings.FishingTournamentInterval);
+                CurrentTournament = null;
+            }
         }
 
         /// <summary>

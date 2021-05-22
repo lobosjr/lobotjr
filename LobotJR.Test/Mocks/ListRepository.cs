@@ -26,9 +26,9 @@ namespace LobotJR.Test.Mocks
         /// </summary>
         /// <param name="data">The list that holds the repository data.</param>
         /// <param name="idPropertyName">The id property, which must be an int.</param>
-        public ListRepository(List<T> data, string idPropertyName = "Id")
+        public ListRepository(List<T> data = null, string idPropertyName = "Id")
         {
-            Data = data;
+            Data = data ?? new List<T>();
             idProperty = typeof(T).GetProperties().Where(x => x.PropertyType == typeof(int) && x.Name.Equals(idPropertyName)).FirstOrDefault();
         }
 

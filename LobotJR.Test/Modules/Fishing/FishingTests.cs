@@ -86,7 +86,7 @@ namespace LobotJR.Test.Modules.Fishing
         {
             var fisher = FisherData.FirstOrDefault(x => x.UserId.Equals("00"));
             var responses = Module.PlayerLeaderboardCompact(null, fisher.UserId);
-            Assert.AreEqual(2, responses.Items.Count());
+            Assert.AreEqual(3, responses.Items.Count());
             var compact = responses.ToCompact();
             foreach (var fish in fisher.Records)
             {

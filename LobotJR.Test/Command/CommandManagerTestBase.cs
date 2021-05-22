@@ -2,6 +2,7 @@
 using LobotJR.Data;
 using LobotJR.Data.User;
 using LobotJR.Modules;
+using LobotJR.Test.Mocks;
 using Moq;
 using System;
 using System.Collections.Generic;
@@ -112,6 +113,9 @@ namespace LobotJR.Test.Command
             RepositoryManagerMock = new Mock<IRepositoryManager>();
             RepositoryManagerMock.Setup(x => x.Users).Returns(UserMapMock.Object);
             RepositoryManagerMock.Setup(x => x.UserRoles).Returns(UserRoleMock.Object);
+            var appSettings = new ListRepository<AppSettings>();
+            appSettings.Data.Add(new AppSettings());
+            RepositoryManagerMock.Setup(x => x.AppSettings).Returns(appSettings);
             CommandManager = new CommandManager(RepositoryManagerMock.Object);
             CommandManager.LoadModules(CommandModuleMock.Object);
         }
