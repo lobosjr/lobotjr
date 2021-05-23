@@ -118,7 +118,8 @@
     <Compile Include="IrcClient.cs" />
     <Compile Include="Items.cs" />
     <Compile Include="JSON.cs" />
-    <Compile Include="Migrations\FishingMigration.cs" />
+    <Compile Include="Migrations\FisherMigration.cs" />
+    <Compile Include="Migrations\FishMigration.cs" />
     <Compile Include="Modules\AccessControl\AccessControlAdmin.cs" />
     <Compile Include="Modules\Fishing\FishingAdmin.cs" />
     <Compile Include="Modules\Fishing\FishingModule.cs" />

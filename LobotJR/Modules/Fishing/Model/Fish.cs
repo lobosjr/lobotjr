@@ -50,7 +50,7 @@ namespace LobotJR.Modules.Fishing.Model
         /// <summary>
         /// The relative weight of this rarity.
         /// </summary>
-        public int Weight { get; set; }
+        public float Weight { get; set; }
     }
 
     public class FishSize : TableObject
