@@ -463,6 +463,13 @@ namespace TwitchBot
             var context = new SqliteContext();
             context.Database.Initialize(false);
             var repoManager = new SqliteRepositoryManager(context);
+            var appSettings = repoManager.AppSettings.Read().FirstOrDefault();
+            if (appSettings == null)
+            {
+                appSettings = new AppSettings();
+                repoManager.AppSettings.Create(appSettings);
+                repoManager.AppSettings.Commit();
+            }
             #endregion
 
             #region System Setup

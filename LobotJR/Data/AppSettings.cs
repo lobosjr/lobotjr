@@ -3,7 +3,7 @@
     /// <summary>
     /// Settings that modify the behavior of the app.
     /// </summary>
-    public class AppSettings
+    public class AppSettings : TableObject
     {
         /// <summary>
         /// The amount of time, in minutes, to wait between calls to fetch the
