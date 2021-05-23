@@ -1,17 +1,16 @@
-﻿using LobotJR.Data;
-using LobotJR.Modules.Fishing.Model;
+﻿using LobotJR.Modules.Fishing.Model;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace LobotJR.Migrations
+namespace LobotJR.Data.Import
 {
     /// <summary>
     /// Loads fish data from legacy flat-file format and imports them into the
     /// new sql format.
     /// </summary>
-    public class FishMigration
+    public class FishDataImport
     {
         public static readonly string FishDataPath = "content/fishlist.ini";
 

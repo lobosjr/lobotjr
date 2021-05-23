@@ -1,18 +1,17 @@
-﻿using LobotJR.Data;
-using LobotJR.Data.User;
+﻿using LobotJR.Data.User;
 using LobotJR.Modules.Fishing.Model;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace LobotJR.Migrations
+namespace LobotJR.Data.Import
 {
     /// <summary>
     /// Loads fisher data from legacy flat-file format and imports them into
     /// the new sql format.
     /// </summary>
-    public class FisherMigration
+    public class FisherDataImport
     {
         public static readonly string FisherDataPath = "fishing.json";
         public static readonly string FishingLeaderboardPath = "fishingLeaderboard.json";

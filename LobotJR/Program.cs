@@ -5,7 +5,7 @@ using Equipment;
 using GroupFinder;
 using LobotJR.Command;
 using LobotJR.Data;
-using LobotJR.Migrations;
+using LobotJR.Data.Import;
 using LobotJR.Modules;
 using LobotJR.Modules.Fishing;
 using LobotJR.Shared.Authentication;
@@ -512,19 +512,19 @@ namespace TwitchBot
                 #endregion
 
                 #region Import Legacy Data Into Sql
-                if (FishMigration.ImportFishDataIntoSql(FishMigration.FishDataPath, repoManager.FishData))
+                if (FishDataImport.ImportFishDataIntoSql(FishDataImport.FishDataPath, repoManager.FishData))
                 {
-                    File.Move(FishMigration.FishDataPath, FishMigration.FishDataPath + ".backup");
+                    File.Move(FishDataImport.FishDataPath, FishDataImport.FishDataPath + ".backup");
                 }
 
-                if (FisherMigration.ImportFisherDataIntoSql(FisherMigration.FisherDataPath, repoManager.Fishers, repoManager.FishData, commandManager.UserLookup, tokenData.BroadcastToken.AccessToken, clientData.ClientId))
+                if (FisherDataImport.ImportFisherDataIntoSql(FisherDataImport.FisherDataPath, repoManager.Fishers, repoManager.FishData, commandManager.UserLookup, tokenData.BroadcastToken.AccessToken, clientData.ClientId))
                 {
-                    File.Move(FisherMigration.FisherDataPath, FisherMigration.FisherDataPath + ".backup");
+                    File.Move(FisherDataImport.FisherDataPath, FisherDataImport.FisherDataPath + ".backup");
                 }
 
-                if (FisherMigration.ImportLeaderboardDataIntoSql(FisherMigration.FishingLeaderboardPath, repoManager.FishingLeaderboard, repoManager.FishData, commandManager.UserLookup, tokenData.BroadcastToken.AccessToken, clientData.ClientId))
+                if (FisherDataImport.ImportLeaderboardDataIntoSql(FisherDataImport.FishingLeaderboardPath, repoManager.FishingLeaderboard, repoManager.FishData, commandManager.UserLookup, tokenData.BroadcastToken.AccessToken, clientData.ClientId))
                 {
-                    File.Move(FisherMigration.FishingLeaderboardPath, FisherMigration.FishingLeaderboardPath + ".backup");
+                    File.Move(FisherDataImport.FishingLeaderboardPath, FisherDataImport.FishingLeaderboardPath + ".backup");
                 }
                 #endregion
 
