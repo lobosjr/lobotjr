@@ -32,7 +32,7 @@ namespace LobotJR.Data.User
         /// <returns>The username.</returns>
         public string GetUsername(string id)
         {
-            var entry = UserMap.Read(x => x.Id.Equals(id)).FirstOrDefault();
+            var entry = UserMap.Read(x => x.TwitchId.Equals(id)).FirstOrDefault();
             return entry?.Username;
         }
 
@@ -43,7 +43,7 @@ namespace LobotJR.Data.User
         /// <returns>The twitch id.</returns>
         public string GetId(string username)
         {
-            var entry = UserMap.Read(x => x.Username.Equals(username)).FirstOrDefault();
+            var entry = UserMap.Read(x => x.Username.Equals(username, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             if (entry == null)
             {
                 if (!cacheMisses.Contains(username))
@@ -51,7 +51,7 @@ namespace LobotJR.Data.User
                     cacheMisses.Add(username);
                 }
             }
-            return entry?.Id;
+            return entry?.TwitchId;
         }
 
         /// <summary>
@@ -70,7 +70,7 @@ namespace LobotJR.Data.User
                 var response = Users.Get(token, clientId, removed);
                 foreach (var entry in response.Data)
                 {
-                    var existing = UserMap.Read(x => x.Id.Equals(entry.Id)).FirstOrDefault();
+                    var existing = UserMap.Read(x => x.TwitchId.Equals(entry.Id)).FirstOrDefault();
                     if (existing != null)
                     {
                         existing.Username = entry.DisplayName;
@@ -81,7 +81,7 @@ namespace LobotJR.Data.User
                         UserMap.Create(new UserMap()
                         {
                             Username = entry.DisplayName,
-                            Id = entry.Id
+                            TwitchId = entry.Id
                         });
                     }
                 }

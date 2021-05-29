@@ -87,8 +87,8 @@ namespace LobotJR.Test.Command
             });
             IdCache = new List<UserMap>(new UserMap[]
             {
-                new UserMap() { Id = "12345", Username = "Auth" },
-                new UserMap() { Id = "67890", Username = "NotAuth" }
+                new UserMap() { TwitchId = "12345", Username = "Auth" },
+                new UserMap() { TwitchId = "67890", Username = "NotAuth" }
             });
             UserMapMock = new Mock<IRepository<UserMap>>();
             UserMapMock.Setup(x => x.Read()).Returns(IdCache);
@@ -97,9 +97,9 @@ namespace LobotJR.Test.Command
             UserMapMock.Setup(x => x.Create(It.IsAny<UserMap>()))
                 .Returns((UserMap param) => { IdCache.Add(param); return param; });
             UserMapMock.Setup(x => x.Update(It.IsAny<UserMap>()))
-                .Returns((UserMap param) => { IdCache.Remove(IdCache.Where(x => x.Id == param.Id).FirstOrDefault()); IdCache.Add(param); return param; });
+                .Returns((UserMap param) => { IdCache.Remove(IdCache.Where(x => x.TwitchId == param.TwitchId).FirstOrDefault()); IdCache.Add(param); return param; });
             UserMapMock.Setup(x => x.Delete(It.IsAny<UserMap>()))
-                .Returns((UserMap param) => { IdCache.Remove(IdCache.Where(x => x.Id == param.Id).FirstOrDefault()); return param; });
+                .Returns((UserMap param) => { IdCache.Remove(IdCache.Where(x => x.TwitchId == param.TwitchId).FirstOrDefault()); return param; });
             UserRoleMock = new Mock<IRepository<UserRole>>();
             UserRoleMock.Setup(x => x.Read()).Returns(UserRoles);
             UserRoleMock.Setup(x => x.Read(It.IsAny<Func<UserRole, bool>>()))
@@ -116,7 +116,7 @@ namespace LobotJR.Test.Command
             var appSettings = new ListRepository<AppSettings>();
             appSettings.Data.Add(new AppSettings());
             RepositoryManagerMock.Setup(x => x.AppSettings).Returns(appSettings);
-            CommandManager = new CommandManager(RepositoryManagerMock.Object);
+            CommandManager = new CommandManager(RepositoryManagerMock.Object, new UserLookup(UserMapMock.Object, new AppSettings()));
             CommandManager.LoadModules(CommandModuleMock.Object);
         }
     }

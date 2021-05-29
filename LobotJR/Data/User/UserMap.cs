@@ -3,7 +3,7 @@
     /// <summary>
     /// Maps the username to their twitch id.
     /// </summary>
-    public class UserMap
+    public class UserMap : TableObject
     {
         /// <summary>
         /// User's current username.
@@ -12,6 +12,6 @@
         /// <summary>
         /// Id from twitch used to identify the user.
         /// </summary>
-        public string Id { get; set; }
+        public string TwitchId { get; set; }
     }
 }

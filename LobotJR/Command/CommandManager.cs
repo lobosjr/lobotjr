@@ -149,11 +149,10 @@ namespace LobotJR.Command
             return !roles.Any() && anonymousIdToExecutorMap.ContainsKey(commandId);
         }
 
-        public CommandManager(IRepositoryManager repositoryManager)
+        public CommandManager(IRepositoryManager repositoryManager, UserLookup userLookup)
         {
             RepositoryManager = repositoryManager;
-            var appSettings = repositoryManager.AppSettings.Read().First();
-            UserLookup = new UserLookup(repositoryManager.Users, appSettings);
+            UserLookup = userLookup;
         }
 
         /// <summary>

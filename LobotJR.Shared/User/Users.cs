@@ -55,7 +55,10 @@ namespace LobotJR.Shared.User
             request.AddHeader("Accept", "application/json");
             request.AddHeader("Authorization", $"Bearer {token}");
             request.AddHeader("Client-ID", clientId);
-            request.AddParameter("login", string.Join(",", users), ParameterType.QueryString);
+            foreach (var user in users)
+            {
+                request.AddParameter("login", user, ParameterType.QueryString);
+            }
             var response = client.Execute<UserResponse>(request);
             switch (response.StatusCode)
             {

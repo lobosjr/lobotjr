@@ -83,7 +83,7 @@ namespace LobotJR.Test.Mocks
                 Data.Add(entry);
                 return entry;
             }
-            return default(T);
+            return default;
         }
     }
 }

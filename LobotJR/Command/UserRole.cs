@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using LobotJR.Data;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -8,7 +9,7 @@ namespace LobotJR.Command
     /// <summary>
     /// Represents a user role, as well as the users who are members of it.
     /// </summary>
-    public class UserRole
+    public class UserRole : TableObject
     {
         private static Regex RegexFromCommand(string command)
         {
@@ -30,7 +31,6 @@ namespace LobotJR.Command
             return Regex.Split(value, "(?<!\\\\),").Select(x => x.Replace("\\,", ",")).ToList();
         }
 
-        public int Id { get; set; }
         /// <summary>
         /// The name of the role.
         /// </summary>
@@ -49,7 +49,7 @@ namespace LobotJR.Command
             {
                 return StringToList(UserList);
             }
-            private set
+            set
             {
                 UserList = ListToString(value);
             }

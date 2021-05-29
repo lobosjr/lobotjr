@@ -86,13 +86,15 @@ namespace LobotJR.Test.Systems.Fishing
         [TestMethod]
         public void CalculatesFishSizes()
         {
-            var fisher = new Fisher();
-            fisher.Hooked = new Fish()
+            var fisher = new Fisher
             {
-                MinimumWeight = 1,
-                MaximumWeight = 10,
-                MinimumLength = 11,
-                MaximumLength = 20,
+                Hooked = new Fish()
+                {
+                    MinimumWeight = 1,
+                    MaximumWeight = 10,
+                    MinimumLength = 11,
+                    MaximumLength = 20,
+                }
             };
             var catchData = System.CalculateFishSizes(fisher);
             Assert.IsTrue(fisher.Hooked.MinimumWeight <= catchData.Weight);

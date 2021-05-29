@@ -6,6 +6,8 @@ using GroupFinder;
 using LobotJR.Command;
 using LobotJR.Data;
 using LobotJR.Data.Import;
+using LobotJR.Data.Migration;
+using LobotJR.Data.User;
 using LobotJR.Modules;
 using LobotJR.Modules.Fishing;
 using LobotJR.Shared.Authentication;
@@ -463,6 +465,9 @@ namespace TwitchBot
             var context = new SqliteContext();
             context.Database.Initialize(false);
             var repoManager = new SqliteRepositoryManager(context);
+            var userLookup = new UserLookup(repoManager.Users, new AppSettings());
+            var updater = new SqliteDatabaseUpdater(repoManager, context, userLookup, tokenData.BroadcastToken.AccessToken, clientData.ClientId);
+            updater.UpdateDatabase();
             var appSettings = repoManager.AppSettings.Read().FirstOrDefault();
             if (appSettings == null)
             {
@@ -470,6 +475,7 @@ namespace TwitchBot
                 repoManager.AppSettings.Create(appSettings);
                 repoManager.AppSettings.Commit();
             }
+            userLookup = new UserLookup(repoManager.Users, appSettings);
             #endregion
 
             #region System Setup
@@ -500,12 +506,12 @@ namespace TwitchBot
                 wolfcoins.UpdateSubs(tokenData.BroadcastToken.AccessToken, clientData.ClientId);
 
                 #region Command Manager Setup
-                var commandManager = new CommandManager(repoManager);
+                var commandManager = new CommandManager(repoManager, userLookup);
                 commandManager.LoadAllModules(systemManager, wolfcoins);
                 commandManager.PushNotifications +=
                     (string userId, CommandResult commandResult) =>
                     {
-                        string username = userId == null ? null : commandManager.UserLookup.GetUsername(userId);
+                        string username = userId == null ? null : userLookup.GetUsername(userId);
                         string message = "Push Notification";
                         HandleCommandResult(username, message, commandResult, irc, group);
                     };
@@ -517,12 +523,12 @@ namespace TwitchBot
                     File.Move(FishDataImport.FishDataPath, FishDataImport.FishDataPath + ".backup");
                 }
 
-                if (FisherDataImport.ImportFisherDataIntoSql(FisherDataImport.FisherDataPath, repoManager.Fishers, repoManager.FishData, commandManager.UserLookup, tokenData.BroadcastToken.AccessToken, clientData.ClientId))
+                if (FisherDataImport.ImportFisherDataIntoSql(FisherDataImport.FisherDataPath, repoManager.Fishers, repoManager.FishData, userLookup, tokenData.BroadcastToken.AccessToken, clientData.ClientId))
                 {
                     File.Move(FisherDataImport.FisherDataPath, FisherDataImport.FisherDataPath + ".backup");
                 }
 
-                if (FisherDataImport.ImportLeaderboardDataIntoSql(FisherDataImport.FishingLeaderboardPath, repoManager.FishingLeaderboard, repoManager.FishData, commandManager.UserLookup, tokenData.BroadcastToken.AccessToken, clientData.ClientId))
+                if (FisherDataImport.ImportLeaderboardDataIntoSql(FisherDataImport.FishingLeaderboardPath, repoManager.FishingLeaderboard, repoManager.FishData, userLookup, tokenData.BroadcastToken.AccessToken, clientData.ClientId))
                 {
                     File.Move(FisherDataImport.FishingLeaderboardPath, FisherDataImport.FishingLeaderboardPath + ".backup");
                 }
@@ -566,9 +572,9 @@ namespace TwitchBot
                     }
 
                     #region System Processing
-                    if (commandManager.UserLookup.IsUpdateTime(DateTime.Now))
+                    if (userLookup.IsUpdateTime(DateTime.Now))
                     {
-                        commandManager.UserLookup.UpdateCache(tokenData.BroadcastToken.AccessToken, clientData.ClientId);
+                        userLookup.UpdateCache(tokenData.BroadcastToken.AccessToken, clientData.ClientId);
                     }
                     systemManager.Process(broadcasting);
                     #endregion

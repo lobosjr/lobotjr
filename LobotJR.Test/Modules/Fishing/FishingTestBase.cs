@@ -117,10 +117,10 @@ namespace LobotJR.Test.Modules.Fishing
 
             UserMapData = new UserMap[]
             {
-                new UserMap() { Id = "00", Username = "Foo"},
-                new UserMap() { Id = "01", Username = "Bar"},
-                new UserMap() { Id = "02", Username = "Fizz"},
-                new UserMap() { Id = "03", Username = "Buzz"}
+                new UserMap() { TwitchId = "00", Username = "Foo"},
+                new UserMap() { TwitchId = "01", Username = "Bar"},
+                new UserMap() { TwitchId = "02", Username = "Fizz"},
+                new UserMap() { TwitchId = "03", Username = "Buzz"}
             }.ToList();
             UserMapMock = new ListRepository<UserMap>(UserMapData);
             AppSettings = new AppSettings()
