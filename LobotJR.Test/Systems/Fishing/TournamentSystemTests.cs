@@ -3,8 +3,10 @@ using LobotJR.Modules.Fishing;
 using LobotJR.Modules.Fishing.Model;
 using LobotJR.Test.Mocks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 using System;
 using System.Linq;
+using static LobotJR.Modules.Fishing.TournamentSystem;
 
 namespace LobotJR.Test.Systems.Fishing
 {
@@ -63,9 +65,12 @@ namespace LobotJR.Test.Systems.Fishing
         [TestMethod]
         public void StartsTournament()
         {
+            var callbackMock = new Mock<TournamentStartHandler>();
+            System.TournamentStarted += callbackMock.Object;
             System.StartTournament();
             Assert.IsNotNull(System.CurrentTournament);
             Assert.IsNull(System.NextTournament);
+            callbackMock.Verify(x => x(It.IsAny<DateTime>()), Times.Once);
         }
 
         [TestMethod]
@@ -93,19 +98,22 @@ namespace LobotJR.Test.Systems.Fishing
         public void EndsTournament()
         {
             var tournament = new TournamentResult() { Id = 123 };
+            var callbackMock = new Mock<TournamentEndHandler>();
+            System.TournamentEnded += callbackMock.Object;
             System.CurrentTournament = tournament;
             System.NextTournament = null;
-            System.EndTournament();
+            System.EndTournament(true);
             Assert.IsNull(System.CurrentTournament);
             Assert.IsNotNull(System.NextTournament);
             Assert.IsTrue(TournamentResults.Data.Any(x => x.Id == tournament.Id));
+            callbackMock.Verify(x => x(It.IsAny<TournamentResult>(), It.IsAny<DateTime>()));
         }
 
         [TestMethod]
         public void EndTournamentDoesNothingIfNoTournamentRunning()
         {
             System.NextTournament = null;
-            System.EndTournament();
+            System.EndTournament(true);
             Assert.IsNull(System.CurrentTournament);
             Assert.AreEqual(0, TournamentResults.Data.Count);
         }

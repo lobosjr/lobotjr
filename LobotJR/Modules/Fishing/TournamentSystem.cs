@@ -15,6 +15,27 @@ namespace LobotJR.Modules.Fishing
         private readonly AppSettings Settings;
 
         /// <summary>
+        /// Event handler for the start of a tournament.
+        /// </summary>
+        /// <param name="end">The timestamp for when the tournament ends.</param>
+        public delegate void TournamentStartHandler(DateTime end);
+        /// <summary>
+        /// Event handler for the end of a tournament.
+        /// </summary>
+        /// <param name="result">The results of the tournament.</param>
+        /// <param name="next">The timestamp for when the next tournament starts.</param>
+        public delegate void TournamentEndHandler(TournamentResult result, DateTime? next);
+
+        /// <summary>
+        /// Event fired when a tournament starts.
+        /// </summary>
+        public event TournamentStartHandler TournamentStarted;
+        /// <summary>
+        /// Event fired when a tournament ends.
+        /// </summary>
+        public event TournamentEndHandler TournamentEnded;
+        
+        /// <summary>
         /// The current tournament, if one is running.
         /// </summary>
         public TournamentResult CurrentTournament { get; set; }
@@ -84,19 +105,30 @@ namespace LobotJR.Modules.Fishing
                     Date = DateTime.Now.AddMinutes(Settings.FishingTournamentDuration)
                 };
                 NextTournament = null;
+                TournamentStarted?.Invoke(CurrentTournament.Date);
             }
         }
 
         /// <summary>
         /// Ends the current tournament, saves the results, and schedules the next one.
         /// </summary>
-        public void EndTournament()
+        public void EndTournament(bool broadcasting)
         {
             if (CurrentTournament != null)
             {
                 TournamentResults.Create(CurrentTournament);
                 TournamentResults.Commit();
-                NextTournament = CurrentTournament.Date.AddMinutes(Settings.FishingTournamentDuration + Settings.FishingTournamentInterval);
+                DateTime? next;
+                if (broadcasting)
+                {
+                    next = CurrentTournament.Date.AddMinutes(Settings.FishingTournamentDuration + Settings.FishingTournamentInterval);
+                }
+                else
+                {
+                    next = null;
+                }
+                NextTournament = next;
+                TournamentEnded?.Invoke(CurrentTournament, next);
                 CurrentTournament = null;
             }
         }
@@ -110,7 +142,7 @@ namespace LobotJR.Modules.Fishing
             {
                 if (CurrentTournament != null)
                 {
-                    EndTournament();
+                    EndTournament(broadcasting);
                 }
                 NextTournament = null;
             }
@@ -118,7 +150,7 @@ namespace LobotJR.Modules.Fishing
             {
                 if (CurrentTournament != null && DateTime.Now >= CurrentTournament.Date)
                 {
-                    EndTournament();
+                    EndTournament(broadcasting);
                 }
                 else if (CurrentTournament == null && DateTime.Now >= NextTournament)
                 {

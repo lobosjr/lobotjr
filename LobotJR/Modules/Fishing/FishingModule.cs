@@ -55,7 +55,7 @@ namespace LobotJR.Modules.Fishing
                 new CommandHandler("CatchFish", CatchFish, "catch", "reel"),
                 new CommandHandler("CastLine", Cast, "cast"),
             };
-            SubModules = new ICommandModule[] { new FishingAdmin(fishingSystem), new TournamentModule(fishingSystem.Tournament, tournamentResults) };
+            SubModules = new ICommandModule[] { new FishingAdmin(fishingSystem), new TournamentModule(fishingSystem.Tournament, tournamentResults, userLookup) };
         }
 
         private void FishingSystem_FishHooked(Fisher fisher)

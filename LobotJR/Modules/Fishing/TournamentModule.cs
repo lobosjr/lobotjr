@@ -1,5 +1,6 @@
 ﻿using LobotJR.Command;
 using LobotJR.Data;
+using LobotJR.Data.User;
 using LobotJR.Modules.Fishing.Model;
 using LobotJR.Utils;
 using System;
@@ -15,6 +16,7 @@ namespace LobotJR.Modules.Fishing
     {
         private readonly IRepository<TournamentResult> Repository;
         private readonly TournamentSystem TournamentSystem;
+        private readonly UserLookup UserLookup;
 
         /// <summary>
         /// Prefix applied to names of commands within this module.
@@ -22,7 +24,7 @@ namespace LobotJR.Modules.Fishing
         public string Name => "Tournament";
 
         /// <summary>
-        /// This module does not issue any push notifications.
+        /// Notifications when a tournament starts or ends.
         /// </summary>
         public event PushNotificationHandler PushNotification;
 
@@ -36,16 +38,52 @@ namespace LobotJR.Modules.Fishing
         /// </summary>
         public IEnumerable<ICommandModule> SubModules => null;
 
-        public TournamentModule(TournamentSystem system, IRepository<TournamentResult> repository)
+        public TournamentModule(TournamentSystem system, IRepository<TournamentResult> repository, UserLookup userLookup)
         {
             TournamentSystem = system;
+            system.TournamentStarted += System_TournamentStarted;
+            system.TournamentEnded += System_TournamentEnded;
             Repository = repository;
+            UserLookup = userLookup;
             Commands = new CommandHandler[]
             {
                 new CommandHandler("TournamentResults", TournamentResults, TournamentResultsCompact, "TournamentResults", "tournament-results"),
                 new CommandHandler("TournamentRecords", TournamentRecords, TournamentRecordsCompact, "TournamentRecords", "tournament-records"),
                 new CommandHandler("NextTournament", NextTournament, NextTournamentCompact, "NextTournament", "next-tournament")
             };
+        }
+
+        private void System_TournamentStarted(DateTime end)
+        {
+            var duration = end - DateTime.Now;
+            var message = $"A fishing tournament has just begun! For the next {Math.Round(duration.TotalMinutes)} minutes, fish can be caught more quickly & will be eligible for leaderboard recognition! Head to https://tinyurl.com/PlayWolfpackRPG and type !cast to play!";
+            PushNotification?.Invoke(null, new CommandResult { Processed = true, Messages = new string[] { message } });
+        }
+
+        private void System_TournamentEnded(TournamentResult result, DateTime? next)
+        {
+            string message;
+            if (next == null)
+            {
+                message = "Stream has gone offline, so the fishing tournament was ended early. D:";
+                if (result.Entries.Count > 0)
+                {
+                    message += $" Winner at the time of conclusion: {UserLookup.GetUsername(result.Winner.UserId)} with a score of {result.Winner.Points}.";
+
+                }
+            }
+            else
+            {
+                if (result.Entries.Count > 0)
+                {
+                    message = $"The fishing tournament has ended! Out of {result.Entries.Count} participants, {UserLookup.GetUsername(result.Winner.UserId)} won with {result.Winner.Points} points!";
+                }
+                else
+                {
+                    message = "The fishing tournament has ended.";
+                }
+            }
+            PushNotification?.Invoke(null, new CommandResult { Processed = true, Messages = new string[] { message } });
         }
 
         public CommandResult TournamentResults(string data, string userId)

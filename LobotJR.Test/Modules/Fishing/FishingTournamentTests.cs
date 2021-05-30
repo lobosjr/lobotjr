@@ -1,5 +1,10 @@
-﻿using LobotJR.Modules.Fishing;
+﻿using LobotJR.Command;
+using LobotJR.Modules;
+using LobotJR.Modules.Fishing;
+using LobotJR.Modules.Fishing.Model;
+using LobotJR.Utils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 using System;
 using System.Linq;
 
@@ -38,6 +43,73 @@ namespace LobotJR.Test.Modules.Fishing
         public void Setup()
         {
             InitializeFishingModule();
+        }
+
+        [TestMethod]
+        public void PushesNotificationOnTournamentStart()
+        {
+            var handlerMock = new Mock<PushNotificationHandler>();
+            TournamentModule.PushNotification += handlerMock.Object;
+            System.Tournament.StartTournament();
+            handlerMock.Verify(x => x(null, It.IsAny<CommandResult>()), Times.Once);
+            var result = handlerMock.Invocations[0].Arguments[1] as CommandResult;
+            Assert.IsTrue(result.Messages.Any(x => x.Contains("!cast")));
+        }
+
+        [TestMethod]
+        public void PushesNotificationOnTournamentEnd()
+        {
+            var user = UserMapData.First(x => x.TwitchId.Equals("00"));
+            var handlerMock = new Mock<PushNotificationHandler>();
+            System.Tournament.StartTournament();
+            TournamentModule.PushNotification += handlerMock.Object;
+            System.Tournament.CurrentTournament.Entries.Add(new TournamentEntry(user.TwitchId, 100));
+            System.Tournament.EndTournament(true);
+            handlerMock.Verify(x => x(null, It.IsAny<CommandResult>()), Times.Once);
+            var result = handlerMock.Invocations[0].Arguments[1] as CommandResult;
+            Assert.IsTrue(result.Messages.Any(x => x.Contains("end")));
+            Assert.IsTrue(result.Messages.Any(x => x.Contains(user.Username)));
+        }
+
+        [TestMethod]
+        public void PushesNotificationOnTournamentEndWithNoParticipants()
+        {
+            var handlerMock = new Mock<PushNotificationHandler>();
+            System.Tournament.StartTournament();
+            TournamentModule.PushNotification += handlerMock.Object;
+            System.Tournament.EndTournament(true);
+            handlerMock.Verify(x => x(null, It.IsAny<CommandResult>()), Times.Once);
+            var result = handlerMock.Invocations[0].Arguments[1] as CommandResult;
+            Assert.IsTrue(result.Messages.Any(x => x.Contains("end")));
+            Assert.IsFalse(result.Messages.Any(x => x.Contains("participants", StringComparison.OrdinalIgnoreCase)));
+        }
+
+        [TestMethod]
+        public void PushesNotificationOnTournamentEndByStreamStopping()
+        {
+            var user = UserMapData.First(x => x.TwitchId.Equals("00"));
+            var handlerMock = new Mock<PushNotificationHandler>();
+            System.Tournament.StartTournament();
+            TournamentModule.PushNotification += handlerMock.Object;
+            System.Tournament.CurrentTournament.Entries.Add(new TournamentEntry(user.TwitchId, 100));
+            System.Tournament.EndTournament(false);
+            handlerMock.Verify(x => x(null, It.IsAny<CommandResult>()), Times.Once);
+            var result = handlerMock.Invocations[0].Arguments[1] as CommandResult;
+            Assert.IsTrue(result.Messages.Any(x => x.Contains("offline")));
+            Assert.IsTrue(result.Messages.Any(x => x.Contains(user.Username, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        [TestMethod]
+        public void PushesNotificationOnTournamentEndByStreamStoppingWithNoParticipants()
+        {
+            var handlerMock = new Mock<PushNotificationHandler>();
+            System.Tournament.StartTournament();
+            TournamentModule.PushNotification += handlerMock.Object;
+            System.Tournament.EndTournament(false);
+            handlerMock.Verify(x => x(null, It.IsAny<CommandResult>()), Times.Once);
+            var result = handlerMock.Invocations[0].Arguments[1] as CommandResult;
+            Assert.IsTrue(result.Messages.Any(x => x.Contains("offline")));
+            Assert.IsFalse(result.Messages.Any(x => x.Contains("winner", StringComparison.OrdinalIgnoreCase)));
         }
 
         [TestMethod]
