@@ -202,7 +202,7 @@ namespace LobotJR.Modules.Fishing
                     }
                     var userEntry = FishingSystem.Tournament.CurrentTournament.Entries.Where(x => x.UserId.Equals(userId)).FirstOrDefault();
                     var sorted = FishingSystem.Tournament.CurrentTournament.Entries.OrderBy(x => x.Points).ToList().IndexOf(userEntry) + 1;
-                    responses.Add($"You caught a {catchData.Fish.Name} worth {catchData.Points} points! You are in {sorted.ToOrdinal()} place with {userEntry.Points} total points.");
+                    responses.Add($"You caught a {catchData.Length} inch, {catchData.Weight} pound {catchData.Fish.Name} worth {catchData.Points} points! You are in {sorted.ToOrdinal()} place with {userEntry.Points} total points.");
                     return new CommandResult(responses.ToArray());
                 }
                 else
