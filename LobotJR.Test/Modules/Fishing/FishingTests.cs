@@ -68,7 +68,7 @@ namespace LobotJR.Test.Modules.Fishing
             var results = commandManager.ProcessMessage("tournament-results", "User");
             Assert.IsNotNull(results.Responses);
             Assert.AreEqual(3, results.Responses.Count);
-            Assert.IsTrue(results.Responses.Any(x => x.Contains("00:00:30")));
+            Assert.IsTrue(results.Responses.Any(x => x.Contains("30 seconds ago")));
             Assert.IsTrue(results.Responses.Any(x => x.Contains("Winner") && x.Contains("30")));
             Assert.IsTrue(results.Responses.Any(x => x.Contains("3rd") && x.Contains("10")));
         }
@@ -79,7 +79,7 @@ namespace LobotJR.Test.Modules.Fishing
             var results = commandManager.ProcessMessage("tournament-results", "NotUser");
             Assert.IsNotNull(results.Responses);
             Assert.AreEqual(2, results.Responses.Count);
-            Assert.IsTrue(results.Responses.Any(x => x.Contains("00:00:30")));
+            Assert.IsTrue(results.Responses.Any(x => x.Contains("30 seconds ago")));
             Assert.IsTrue(results.Responses.Any(x => x.Contains("Winner") && x.Contains("30")));
         }
 
@@ -89,7 +89,7 @@ namespace LobotJR.Test.Modules.Fishing
             var results = commandManager.ProcessMessage("tournament-results", "Winner");
             Assert.IsNotNull(results.Responses);
             Assert.AreEqual(2, results.Responses.Count);
-            Assert.IsTrue(results.Responses.Any(x => x.Contains("00:00:30")));
+            Assert.IsTrue(results.Responses.Any(x => x.Contains("30 seconds ago")));
             Assert.IsFalse(results.Responses.Any(x => x.Contains("Winner")));
             Assert.IsTrue(results.Responses.Any(x => x.Contains("You") && x.Contains("30")));
         }
