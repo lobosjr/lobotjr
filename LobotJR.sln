@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LobotJR", "LobotJR\LobotJR.csproj", "{F4168867-9FAA-467E-8C2C-DA4516ED7F27}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{4A179AE1-BC4B-4D80-B45B-50A26E00A5AD}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LobotJR.Launcher", "LobotJR.Launcher\LobotJR.Launcher.csproj", "{3F26FB42-7761-4781-85E2-873FAD2787BB}"
 EndProject
