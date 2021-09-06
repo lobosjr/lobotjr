@@ -11,12 +11,16 @@ namespace LobotJR.Modules.AccessControl
     /// </summary>
     public class AccessControlModule : ICommandModule
     {
-        private readonly ICommandManager commandManager;
         private readonly IRepository<UserRole> repository;
         /// <summary>
         /// Prefix applied to names of commands within this module.
         /// </summary>
         public string Name => "AccessControl";
+
+        /// <summary>
+        /// This module does not issue any push notifications.
+        /// </summary>
+        public event PushNotificationHandler PushNotification;
 
         /// <summary>
         /// A collection of commands for managing access to commands.
@@ -30,7 +34,6 @@ namespace LobotJR.Modules.AccessControl
 
         public AccessControlModule(ICommandManager commandManager)
         {
-            this.commandManager = commandManager;
             repository = commandManager.RepositoryManager.UserRoles;
             Commands = new CommandHandler[]
             {
@@ -39,12 +42,12 @@ namespace LobotJR.Modules.AccessControl
             SubModules = new ICommandModule[] { new AccessControlAdmin(commandManager) };
         }
 
-        private CommandResult CheckAccess(string data, string user)
+        private CommandResult CheckAccess(string data, string userId)
         {
             var roleName = data;
             if (roleName == null || roleName.Length == 0)
             {
-                var roles = repository.Read(x => x.Users.Any(y => y.Equals(user, StringComparison.OrdinalIgnoreCase)));
+                var roles = repository.Read(x => x.UserIds.Any(y => y.Equals(userId, StringComparison.OrdinalIgnoreCase)));
                 if (roles.Any())
                 {
                     var count = roles.Count();
@@ -62,7 +65,7 @@ namespace LobotJR.Modules.AccessControl
                 return new CommandResult($"Error: No role with name \"{roleName}\" was found.");
             }
 
-            var access = role.Users.Contains(user) ? "are" : "are not";
+            var access = role.UserIds.Contains(userId) ? "are" : "are not";
             return new CommandResult($"You {access} a member of \"{role.Name}\"!");
         }
     }

@@ -1,7 +1,6 @@
 ﻿using Adventures;
 using Classes;
 using Equipment;
-using Fishing;
 using LobotJR.Shared.Client;
 using LobotJR.Shared.User;
 using Newtonsoft.Json;
@@ -15,7 +14,7 @@ using TwitchBot;
 
 namespace Wolfcoins
 {
-    class Party
+    public class Party
     {
         public Dungeon myDungeon;
         public HashSet<CharClass> members = new HashSet<CharClass>();
@@ -72,22 +71,18 @@ namespace Wolfcoins
         }
     }
 
-    class Currency
+    public class Currency
     {
 
         public Dictionary<string, int> coinList = new Dictionary<string, int>();
         public Dictionary<string, int> xpList = new Dictionary<string, int>();
         public Dictionary<string, CharClass> classList = new Dictionary<string, CharClass>();
-        public Dictionary<string, Fisherman> fishingList = new Dictionary<string, Fisherman>();
-        public List<Fish> fishingLeaderboard = new List<Fish>();
 
         public Data viewers = new Data();
         List<string> viewerList = new List<string>();
         public HashSet<string> subSet = new HashSet<string>();
         public List<SubscriberData.Subscription> subsList = new List<SubscriberData.Subscription>();
         private readonly string path = "wolfcoins.json";
-        private readonly string fishingPath = "fishing.json";
-        private readonly string fishingLeaderboardPath = "fishingLeaderboard.json";
         private readonly string xpPath = "XP.json";
         private readonly string classPath = "classData.json";
 
@@ -696,16 +691,6 @@ namespace Wolfcoins
             return false;
         }
 
-        public bool Exists(Dictionary<string, Fisherman> dic, string user)
-        {
-            if (dic != null)
-            {
-                return dic.Keys.Contains(user);
-            }
-
-            return false;
-        }
-
         public bool Exists(Dictionary<string, CharClass> dic, string user)
         {
             if (dic != null)
@@ -948,25 +933,15 @@ namespace Wolfcoins
             var json3 = JsonConvert.SerializeObject(coinList);
             var bytes3 = Encoding.UTF8.GetBytes(json3);
             string backupPath3 = "backup/Coins";
-            var json4 = JsonConvert.SerializeObject(fishingList);
-            var bytes4 = Encoding.UTF8.GetBytes(json4);
-            string backupPath4 = "backup/Fishing";
-            var json5 = JsonConvert.SerializeObject(fishingLeaderboard);
-            var bytes5 = Encoding.UTF8.GetBytes(json5);
-            string backupPath5 = "backup/FishingLeaderboard";
             DateTime now = DateTime.Now;
             backupPath = backupPath + now.Day + now.Month + now.Year + now.Hour + now.Minute + now.Second;
             backupPath2 = backupPath2 + now.Day + now.Month + now.Year + now.Hour + now.Minute + now.Second;
             backupPath3 = backupPath3 + now.Day + now.Month + now.Year + now.Hour + now.Minute + now.Second;
-            backupPath4 = backupPath4 + now.Day + now.Month + now.Year + now.Hour + now.Minute + now.Second;
-            backupPath5 = backupPath5 + now.Day + now.Month + now.Year + now.Hour + now.Minute + now.Second;
             try
             {
                 File.WriteAllBytes(backupPath, bytes);
                 File.WriteAllBytes(backupPath2, bytes2);
                 File.WriteAllBytes(backupPath3, bytes3);
-                File.WriteAllBytes(backupPath4, bytes4);
-                File.WriteAllBytes(backupPath5, bytes5);
                 return true;
             }
             catch (Exception e)
@@ -989,27 +964,6 @@ namespace Wolfcoins
             catch (Exception e)
             {
                 Console.WriteLine("Error saving XP file: ");
-                Console.WriteLine(e);
-                return false;
-            }
-
-        }
-
-        public bool SaveFishingList()
-        {
-            var json = JsonConvert.SerializeObject(fishingList);
-            var json2 = JsonConvert.SerializeObject(fishingLeaderboard);
-            var bytes = Encoding.UTF8.GetBytes(json);
-            var bytes2 = Encoding.UTF8.GetBytes(json2);
-            try
-            {
-                File.WriteAllBytes(fishingPath, bytes);
-                File.WriteAllBytes(fishingLeaderboardPath, bytes2);
-                return true;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Error saving Fishing file: ");
                 Console.WriteLine(e);
                 return false;
             }
@@ -1056,27 +1010,6 @@ namespace Wolfcoins
             {
                 xpList = new Dictionary<string, int>();
                 Console.WriteLine("Path not found. XP file initialized to default.");
-            }
-
-            if (File.Exists(fishingPath))
-            {
-                fishingList = JsonConvert.DeserializeObject<Dictionary<string, Fisherman>>(File.ReadAllText(fishingPath));
-                foreach (var player in fishingList)
-                {
-                    player.Value.isFishing = false;
-                    player.Value.fishHooked = false;
-                }
-                Console.WriteLine("Fishing data loaded.");
-            }
-            if (File.Exists(fishingLeaderboardPath))
-            {
-                fishingLeaderboard = JsonConvert.DeserializeObject<List<Fish>>(File.ReadAllText(fishingLeaderboardPath));
-                Console.WriteLine("Fishing data loaded.");
-            }
-            else
-            {
-                fishingLeaderboard = new List<Fish>();
-                Console.WriteLine("Path not found. Fishing Leaderboard data initialized to default.");
             }
 
             if (File.Exists(classPath))

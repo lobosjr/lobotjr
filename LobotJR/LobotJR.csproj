@@ -70,17 +70,24 @@
     <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.12.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="NuGet.Versioning, Version=5.9.1.11, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\NuGet.Versioning.5.9.1\lib\net45\NuGet.Versioning.dll</HintPath>
+    </Reference>
     <Reference Include="SQLite.CodeFirst, Version=1.6.0.30, Culture=neutral, PublicKeyToken=eb96ba0a78d831a7, processorArchitecture=MSIL">
       <HintPath>..\packages\SQLite.CodeFirst.1.6.0.30\lib\net45\SQLite.CodeFirst.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Data.SQLite, Version=1.0.113.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
       <HintPath>..\packages\Stub.System.Data.SQLite.Core.NetFramework.1.0.113.3\lib\net46\System.Data.SQLite.dll</HintPath>
     </Reference>
     <Reference Include="System.Data.SQLite.EF6, Version=1.0.113.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Data.SQLite.EF6.1.0.113.0\lib\net46\System.Data.SQLite.EF6.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Data.SQLite.EF6.Migrations, Version=1.0.112.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Data.SQLite.EF6.Migrations.1.0.112\lib\System.Data.SQLite.EF6.Migrations.dll</HintPath>
     </Reference>
     <Reference Include="System.Data.SQLite.Linq, Version=1.0.113.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Data.SQLite.Linq.1.0.113.0\lib\net46\System.Data.SQLite.Linq.dll</HintPath>
@@ -95,28 +102,51 @@
   <ItemGroup>
     <Compile Include="Command\CommandHandler.cs" />
     <Compile Include="Command\CommandManager.cs" />
+    <Compile Include="Command\CommandRequest.cs" />
     <Compile Include="Command\CommandResult.cs" />
+    <Compile Include="Command\CompactCollection.cs" />
     <Compile Include="Command\ICommandManager.cs" />
     <Compile Include="Command\ICompactResponse.cs" />
     <Compile Include="Command\UserRole.cs" />
+    <Compile Include="Data\AppSettings.cs" />
+    <Compile Include="Data\Migration\DatabaseUpdate-Null-1.0.0.cs" />
+    <Compile Include="Data\Migration\DatabaseMigrationResult.cs" />
+    <Compile Include="Data\Migration\IDatabaseUpdate.cs" />
+    <Compile Include="Data\Migration\SqliteDatabaseUpdater.cs" />
+    <Compile Include="Data\TableObject.cs" />
+    <Compile Include="Data\IContentManager.cs" />
     <Compile Include="Data\IRepositoryManager.cs" />
     <Compile Include="Data\SqliteRepositoryManager.cs" />
     <Compile Include="Data\SqliteInitializer.cs" />
     <Compile Include="Data\SqliteRepository.cs" />
     <Compile Include="Data\IRepository.cs" />
     <Compile Include="Data\SqliteContext.cs" />
-    <Compile Include="Fishing.cs" />
+    <Compile Include="Data\User\UserLookup.cs" />
+    <Compile Include="Data\User\UserMap.cs" />
     <Compile Include="Dungeon.cs" />
     <Compile Include="Classes.cs" />
     <Compile Include="GroupFinder.cs" />
     <Compile Include="IrcClient.cs" />
     <Compile Include="Items.cs" />
     <Compile Include="JSON.cs" />
+    <Compile Include="Data\Import\FisherDataImport.cs" />
+    <Compile Include="Data\Import\FishDataImport.cs" />
     <Compile Include="Modules\AccessControl\AccessControlAdmin.cs" />
+    <Compile Include="Modules\Fishing\FishingAdmin.cs" />
     <Compile Include="Modules\Fishing\FishingModule.cs" />
+    <Compile Include="Modules\Fishing\FishingSystem.cs" />
+    <Compile Include="Modules\Fishing\TournamentModule.cs" />
     <Compile Include="Modules\AccessControl\AccessControlModule.cs" />
-    <Compile Include="Modules\Fishing\TournamentResult.cs" />
+    <Compile Include="Modules\Fishing\Model\Catch.cs" />
+    <Compile Include="Modules\Fishing\Model\Fish.cs" />
+    <Compile Include="Modules\Fishing\Model\Fisher.cs" />
+    <Compile Include="Modules\Fishing\Model\TournamentEntry.cs" />
+    <Compile Include="Modules\Fishing\Model\TournamentResult.cs" />
+    <Compile Include="Modules\Fishing\TournamentSystem.cs" />
     <Compile Include="Modules\ICommandModule.cs" />
+    <Compile Include="Modules\ISystem.cs" />
+    <Compile Include="Modules\ISystemManager.cs" />
+    <Compile Include="Modules\SystemManager.cs" />
     <Compile Include="Pets.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -164,6 +194,7 @@
       <Name>LobotJR.Shared</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>

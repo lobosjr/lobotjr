@@ -1,23 +1,32 @@
 ﻿using LobotJR.Command;
 using LobotJR.Data;
+using LobotJR.Data.User;
+using LobotJR.Modules.Fishing.Model;
 using LobotJR.Utils;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace LobotJR.Modules.Fishing
 {
     /// <summary>
-    /// Module of access control commands.
+    /// Contains the compact methods for the fishing module.
     /// </summary>
     public class FishingModule : ICommandModule
     {
-        private readonly IRepository<TournamentResult> repository;
+        private readonly UserLookup UserLookup;
+        private readonly FishingSystem FishingSystem;
+        private readonly Dictionary<string, int> Wolfcoins;
 
         /// <summary>
         /// Prefix applied to names of commands within this module.
         /// </summary>
         public string Name => "Fishing";
+
+        /// <summary>
+        /// Invoked to notify users of fish being hooked or getting away, and
+        /// for notifying chat when a user sets a new record.
+        /// </summary>
+        public event PushNotificationHandler PushNotification;
 
         /// <summary>
         /// A collection of commands for managing access to commands.
@@ -27,134 +36,230 @@ namespace LobotJR.Modules.Fishing
         /// <summary>
         /// Null response to indicate this module has no sub modules.
         /// </summary>
-        public IEnumerable<ICommandModule> SubModules => null;
+        public IEnumerable<ICommandModule> SubModules { get; private set; }
 
-        public FishingModule(IRepository<TournamentResult> repository)
+        public FishingModule(UserLookup userLookup, FishingSystem fishingSystem, IRepository<TournamentResult> tournamentResults, Dictionary<string, int> wolfcoins)
         {
-            this.repository = repository;
+            FishingSystem = fishingSystem;
+            FishingSystem.FishHooked += FishingSystem_FishHooked;
+            FishingSystem.FishGotAway += FishingSystem_FishGotAway;
+            FishingSystem.NewGlobalRecord += FishingSystem_NewGlobalRecord;
+            UserLookup = userLookup;
+            Wolfcoins = wolfcoins;
             Commands = new CommandHandler[]
             {
-                new CommandHandler("TournamentResults", TournamentResults, TournamentResultsCompact, "TournamentResults", "tournament-results"),
-                new CommandHandler("TournamentRecords", TournamentRecords, TournamentRecordsCompact, "TournamentRecords", "tournament-records")
+                new CommandHandler("PlayerLeaderboard", PlayerLeaderboard, PlayerLeaderboardCompact, "fish"),
+                new CommandHandler("GlobalLeaderboard", GlobalLeaderboard, GlobalLeaderboardCompact, "fishleaders", "leaderboards", "fish-leaders"),
+                new CommandHandler("ReleaseFish", ReleaseFish, "releasefish", "release-fish"),
+                new CommandHandler("CancelCast", CancelCast, "cancelcast", "cancel-cast"),
+                new CommandHandler("CatchFish", CatchFish, "catch", "reel"),
+                new CommandHandler("CastLine", Cast, "cast"),
             };
+            SubModules = new ICommandModule[] { new FishingAdmin(fishingSystem), new TournamentModule(fishingSystem.Tournament, tournamentResults, userLookup) };
         }
 
-        public CommandResult TournamentResults(string data, string user)
+        private void FishingSystem_FishHooked(Fisher fisher)
         {
-            var result = TournamentResultsCompact(data, user);
-            if (result == null)
+            var hookMessage = $"{fisher.Hooked.SizeCategory.Message} Type !catch to reel it in!";
+            PushNotification?.Invoke(fisher.UserId, new CommandResult(hookMessage));
+        }
+
+        private void FishingSystem_FishGotAway(Fisher fisher)
+        {
+            PushNotification?.Invoke(fisher.UserId, new CommandResult("Heck! The fish got away. Maybe next time..."));
+        }
+
+        private void FishingSystem_NewGlobalRecord(Catch catchData)
+        {
+            var recordMessage = $"{UserLookup.GetUsername(catchData.UserId)} just caught the heaviest {catchData.Fish.Name} ever! It weighs {catchData.Weight} pounds!";
+            PushNotification?.Invoke(null, new CommandResult() { Messages = new string[] { recordMessage } });
+        }
+
+        public CompactCollection<Catch> PlayerLeaderboardCompact(string data, string userId)
+        {
+            string selectFunc(Catch x) => $"{x.Fish.Name}|{x.Length}|{x.Weight};";
+            var fisher = FishingSystem.GetFisherById(userId);
+            if (string.IsNullOrWhiteSpace(data))
             {
-                return new CommandResult("No fishing tournaments have completed.");
-            }
-            var sinceEnded = DateTime.Now - result.Ended;
-            var pluralized = "participant";
-            if (result.Participants > 1)
-            {
-                pluralized += "s";
-            }
-            var responses = new List<string>(new string[] { $"The most recent tournament ended {sinceEnded.ToCommonString()} ago with {result.Participants} {pluralized}." });
-            if (result.Rank > 0)
-            {
-                if (result.Winner.Equals(user, StringComparison.OrdinalIgnoreCase))
+                if (fisher != null)
                 {
-                    responses.Add($"You won the tournament with {result.WinnerPoints} points.");
+                    return new CompactCollection<Catch>(fisher.Records, selectFunc);
+                }
+                return new CompactCollection<Catch>(new Catch[0], null);
+            }
+            else
+            {
+                if (int.TryParse(data, out var id))
+                {
+                    var fish = fisher.Records.ToList();
+                    if (id > 0 && id <= fish.Count)
+                    {
+                        return new CompactCollection<Catch>(new Catch[] { fish[id - 1] }, selectFunc);
+                    }
+                }
+                return null;
+            }
+        }
+
+        public CommandResult PlayerLeaderboard(string data, string userId)
+        {
+            var compact = PlayerLeaderboardCompact(data, userId);
+            var items = compact.Items.ToList();
+            if (string.IsNullOrWhiteSpace(data))
+            {
+                if (items.Count > 0)
+                {
+                    var responses = new List<string>
+                    {
+                        $"You've caught {items.Count} different types of fish: "
+                    };
+                    responses.AddRange(items.Select((x, i) => $"{i}: {x.Fish.Name}"));
+                    return new CommandResult(responses.ToArray());
                 }
                 else
                 {
-                    responses.Add($"The tournament was won by {result.Winner} with {result.WinnerPoints} points.");
-                    responses.Add($"You placed {result.Rank.ToOrdinal()} with {result.UserPoints} points.");
+                    return new CommandResult($"You haven't caught any fish yet!");
                 }
             }
             else
             {
-                responses.Add($"The tournament was won by {result.Winner} with {result.WinnerPoints} points.");
-            }
-            return new CommandResult(responses.ToArray());
-        }
-
-        public TournamentResultsResponse TournamentResultsCompact(string data, string user)
-        {
-            var tournament = repository.Read().OrderByDescending(x => x.Date).FirstOrDefault();
-            if (tournament != null)
-            {
-                var winner = tournament.Winner;
-                var output = new TournamentResultsResponse()
+                if (compact == null)
                 {
-                    Ended = tournament.Date,
-                    Participants = tournament.Entries.Count,
-                    Winner = winner.Name,
-                    WinnerPoints = winner.Points
-
-                };
-                var userEntry = tournament.GetEntryByName(user);
-                if (userEntry != null)
-                {
-                    output.Rank = tournament.GetRankByName(userEntry.Name);
-                    output.UserPoints = userEntry.Points;
+                    return new CommandResult($"Invalid request. Syntax: !fish <Fish #>");
                 }
-                return output;
+                var fishCatch = compact.Items.FirstOrDefault();
+                var responses = new List<string>
+                {
+                    $"Name - {fishCatch.Fish.Name}",
+                    $"Length - {fishCatch.Length} in.",
+                    $"Weight - {fishCatch.Weight} lbs.",
+                    $"Size Category - {fishCatch.Fish.SizeCategory.Name}",
+                    $"Description - {fishCatch.Fish.FlavorText}"
+                };
+                return new CommandResult(responses.ToArray());
             }
-            return null;
         }
 
-        public CommandResult TournamentRecords(string data, string user)
+        public CompactCollection<Catch> GlobalLeaderboardCompact(string data, string userId)
         {
-            var records = TournamentRecordsCompact(data, user);
-            if (records == null)
+            return new CompactCollection<Catch>(FishingSystem.GetLeaderboard(), x => $"{x.Fish.Name}|{x.Length}|{x.Weight}|{UserLookup.GetUsername(x.UserId)};");
+        }
+
+        public CommandResult GlobalLeaderboard(string data)
+        {
+            var compact = GlobalLeaderboardCompact(data, null);
+            return new CommandResult(compact.Items.Select(x => $"Largest {x.Fish.Name} caught by {UserLookup.GetUsername(x.UserId)} at {x.Weight} lbs., {x.Length} in.").ToArray());
+        }
+
+        public CommandResult ReleaseFish(string data, string userId)
+        {
+            if (int.TryParse(data, out var param))
             {
-                return new CommandResult("You have not entered any fishing tournaments.");
+                var fisher = FishingSystem.GetFisherById(userId);
+                if (fisher == null || fisher.Records.Count == 0)
+                {
+                    return new CommandResult("You don't have any fish! Type !cast to try and fish for some!");
+                }
+                if (param > 0 && param <= fisher.Records.Count)
+                {
+                    var fish = fisher.Records[param - 1];
+                    FishingSystem.DeleteFish(fisher, fish);
+                    return new CommandResult($"You released your {fish.Fish.Name}. Bye bye!");
+                }
             }
-            return new CommandResult($"Your highest score in a tournament was {records.TopScore} points, earning you {records.TopScoreRank.ToOrdinal()} place.",
-                $"Your best tournament placement was {records.TopRank.ToOrdinal()} place, with {records.TopRankScore} points.");
+            return new CommandResult($"Invalid request. Syntax: !releasefish <Fish #>");
         }
 
-        public TournamentRecordsResponse TournamentRecordsCompact(string data, string user)
+        public CommandResult CancelCast(string data, string userId)
         {
-            var output = new Dictionary<string, string>();
-            var tournaments = repository.Read(x => x.GetEntryByName(user) != null);
-            if (!tournaments.Any())
+            var fisher = FishingSystem.GetFisherById(userId);
+            if (fisher != null && fisher.IsFishing)
             {
-                return null;
+                FishingSystem.UnhookFish(fisher);
+                return new CommandResult("You reel in the empty line.");
             }
-            var topRank = tournaments.OrderBy(x => x.GetRankByName(user)).First();
-            var topRankAndScore = tournaments.Where(x => x.GetRankByName(user) == topRank.GetRankByName(user)).OrderByDescending(x => x.GetEntryByName(user).Points).First();
-            var topScore = tournaments.OrderByDescending(x => x.GetEntryByName(user).Points).First();
-            var topScoreAndRank = tournaments.Where(x => x.GetEntryByName(user).Points == topScore.GetEntryByName(user).Points).OrderBy(x => x.GetRankByName(user)).First();
-            return new TournamentRecordsResponse()
+            return new CommandResult("Your line has not been cast.");
+        }
+
+        public CommandResult CatchFish(string data, string userId)
+        {
+            var fisher = FishingSystem.GetFisherById(userId);
+            if (fisher != null && fisher.IsFishing)
             {
-                TopRank = topRankAndScore.GetRankByName(user),
-                TopRankScore = topRankAndScore.GetEntryByName(user).Points,
-                TopScore = topScoreAndRank.GetEntryByName(user).Points,
-                TopScoreRank = topScoreAndRank.GetRankByName(user)
-            };
+                var catchData = FishingSystem.CatchFish(fisher);
+                if (catchData == null)
+                {
+                    return new CommandResult("Nothing is biting yet! To reset your cast, use !cancelcast");
+                }
+
+                if (FishingSystem.Tournament.IsRunning)
+                {
+                    var record = fisher.Records.Where(x => x.Fish.Id == catchData.Fish.Id).FirstOrDefault();
+                    var responses = new List<string>();
+                    if (record.Weight == catchData.Weight)
+                    {
+                        responses.Add($"This is the biggest {catchData.Fish.Name} you've ever caught!");
+                    }
+                    var userEntry = FishingSystem.Tournament.CurrentTournament.Entries.Where(x => x.UserId.Equals(userId)).FirstOrDefault();
+                    var sorted = FishingSystem.Tournament.CurrentTournament.Entries.OrderBy(x => x.Points).ToList().IndexOf(userEntry) + 1;
+                    responses.Add($"You caught a {catchData.Length} inch, {catchData.Weight} pound {catchData.Fish.Name} worth {catchData.Points} points! You are in {sorted.ToOrdinal()} place with {userEntry.Points} total points.");
+                    return new CommandResult(responses.ToArray());
+                }
+                else
+                {
+                    return new CommandResult($"Congratulations! You caught a {catchData.Length} inch, {catchData.Weight} pound {catchData.Fish.Name}!");
+                }
+            }
+            return new CommandResult($"Your line has not been cast. Use !cast to start fishing");
         }
-    }
 
-    public class TournamentResultsResponse : ICompactResponse
-    {
-        public DateTime Ended { get; set; }
-        public int Participants { get; set; }
-        public string Winner { get; set; }
-        public int WinnerPoints { get; set; }
-        public int Rank { get; set; }
-        public int UserPoints { get; set; }
-
-        public IEnumerable<string> ToCompact()
+        public CommandResult Cast(string data, string userId)
         {
-            return new string[] { $"{Ended}|{Participants}|{Winner}|{WinnerPoints}|{Rank}|{UserPoints};" };
+            var fisher = FishingSystem.GetFisherById(userId);
+            if (fisher != null)
+            {
+                if (fisher.Hooked != null)
+                {
+                    return new CommandResult("Something's already bit your line! Quick, type !catch to snag it!");
+                }
+                if (fisher.IsFishing)
+                {
+                    return new CommandResult("Your line is already cast! I'm sure a fish'll be along soon...");
+                }
+            }
+            FishingSystem.Cast(userId);
+            return new CommandResult("You cast your line out into the water.");
         }
-    }
 
-    public class TournamentRecordsResponse : ICompactResponse
-    {
-        public int TopRank { get; set; }
-        public int TopRankScore { get; set; }
-        public int TopScore { get; set; }
-        public int TopScoreRank { get; set; }
-
-        public IEnumerable<string> ToCompact()
+        public CommandResult Gloat(string data, string userId)
         {
-            return new string[] { $"{TopRank}|{TopRankScore}|{TopScore}|{TopScoreRank};" };
+            if (Wolfcoins.TryGetValue(UserLookup.GetUsername(userId), out var currency))
+            {
+                if (currency >= FishingSystem.GloatCost)
+                {
+                    var fisher = FishingSystem.GetFisherById(userId);
+                    if (fisher.Records.Any())
+                    {
+                        if (int.TryParse(data, out var id))
+                        {
+                            if (id > 0 && id <= fisher.Records.Count)
+                            {
+                                var fish = fisher.Records[id - 1];
+                                return new CommandResult($"You spent {FishingSystem.GloatCost} wolfcoins to brag about your biggest {fish.Fish.Name}.")
+                                {
+                                    Messages = new string[] { $"{UserLookup.GetUsername(userId)} gloats about the time they caught a {fish.Length} in. long, {fish.Weight} pound {fish.Fish.Name} lobosSmug" }
+                                };
+                            }
+                        }
+                        return new CommandResult("Invalid request. Syntax: !gloatfish <Fish #>");
+                    }
+                    else
+                    {
+                        return new CommandResult("You don't have any fish! Type !cast to try and fish for some!");
+                    }
+                }
+            }
+            return new CommandResult("You don't have enough coins to gloat!");
         }
     }
 }

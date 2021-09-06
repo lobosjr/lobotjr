@@ -1,6 +1,8 @@
 ﻿using LobotJR.Data;
+using LobotJR.Data.User;
 using LobotJR.Modules;
 using System.Collections.Generic;
+using Wolfcoins;
 
 namespace LobotJR.Command
 {
@@ -10,25 +12,29 @@ namespace LobotJR.Command
     public interface ICommandManager
     {
         /// <summary>
+        /// Event raised when a module sends a push notification.
+        /// </summary>
+        event PushNotificationHandler PushNotifications;
+
+        /// <summary>
         /// Repository manager for access to data.
         /// </summary>
         IRepositoryManager RepositoryManager { get; }
+        /// <summary>
+        /// User lookup service used to translate between usernames and user ids.
+        /// </summary>
+        UserLookup UserLookup { get; }
         /// <summary>
         /// List of ids for registered commands.
         /// </summary>
         IEnumerable<string> Commands { get; }
 
         /// <summary>
-        /// Initialize the command manager, loading role data and registering
-        /// the commands.
-        /// </summary>
-        /// <param name="broadcastUser">The name of the channel the bot is in.</param>
-        /// <param name="chatUser">The name of the bot user.</param>
-        void Initialize(string broadcastUser, string chatUser);
-        /// <summary>
         /// Loads all registered command modules.
         /// </summary>
-        void LoadAllModules();
+        /// <param name="systemManager">System manager containing all loaded systems.</param>
+        /// <param name="wolfcoins">Holds data about wolfcoins in legacy format.</param>
+        void LoadAllModules(ISystemManager systemManager, Currency wolfcoins);
         /// <summary>
         /// Loads all registered command modules.
         /// <param name="modules">An array of modules to load.</param>

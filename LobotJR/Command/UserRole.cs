@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using LobotJR.Data;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -8,8 +9,14 @@ namespace LobotJR.Command
     /// <summary>
     /// Represents a user role, as well as the users who are members of it.
     /// </summary>
-    public class UserRole
+    public class UserRole : TableObject
     {
+        private static Regex RegexFromCommand(string command)
+        {
+            var commandString = command.Replace(".", "\\.").Replace("*", ".*");
+            return new Regex($"^{commandString}$");
+        }
+
         private static string ListToString(IEnumerable<string> collection)
         {
             return string.Join(",", collection.Select(x => x.Replace(",", "\\,")));
@@ -24,26 +31,25 @@ namespace LobotJR.Command
             return Regex.Split(value, "(?<!\\\\),").Select(x => x.Replace("\\,", ",")).ToList();
         }
 
-        public int Id { get; set; }
         /// <summary>
         /// The name of the role.
         /// </summary>
         public string Name { get; set; }
         /// <summary>
-        /// A comma-delimited list of usernames.
+        /// A comma-delimited list of user ids.
         /// </summary>
         public string UserList { get; set; }
         /// <summary>
         /// A list of users who are members of the role.
         /// </summary>
         [NotMapped]
-        public List<string> Users
+        public List<string> UserIds
         {
             get
             {
                 return StringToList(UserList);
             }
-            private set
+            set
             {
                 UserList = ListToString(value);
             }
@@ -65,8 +71,12 @@ namespace LobotJR.Command
             private set
             {
                 CommandList = ListToString(value);
+
             }
         }
+
+        [NotMapped]
+        public Dictionary<string, bool> CheckedCommands { get; private set; } = new Dictionary<string, bool>();
 
 
         /// <summary>
@@ -89,16 +99,16 @@ namespace LobotJR.Command
         /// Creates a user role with a name.
         /// </summary>
         /// <param name="name">The name of the role.</param>
-        public UserRole(string name, IEnumerable<string> users, IEnumerable<string> commands)
+        public UserRole(string name, IEnumerable<string> userIds, IEnumerable<string> commands)
         {
             Name = name;
-            if (users != null)
+            if (userIds != null)
             {
-                Users = new List<string>(users);
+                UserIds = new List<string>(userIds);
             }
             else
             {
-                Users = new List<string>();
+                UserIds = new List<string>();
             }
             if (commands != null)
             {
@@ -113,22 +123,23 @@ namespace LobotJR.Command
         /// <summary>
         /// Adds a user to this role.
         /// </summary>
-        /// <param name="user">The name of the user.</param>
-        public void AddUser(string user)
+        /// <param name="id">The id of the user.</param>
+        public void AddUser(string id)
         {
-            var temp = Users;
-            temp.Add(user);
-            Users = temp;
+            var temp = UserIds;
+            temp.Add(id);
+            UserIds = temp;
         }
+
         /// <summary>
         /// Removes a user from this role.
         /// </summary>
-        /// <param name="user">The name of the user.</param>
-        public void RemoveUser(string user)
+        /// <param name="id">The id of the user.</param>
+        public void RemoveUser(string id)
         {
-            var temp = Users;
-            temp.Remove(user);
-            Users = temp;
+            var temp = UserIds;
+            temp.Remove(id);
+            UserIds = temp;
         }
 
         /// <summary>
@@ -159,15 +170,12 @@ namespace LobotJR.Command
         /// <returns>Whether or not the command is covered.</returns>
         public bool CoversCommand(string commandId)
         {
-            return Commands.Any((command) =>
+            if (!CheckedCommands.ContainsKey(commandId))
             {
-                var index = command.IndexOf('*');
-                if (index >= 0)
-                {
-                    return commandId.StartsWith(command.Substring(0, index));
-                }
-                return command.Equals(commandId);
-            });
+                var covers = Commands.Any(command => RegexFromCommand(command).IsMatch(commandId));
+                CheckedCommands.Add(commandId, covers);
+            }
+            return CheckedCommands[commandId];
         }
     }
 }

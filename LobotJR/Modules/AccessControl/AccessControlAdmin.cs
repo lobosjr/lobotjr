@@ -13,10 +13,16 @@ namespace LobotJR.Modules.AccessControl
     {
         private readonly ICommandManager commandManager;
         private readonly IRepository<UserRole> repository;
+
         /// <summary>
         /// Prefix applied to names of commands within this module.
         /// </summary>
         public string Name => "Admin";
+
+        /// <summary>
+        /// This module does not issue any push notifications.
+        /// </summary>
+        public event PushNotificationHandler PushNotification;
 
         /// <summary>
         /// A collection of commands for managing access to commands.
@@ -48,12 +54,12 @@ namespace LobotJR.Modules.AccessControl
             };
         }
 
-        private CommandResult ListRoles(string data, string user)
+        private CommandResult ListRoles(string data)
         {
             return new CommandResult($"There are {repository.Read().Count()} roles: {string.Join(", ", repository.Read().Select(x => x.Name))}");
         }
 
-        private CommandResult CreateRole(string data, string user)
+        private CommandResult CreateRole(string data)
         {
             var existingRole = repository.Read(x => x.Name.Equals(data)).FirstOrDefault();
             if (existingRole != null)
@@ -66,7 +72,7 @@ namespace LobotJR.Modules.AccessControl
             return new CommandResult($"Role \"{data}\" created successfully!");
         }
 
-        private CommandResult DescribeRole(string data, string user)
+        private CommandResult DescribeRole(string data)
         {
             var existingRole = repository.Read(x => x.Name.Equals(data)).FirstOrDefault();
             if (existingRole == null)
@@ -76,11 +82,11 @@ namespace LobotJR.Modules.AccessControl
 
             return new CommandResult(
                 $"Role \"{data}\" contains the following commands: {string.Join(", ", existingRole.Commands)}.",
-                $"Role \"{data}\" contains the following users: {string.Join(", ", existingRole.Users)}."
+                $"Role \"{data}\" contains the following users: {string.Join(", ", existingRole.UserIds)}."
             );
         }
 
-        private CommandResult DeleteRole(string data, string user)
+        private CommandResult DeleteRole(string data)
         {
             var existingRole = repository.Read(x => x.Name.Equals(data)).FirstOrDefault();
             if (existingRole == null)
@@ -98,7 +104,7 @@ namespace LobotJR.Modules.AccessControl
             return new CommandResult($"Role \"{data}\" deleted successfully!");
         }
 
-        private CommandResult AddUserToRole(string data, string user)
+        private CommandResult AddUserToRole(string data)
         {
             var space = data.IndexOf(' ');
             if (space == -1)
@@ -111,6 +117,11 @@ namespace LobotJR.Modules.AccessControl
             {
                 return new CommandResult("Error: Username cannot be empty.");
             }
+            var userId = commandManager.UserLookup.GetId(userToAdd);
+            if (userId == null)
+            {
+                return new CommandResult("Error: User id not present in id cache, please try again in a few minutes.");
+            }
             var roleName = data.Substring(space + 1);
             if (roleName.Length == 0)
             {
@@ -122,19 +133,18 @@ namespace LobotJR.Modules.AccessControl
             {
                 return new CommandResult($"Error: No role with name \"{roleName}\" was found.");
             }
-
-            if (role.Users.Contains(userToAdd))
+            if (role.UserIds.Contains(userId))
             {
                 return new CommandResult($"Error: User \"{userToAdd}\" is already a member of \"{roleName}\".");
             }
-            role.AddUser(userToAdd);
+            role.AddUser(userId);
             repository.Update(role);
             repository.Commit();
 
             return new CommandResult($"User \"{userToAdd}\" was added to role \"{role.Name}\" successfully!");
         }
 
-        private CommandResult RemoveUserFromRole(string data, string user)
+        private CommandResult RemoveUserFromRole(string data)
         {
             var space = data.IndexOf(' ');
             if (space == -1)
@@ -147,6 +157,7 @@ namespace LobotJR.Modules.AccessControl
             {
                 return new CommandResult("Error: Username cannot be empty.");
             }
+            var userId = commandManager.UserLookup.GetId(userToRemove);
             var roleName = data.Substring(space + 1);
             if (roleName.Length == 0)
             {
@@ -159,18 +170,18 @@ namespace LobotJR.Modules.AccessControl
                 return new CommandResult($"Error: No role with name \"{roleName}\" was found.");
             }
 
-            if (!role.Users.Contains(userToRemove))
+            if (!role.UserIds.Contains(userId))
             {
                 return new CommandResult($"Error: User \"{userToRemove}\" is not a member of \"{roleName}\".");
             }
-            role.RemoveUser(userToRemove);
+            role.RemoveUser(userId);
             repository.Update(role);
             repository.Commit();
 
             return new CommandResult($"User \"{userToRemove}\" was removed from role \"{role.Name}\" successfully!");
         }
 
-        private CommandResult AddCommandToRole(string data, string user)
+        private CommandResult AddCommandToRole(string data)
         {
             var space = data.IndexOf(' ');
             if (space == -1)
@@ -212,10 +223,10 @@ namespace LobotJR.Modules.AccessControl
             return new CommandResult($"Command \"{commandName}\" was added to the role \"{role.Name}\" successfully!");
         }
 
-        private CommandResult ListCommands(string data, string user)
+        private CommandResult ListCommands(string data)
         {
             var commands = commandManager.Commands;
-            var modules = commands.Where(x => x.IndexOf('.') != -1).Select(x => x.Substring(0, x.IndexOf('.'))).Distinct().ToList();
+            var modules = commands.Where(x => x.LastIndexOf('.') != -1).Select(x => x.Substring(0, x.LastIndexOf('.'))).Distinct().ToList();
             var response = new string[modules.Count + 1];
             response[0] = $"There are {commands.Count()} commands across {modules.Count} modules.";
             for (var i = 0; i < modules.Count; i++)
@@ -225,7 +236,7 @@ namespace LobotJR.Modules.AccessControl
             return new CommandResult(response);
         }
 
-        private CommandResult RemoveCommandFromRole(string data, string user)
+        private CommandResult RemoveCommandFromRole(string data)
         {
             var space = data.IndexOf(' ');
             if (space == -1)

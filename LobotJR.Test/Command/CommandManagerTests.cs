@@ -1,5 +1,6 @@
 ﻿using LobotJR.Command;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,16 +8,19 @@ using System.Linq;
 namespace LobotJR.Test.Command
 {
     [TestClass]
-    public class CommandManagerTests
+    public class CommandManagerTests : CommandManagerTestBase
     {
+        [TestInitialize]
+        public void Initialize()
+        {
+            InitializeCommandManager();
+        }
+
         [TestMethod]
         public void LoadModulesLoadsModules()
         {
-            var module = new CommandModule();
-            var commandManager = new CommandManager(new TestRepositoryManager());
-            commandManager.Initialize("", "");
-            commandManager.LoadModules(module);
-            var commands = commandManager.Commands;
+            var commands = CommandManager.Commands;
+            var module = CommandModuleMock.Object;
             var firstCommand = module.Commands.First().Name;
             Assert.IsTrue(commands.Count() >= module.Commands.Count());
             Assert.IsFalse(commands.Any(x => x.Equals(firstCommand)));
@@ -26,196 +30,160 @@ namespace LobotJR.Test.Command
         [TestMethod]
         public void InitializeLoadsRoleData()
         {
-            var roles = new List<UserRole>(new UserRole[]
-            {
-                new UserRole("TestRole",
-                    new List<string>(new string[] { "User1", "User2", "User3" }),
-                    new List<string>(new string[] { "Command.One", "Test.*" }))
-            });
-            var commandManager = new CommandManager(new TestRepositoryManager(roles));
-            commandManager.Initialize(null, null);
-            Assert.AreEqual(JsonConvert.SerializeObject(roles), JsonConvert.SerializeObject(commandManager.RepositoryManager.UserRoles.Read()));
+            var userRolesJson = JsonConvert.SerializeObject(UserRoles);
+            var loadedRolesJson = JsonConvert.SerializeObject(CommandManager.RepositoryManager.UserRoles.Read());
+            Assert.AreEqual(userRolesJson, loadedRolesJson);
         }
 
         [TestMethod]
         public void IsValidCommandMatchesFullId()
         {
-            var module = new CommandModule();
+            var module = CommandModuleMock.Object;
             var firstCommand = module.Commands.First();
-            var commandManager = new CommandManager(new TestRepositoryManager());
-            commandManager.Initialize(null, null);
-            commandManager.LoadModules(module);
-            Assert.IsTrue(commandManager.IsValidCommand($"{module.Name}.{firstCommand.Name}"));
+            Assert.IsTrue(CommandManager.IsValidCommand($"{module.Name}.{firstCommand.Name}"));
         }
 
         [TestMethod]
-        public void IsValidCommandMatchesWildcard()
+        public void IsValidCommandMatchesWildcardAtEnd()
         {
-            var module = new CommandModule();
-            var commandManager = new CommandManager(new TestRepositoryManager());
-            commandManager.Initialize(null, null);
-            commandManager.LoadModules(module);
-            Assert.IsTrue(commandManager.IsValidCommand($"{module.Name}.*"));
+            var module = CommandModuleMock.Object;
+            Assert.IsTrue(CommandManager.IsValidCommand($"{module.Name}.*"));
+        }
+
+        [TestMethod]
+        public void IsValidCommandMatchesWildcardAtStart()
+        {
+            var module = CommandModuleMock.Object;
+            Assert.IsTrue(CommandManager.IsValidCommand($"*.{module.SubModules.FirstOrDefault().Name}.*"));
         }
 
         [TestMethod]
         public void ProcessMessageExecutesCommands()
         {
-            var module = new CommandModule();
-            var commandManager = new CommandManager(new TestRepositoryManager());
-            commandManager.Initialize(null, null);
-            commandManager.LoadModules(module);
-            var commandStrings = module.Commands.First().CommandStrings;
-            foreach (var command in commandStrings)
+            var module = CommandModuleMock.Object;
+            var command = module.Commands.First();
+            var commandStrings = command.CommandStrings;
+            foreach (var commandString in commandStrings)
             {
-                commandManager.ProcessMessage(command, "");
+                CommandManager.ProcessMessage(commandString, "Auth");
             }
-            Assert.AreEqual(commandStrings.Count(), module.Calls.Count());
+            ExecutorMocks[command.Name].Verify(x => x(It.IsAny<string>(), It.IsAny<string>()),
+                Times.Exactly(commandStrings.Count()));
         }
 
         [TestMethod]
         public void ProcessMessageWildcardAllowsAccessToSubModules()
         {
-            var module = new CommandModule();
-            var subModule = module.SubModules.First() as SubCommandModule;
-            var roles = new List<UserRole>(new UserRole[]
-            {
-                new UserRole("TestRole",
-                    new List<string>(new string[] { "Auth" }),
-                    new List<string>(new string[] { "Command.*" }))
-            });
-            var commandManager = new CommandManager(new TestRepositoryManager(roles));
-            commandManager.Initialize(null, null);
-            commandManager.LoadModules(module);
-            var result = commandManager.ProcessMessage("Foobar", "Auth");
+            var module = CommandModuleMock.Object;
+            var role = UserRoles.First();
+            role.CommandList = "CommandMock.*";
+            role.UserList = "12345";
+            var result = CommandManager.ProcessMessage("Foobar", "Auth");
             Assert.IsTrue(result.Processed);
-            Assert.AreEqual(null, result.Errors);
-            Assert.IsTrue(subModule.Calls.Any(x => x.Equals("Command.Sub.Foobar")));
+            Assert.IsNull(result.Errors);
+            ExecutorMocks["Foobar"].Verify(x => x(It.IsAny<string>(), It.IsAny<string>()),
+                Times.Once());
         }
 
         [TestMethod]
         public void ProcessMessageSubModuleAccessDoesNotAllowParentAccess()
         {
-            var module = new CommandModule();
-            var roles = new List<UserRole>(new UserRole[]
-            {
-                new UserRole("TestRole",
-                    new List<string>(new string[] { "Auth" }),
-                    new List<string>(new string[] { "Command.Sub.*" })),
-                new UserRole("OtherRole", null, new List<string>(new string[] { "Command.*" }))
-            });
-            var commandManager = new CommandManager(new TestRepositoryManager(roles));
-            commandManager.Initialize(null, null);
-            commandManager.LoadModules(module);
-            var result = commandManager.ProcessMessage("Foo", "Auth");
+            var module = CommandModuleMock.Object;
+            var role = UserRoles.First();
+            role.CommandList = "CommandMock.SubMock.*";
+            UserRoles.Add(new UserRole("OtherRole", null, new List<string>(new string[] { "CommandMock.*" })));
+            var result = CommandManager.ProcessMessage("Foo", "Auth");
             Assert.IsTrue(result.Processed);
             Assert.IsTrue(result.Errors.Any());
-            Assert.IsFalse(module.Calls.Any(x => x.Equals("Command.Foo")));
+            ExecutorMocks["Foo"].Verify(x => x(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
 
         [TestMethod]
         public void ProcessMessageAllowsAuthorizedUserWhenWildcardIsRestricted()
         {
-            var module = new CommandModule();
-            var subModule = module.SubModules.First() as SubCommandModule;
-            var roles = new List<UserRole>(new UserRole[]
-            {
-                new UserRole("TestRole",
-                    new List<string>(new string[] { "Auth" }),
-                    new List<string>(new string[] { "Command.Sub.*" })),
-                new UserRole("OtherRole", null, new List<string>(new string[] { "Command.*" }))
-            });
-            var commandManager = new CommandManager(new TestRepositoryManager(roles));
-            commandManager.Initialize(null, null);
-            commandManager.LoadModules(module);
-            var result = commandManager.ProcessMessage("Foobar", "Auth");
+            var module = CommandModuleMock.Object;
+            var role = UserRoles.First();
+            role.CommandList = "CommandMock.SubMock.*";
+            UserRoles.Add(new UserRole("OtherRole", null, new List<string>(new string[] { "CommandMock.*" })));
+            var result = CommandManager.ProcessMessage("Foobar", "Auth");
             Assert.IsTrue(result.Processed);
-            Assert.AreEqual(null, result.Errors);
-            Assert.IsTrue(subModule.Calls.Any(x => x.Equals("Command.Sub.Foobar")));
+            Assert.IsNull(result.Errors);
+            ExecutorMocks["Foobar"].Verify(x => x(It.IsAny<string>(), It.IsAny<string>()), Times.Once);
         }
 
         [TestMethod]
         public void ProcessMessageRestrictsAccessToUnauthorizedUsers()
         {
-            var module = new CommandModule();
-            var roles = new List<UserRole>(new UserRole[]
-            {
-                new UserRole("TestRole",
-                    new List<string>(new string[] { "Auth" }),
-                    new List<string>(new string[] { "Command.Foo" }))
-            });
-            var commandManager = new CommandManager(new TestRepositoryManager(roles));
-            commandManager.Initialize(null, null);
-            commandManager.LoadModules(module);
-            var result = commandManager.ProcessMessage("Foo", "NotAuth");
+            var result = CommandManager.ProcessMessage("Foo", "NotAuth");
             Assert.IsTrue(result.Processed);
             Assert.IsTrue(result.Errors.Any());
+            ExecutorMocks["Foo"].Verify(x => x(It.IsAny<string>(), It.IsAny<string>()), Times.Never());
         }
 
         [TestMethod]
         public void ProcessMessageAllowsAccessToAuthorizedUsers()
         {
-            var module = new CommandModule();
-            var roles = new List<UserRole>(new UserRole[]
-            {
-                new UserRole("TestRole",
-                    new List<string>(new string[] { "Auth" }),
-                    new List<string>(new string[] { "Command.Foo" }))
-            });
-            var commandManager = new CommandManager(new TestRepositoryManager(roles));
-            commandManager.Initialize(null, null);
-            commandManager.LoadModules(module);
-            var result = commandManager.ProcessMessage("Foo", "Auth");
+            var result = CommandManager.ProcessMessage("Foo", "Auth");
             Assert.IsTrue(result.Processed);
-            Assert.AreEqual(null, result.Errors);
+            Assert.IsNull(result.Errors);
+            ExecutorMocks["Foo"].Verify(x => x(It.IsAny<string>(), It.IsAny<string>()), Times.Once());
         }
 
         [TestMethod]
         public void ProcessMessageRestrictsCommandsWithWildcardRoles()
         {
-            var module = new CommandModule();
-            var roles = new List<UserRole>(new UserRole[]
-            {
-                new UserRole("TestRole",
-                    new List<string>(new string[] { "Auth" }),
-                    new List<string>(new string[] { "Command.*" }))
-            });
-            var commandManager = new CommandManager(new TestRepositoryManager(roles));
-            commandManager.Initialize(null, null);
-            commandManager.LoadModules(module);
-            var result = commandManager.ProcessMessage(module.Commands.First().CommandStrings.First(), "NotAuth");
+            var role = UserRoles.First();
+            role.CommandList = "CommandMock.*";
+            var result = CommandManager.ProcessMessage("Foo", "NotAuth");
             Assert.IsTrue(result.Processed);
-            Assert.AreNotEqual(null, result.Errors);
+            Assert.IsTrue(result.Errors.Any());
+            ExecutorMocks["Foo"].Verify(x => x(It.IsAny<string>(), It.IsAny<string>()), Times.Never());
         }
 
         [TestMethod]
         public void ProcessMessageProcessesCompactCommands()
         {
-            var module = new CommandModule();
-            var roles = new List<UserRole>();
-            var commandManager = new CommandManager(new TestRepositoryManager(roles));
-            commandManager.Initialize(null, null);
-            commandManager.LoadModules(module);
-            var result = commandManager.ProcessMessage("Foo -c", "");
+            var result = CommandManager.ProcessMessage("Foo -c", "Auth");
             Assert.IsTrue(result.Processed);
-            Assert.IsTrue(module.Calls.Contains("Command.Foo -c"));
             Assert.AreEqual(@"Foo: Foo|Bar;", result.Responses.First());
-            Assert.AreEqual(null, result.Errors);
+            Assert.IsNull(result.Errors);
         }
 
         [TestMethod]
         public void ProcessMessageCompactCommandsPassParameters()
         {
-            var module = new CommandModule();
-            var roles = new List<UserRole>();
-            var commandManager = new CommandManager(new TestRepositoryManager(roles));
-            commandManager.Initialize(null, null);
-            commandManager.LoadModules(module);
-            var result = commandManager.ProcessMessage("Foo -c value", "");
+            var result = CommandManager.ProcessMessage("Foo -c value", "Auth");
             Assert.IsTrue(result.Processed);
-            Assert.IsTrue(module.Calls.Contains("Command.Foo -c"));
             Assert.AreEqual(@"Foo: Foo|value;", result.Responses.First());
-            Assert.AreEqual(null, result.Errors);
+            Assert.IsNull(result.Errors);
+        }
+
+        [TestMethod]
+        public void ProcessMessageDoesNotProcessNonAnonymousCommandsForUncachedUsers()
+        {
+            var result = CommandManager.ProcessMessage("Foo", "Uncached");
+            Assert.IsTrue(result.Processed);
+            Assert.IsTrue(result.Responses.Any());
+            ExecutorMocks["Foo"].Verify(x => x(It.IsAny<string>(), It.IsAny<string>()), Times.Never());
+        }
+
+        [TestMethod]
+        public void ProcessMessageAllowsAnonymousCommandsForUncachedUsers()
+        {
+            var result = CommandManager.ProcessMessage("Unrestricted", "Uncached");
+            Assert.IsTrue(result.Processed);
+            Assert.IsTrue(result.Responses.Any());
+            AnonymousExecutorMock.Verify(x => x(It.IsAny<string>()), Times.Once());
+        }
+
+        [TestMethod]
+        public void ProcessMessageDoesNotAllowRestrictedAnonymousCommandsForUncachedUsers()
+        {
+            UserRoles[0].AddCommand("CommandMock.Unrestricted");
+            var result = CommandManager.ProcessMessage("Unrestricted", "Uncached");
+            Assert.IsTrue(result.Processed);
+            Assert.IsTrue(result.Responses.Any());
+            AnonymousExecutorMock.Verify(x => x(It.IsAny<string>()), Times.Never());
         }
     }
 }

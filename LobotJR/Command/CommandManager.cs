@@ -1,10 +1,13 @@
 ﻿using LobotJR.Data;
+using LobotJR.Data.User;
 using LobotJR.Modules;
 using LobotJR.Modules.AccessControl;
 using LobotJR.Modules.Fishing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
+using Wolfcoins;
 
 namespace LobotJR.Command
 {
@@ -15,23 +18,50 @@ namespace LobotJR.Command
     {
         private const int MessageLimit = 450;
 
-        private Dictionary<string, string> commandStringToIdMap;
-        private Dictionary<string, CommandExecutor> commandIdToExecutorMap;
-        private Dictionary<string, CompactExecutor> compactIdToExecutorMap;
+        private readonly Dictionary<string, string> commandStringToIdMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, CommandExecutor> commandIdToExecutorMap = new Dictionary<string, CommandExecutor>();
+        private readonly Dictionary<string, AnonymousExecutor> anonymousIdToExecutorMap = new Dictionary<string, AnonymousExecutor>();
+        private readonly Dictionary<string, CompactExecutor> compactIdToExecutorMap = new Dictionary<string, CompactExecutor>();
+        private readonly Dictionary<string, Regex> commandStringRegexMap = new Dictionary<string, Regex>();
+
+        /// <summary>
+        /// Event raised when a module sends a push notification.
+        /// </summary>
+        public event PushNotificationHandler PushNotifications;
 
         /// <summary>
         /// Repository manager for access to stored data types.
         /// </summary>
         public IRepositoryManager RepositoryManager { get; set; }
         /// <summary>
+        /// User lookup service used to translate between usernames and user ids.
+        /// </summary>
+        public UserLookup UserLookup { get; private set; }
+        /// <summary>
         /// List of ids for registered commands.
         /// </summary>
-        public IEnumerable<string> Commands { get { return commandIdToExecutorMap.Keys.ToArray(); } }
+        public IEnumerable<string> Commands
+        {
+            get
+            {
+                return commandIdToExecutorMap.Keys
+                    .Union(compactIdToExecutorMap.Keys)
+                    .Union(anonymousIdToExecutorMap.Keys)
+                    .ToArray();
+            }
+        }
 
         private void AddCommand(CommandHandler command, string prefix)
         {
             var commandId = $"{prefix}.{command.Name}";
-            commandIdToExecutorMap.Add(commandId, command.Executor);
+            if (command.AnonymousExecutor != null)
+            {
+                anonymousIdToExecutorMap.Add(commandId, command.AnonymousExecutor);
+            }
+            if (command.Executor != null)
+            {
+                commandIdToExecutorMap.Add(commandId, command.Executor);
+            }
             if (command.CompactExecutor != null)
             {
                 compactIdToExecutorMap.Add(commandId, command.CompactExecutor);
@@ -65,6 +95,8 @@ namespace LobotJR.Command
                 prefix = module.Name;
             }
 
+            module.PushNotification += Module_PushNotification;
+
             var exceptions = new List<Exception>();
             foreach (var command in module.Commands)
             {
@@ -82,6 +114,7 @@ namespace LobotJR.Command
             {
                 foreach (var subModule in module.SubModules)
                 {
+                    subModule.PushNotification += Module_PushNotification;
                     try
                     {
                         AddModule(subModule, prefix);
@@ -99,36 +132,37 @@ namespace LobotJR.Command
             }
         }
 
-        private bool CanUserExecute(string commandId, string user)
+        private void Module_PushNotification(string userId, CommandResult commandResult)
+        {
+            PushNotifications?.Invoke(userId, commandResult);
+        }
+
+        private bool CanUserExecute(string commandId, string userId)
         {
             var roles = RepositoryManager.UserRoles.Read().Where(x => x.CoversCommand(commandId));
-            return !roles.Any() || roles.Any(x => x.Users.Contains(user));
+            return !roles.Any() || roles.Any(x => x.UserIds.Contains(userId));
         }
 
-        public CommandManager(IRepositoryManager repositoryManager)
+        private bool CanExecuteAnonymously(string commandId)
+        {
+            var roles = RepositoryManager.UserRoles.Read().Where(x => x.CoversCommand(commandId));
+            return !roles.Any() && anonymousIdToExecutorMap.ContainsKey(commandId);
+        }
+
+        public CommandManager(IRepositoryManager repositoryManager, UserLookup userLookup)
         {
             RepositoryManager = repositoryManager;
-        }
-
-        /// <summary>
-        /// Initialize the command manager, loading role data and registering
-        /// the commands.
-        /// </summary>
-        public void Initialize(string broadcastUser, string chatUser)
-        {
-            commandStringToIdMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            commandIdToExecutorMap = new Dictionary<string, CommandExecutor>();
-            compactIdToExecutorMap = new Dictionary<string, CompactExecutor>();
+            UserLookup = userLookup;
         }
 
         /// <summary>
         /// Loads all registered command modules.
         /// </summary>
-        public void LoadAllModules()
+        /// <param name="systemManager">System manager containing all loaded systems.</param>
+        public void LoadAllModules(ISystemManager systemManager, Currency wolfcoins)
         {
-            var context = new SqliteContext();
             LoadModules(new AccessControlModule(this),
-                new FishingModule(RepositoryManager.TournamentResults));
+                new FishingModule(UserLookup, systemManager.Get<FishingSystem>(), RepositoryManager.TournamentResults, wolfcoins.coinList));
         }
 
         /// <summary>
@@ -165,9 +199,73 @@ namespace LobotJR.Command
             var index = commandId.IndexOf('*');
             if (index >= 0)
             {
-                return Commands.Any(x => x.StartsWith(commandId.Substring(0, index)));
+                if (!commandStringRegexMap.ContainsKey(commandId))
+                {
+                    var commandString = commandId.Replace(".", "\\.").Replace("*", ".*");
+                    commandStringRegexMap.Add(commandId, new Regex($"^{commandString}$"));
+                }
+                var commandRegex = commandStringRegexMap[commandId];
+                return Commands.Any(x => commandRegex.IsMatch(x));
             }
-            return commandIdToExecutorMap.ContainsKey(commandId);
+            return Commands.Any(x => x.Equals(commandId));
+        }
+
+        private CommandResult PrepareCompactResponse(CommandRequest request, ICompactResponse response)
+        {
+            var entries = response.ToCompact();
+            var prefix = $"{request.CommandString}: ";
+            var toSend = prefix;
+            var responses = new List<string>();
+            foreach (var entry in entries)
+            {
+                if (toSend.Length + entry.Length > MessageLimit)
+                {
+                    responses.Add(toSend);
+                    toSend = prefix;
+                }
+                toSend += entry;
+            }
+            responses.Add(toSend);
+            return new CommandResult(responses.ToArray());
+        }
+
+        private CommandResult TryExecuteCommand(CommandRequest request)
+        {
+            try
+            {
+                if (request.IsCompact)
+                {
+                    if (compactIdToExecutorMap.TryGetValue(request.CommandId, out var compactExecutor))
+                    {
+                        var compactResponse = compactExecutor.Invoke(request.Data, request.UserId);
+                        if (compactResponse != null)
+                        {
+                            return PrepareCompactResponse(request, compactResponse);
+                        }
+                        return new CommandResult($"Command requested produced no results.");
+                    }
+                    else
+                    {
+                        return new CommandResult($"Command {request.CommandId} does not support compact mode.");
+                    }
+                }
+                else
+                {
+                    if (commandIdToExecutorMap.TryGetValue(request.CommandId, out var executor))
+                    {
+                        return executor.Invoke(request.Data, request.UserId);
+                    }
+                    if (anonymousIdToExecutorMap.TryGetValue(request.CommandId, out var anonymousExecutor))
+                    {
+                        return anonymousExecutor.Invoke(request.Data);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                return new CommandResult(true, new Exception[] { e });
+            }
+            return new CommandResult();
         }
 
         /// <summary>
@@ -175,83 +273,24 @@ namespace LobotJR.Command
         /// </summary>
         /// <param name="message">The message the user sent.</param>
         /// <param name="user">The user's name.</param>
-        /// <param name="responses">The response messages to send to the user.</param>
         /// <returns>Whether a command was found and executed.</returns>
         public CommandResult ProcessMessage(string message, string user)
         {
-            var space = message.IndexOf(' ');
-            string commandString;
-            string data = null;
-            var compact = false;
-            if (space != -1)
+            var request = CommandRequest.Parse(message);
+            if (commandStringToIdMap.TryGetValue(request.CommandString, out var commandId))
             {
-                commandString = message.Substring(0, space);
-                data = message.Substring(space + 1);
-                compact = data.StartsWith("-c");
-                if (compact)
+                request.CommandId = commandId;
+                request.UserId = UserLookup.GetId(user);
+                if (request.UserId == null && !CanExecuteAnonymously(request.CommandId))
                 {
-                    data = data.Substring(2).TrimStart();
+                    return new CommandResult("User ID not found in cache, please try again in a few minutes. "
+                        + "If you continue to see this error, please let the streamer or a mod know.");
                 }
-            }
-            else
-            {
-                commandString = message;
-            }
-
-            if (commandStringToIdMap.TryGetValue(commandString, out var commandId))
-            {
-                if (CanUserExecute(commandId, user))
+                if (CanUserExecute(request.CommandId, request.UserId))
                 {
-                    try
-                    {
-                        if (compact)
-                        {
-                            if (compactIdToExecutorMap.TryGetValue(commandId, out var compactExecutor))
-                            {
-                                var compactResponse = compactExecutor.Invoke(data, user);
-                                if (compactResponse != null)
-                                {
-                                    var entries = compactResponse.ToCompact();
-                                    var prefix = $"{commandString}: ";
-                                    var toSend = prefix;
-                                    var responses = new List<string>();
-                                    foreach (var entry in entries)
-                                    {
-                                        if (toSend.Length + entry.Length > MessageLimit)
-                                        {
-                                            responses.Add(toSend);
-                                            toSend = prefix;
-                                        }
-                                        toSend += entry;
-                                    }
-                                    responses.Add(toSend);
-                                    return new CommandResult(responses.ToArray());
-                                }
-                            }
-                            else
-                            {
-                                return new CommandResult($"Command {commandId} does not support compact mode");
-                            }
-                        }
-                        else
-                        {
-                            var executor = commandIdToExecutorMap[commandId];
-                            var response = executor.Invoke(data, user);
-                            if (response != null)
-                            {
-                                return response;
-                            }
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        return new CommandResult(true, null, new Exception[] { e });
-                    }
+                    return TryExecuteCommand(request);
                 }
-                else
-                {
-                    return new CommandResult(true, null, new Exception[] { new UnauthorizedAccessException($"User \"{user}\" attempted to execute unauthorized command \"{message}\"") });
-                }
+                return new CommandResult(true, new Exception[] { new UnauthorizedAccessException($"User \"{user}\" attempted to execute unauthorized command \"{message}\"") });
             }
             return new CommandResult();
         }

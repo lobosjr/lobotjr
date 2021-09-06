@@ -1,17 +1,13 @@
-﻿using System;
+﻿using Companions;
+using Equipment;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading;
-using System.IO;
-using System.Windows.Forms;
-using Equipment;
-using Companions;
 
 namespace Classes
 {
 
-    class CharClass
+    public class CharClass
     {
         public const int WARRIOR = 1;
         public const int MAGE = 2;

@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 
-class Data
+public class Data
 {
     public int chatter_count { get; set; }
     public Chatters chatters { get; set; }
@@ -23,7 +19,7 @@ class Data
     
 }
 
-class SubscriberData
+public class SubscriberData
 {
     public class Links
     {
