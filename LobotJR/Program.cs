@@ -520,16 +520,28 @@ namespace TwitchBot
                 #region Import Legacy Data Into Sql
                 if (FishDataImport.ImportFishDataIntoSql(FishDataImport.FishDataPath, repoManager.FishData))
                 {
+                    if (File.Exists(FishDataImport.FishDataPath + ".backup"))
+                    {
+                        File.Delete(FishDataImport.FishDataPath + ".backup");
+                    }
                     File.Move(FishDataImport.FishDataPath, FishDataImport.FishDataPath + ".backup");
                 }
 
                 if (FisherDataImport.ImportFisherDataIntoSql(FisherDataImport.FisherDataPath, repoManager.Fishers, repoManager.FishData, userLookup, tokenData.BroadcastToken.AccessToken, clientData.ClientId))
                 {
+                    if (File.Exists(FisherDataImport.FisherDataPath + ".backup"))
+                    {
+                        File.Delete(FisherDataImport.FisherDataPath + ".backup");
+                    }
                     File.Move(FisherDataImport.FisherDataPath, FisherDataImport.FisherDataPath + ".backup");
                 }
 
                 if (FisherDataImport.ImportLeaderboardDataIntoSql(FisherDataImport.FishingLeaderboardPath, repoManager.FishingLeaderboard, repoManager.FishData, userLookup, tokenData.BroadcastToken.AccessToken, clientData.ClientId))
                 {
+                    if (File.Exists(FisherDataImport.FishingLeaderboardPath + ".backup"))
+                    {
+                        File.Delete(FisherDataImport.FishingLeaderboardPath + ".backup");
+                    }
                     File.Move(FisherDataImport.FishingLeaderboardPath, FisherDataImport.FishingLeaderboardPath + ".backup");
                 }
                 #endregion
