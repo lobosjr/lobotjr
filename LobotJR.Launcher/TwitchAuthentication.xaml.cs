@@ -20,8 +20,8 @@ namespace LobotJR.Launcher
     {
         private const string _cancelAuthUri = "https://id.twitch.tv/oauth2/authorize";
 
-        private static IEnumerable<string> _chatScopes = new List<string>(new string[] { "chat:read", "chat:edit", "whispers:read", "whispers:edit", "channel:moderate" });
-        private static IEnumerable<string> _broadcastScopes = new List<string>(new string[] { "channel_subscriptions" });
+        private static readonly IEnumerable<string> _chatScopes = new List<string>(new string[] { "chat:read", "chat:edit", "whispers:read", "whispers:edit", "channel:moderate" });
+        private static readonly IEnumerable<string> _broadcastScopes = new List<string>(new string[] { "channel_subscriptions" });
 
         private ClientData _clientData;
         private bool _isNavigating = false;
@@ -263,7 +263,7 @@ namespace LobotJR.Launcher
 
         private void LoadTwitchAuthPage(WebBrowser control, IEnumerable<string> scopes, string title)
         {
-            this.SetBrowserEmulation();
+            SetBrowserEmulation();
             LoginLabel.Content = title;
 
             var builder = new UriBuilder("https", "id.twitch.tv");

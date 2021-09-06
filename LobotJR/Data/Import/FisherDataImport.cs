@@ -44,7 +44,7 @@ namespace LobotJR.Data.Import
                     {
                         records.Add(new Catch()
                         {
-                            Fish = fishRepository.ReadById(fish.ID - 1),
+                            Fish = fishRepository.ReadById(fish.ID),
                             UserId = userLookup.GetId(fish.caughtBy),
                             Length = fish.length,
                             Weight = fish.weight
@@ -87,7 +87,7 @@ namespace LobotJR.Data.Import
                 {
                     leaderboardRepository.Create(new Catch()
                     {
-                        Fish = fishRepository.ReadById(record.ID - 1),
+                        Fish = fishRepository.ReadById(record.ID),
                         UserId = userLookup.GetId(record.caughtBy),
                         Length = record.length,
                         Weight = record.weight
