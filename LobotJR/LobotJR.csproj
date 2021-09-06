@@ -75,6 +75,7 @@
     </Reference>
     <Reference Include="SQLite.CodeFirst, Version=1.6.0.30, Culture=neutral, PublicKeyToken=eb96ba0a78d831a7, processorArchitecture=MSIL">
       <HintPath>..\packages\SQLite.CodeFirst.1.6.0.30\lib\net45\SQLite.CodeFirst.dll</HintPath>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
