@@ -518,31 +518,37 @@ namespace TwitchBot
                 #endregion
 
                 #region Import Legacy Data Into Sql
-                if (FishDataImport.ImportFishDataIntoSql(FishDataImport.FishDataPath, repoManager.FishData))
+                if (File.Exists(FishDataImport.FishDataPath))
                 {
-                    if (File.Exists(FishDataImport.FishDataPath + ".backup"))
-                    {
-                        File.Delete(FishDataImport.FishDataPath + ".backup");
-                    }
-                    File.Move(FishDataImport.FishDataPath, FishDataImport.FishDataPath + ".backup");
+                    Console.WriteLine("Detected legacy fish data file, migrating to SQLite.");
+                    FishDataImport.ImportFishDataIntoSql(FishDataImport.FishDataPath, repoManager.FishData);
+                    File.Move(FishDataImport.FishDataPath, $"{FishDataImport.FishDataPath}.{DateTime.Now.ToFileTimeUtc()}.backup");
+                    Console.WriteLine("Fish data migration complete!");
                 }
 
-                if (FisherDataImport.ImportFisherDataIntoSql(FisherDataImport.FisherDataPath, repoManager.Fishers, repoManager.FishData, userLookup, tokenData.BroadcastToken.AccessToken, clientData.ClientId))
+                var hasFisherData = File.Exists(FisherDataImport.FisherDataPath);
+                var hasLeaderboardData = File.Exists(FisherDataImport.FishingLeaderboardPath);
+                if (hasFisherData || hasLeaderboardData)
                 {
-                    if (File.Exists(FisherDataImport.FisherDataPath + ".backup"))
+                    Console.WriteLine("Detected legacy fisher data file, migrating to SQLite. This could take a few minutes.");
+                    IEnumerable<string> users = new List<string>();
+                    Dictionary<string, LegacyFisher> legacyFisherData = FisherDataImport.LoadLegacyFisherData(FisherDataImport.FisherDataPath);
+                    List<LegacyCatch> legacyLeaderboardData = FisherDataImport.LoadLegacyFishingLeaderboardData(FisherDataImport.FishingLeaderboardPath);
+                    Console.WriteLine("Converting usernames to user ids...");
+                    FisherDataImport.FetchUserIds(legacyFisherData.Keys.Union(legacyLeaderboardData.Select(x => x.caughtBy)), userLookup, tokenData.BroadcastToken.AccessToken, clientData.ClientId);
+                    if (hasFisherData)
                     {
-                        File.Delete(FisherDataImport.FisherDataPath + ".backup");
+                        Console.WriteLine("Importing user records...");
+                        FisherDataImport.ImportFisherDataIntoSql(legacyFisherData, repoManager.Fishers, repoManager.FishData, userLookup);
+                        File.Move(FisherDataImport.FisherDataPath, $"{FisherDataImport.FisherDataPath}.{DateTime.Now.ToFileTimeUtc()}.backup");
                     }
-                    File.Move(FisherDataImport.FisherDataPath, FisherDataImport.FisherDataPath + ".backup");
-                }
-
-                if (FisherDataImport.ImportLeaderboardDataIntoSql(FisherDataImport.FishingLeaderboardPath, repoManager.FishingLeaderboard, repoManager.FishData, userLookup, tokenData.BroadcastToken.AccessToken, clientData.ClientId))
-                {
-                    if (File.Exists(FisherDataImport.FishingLeaderboardPath + ".backup"))
+                    if (hasLeaderboardData)
                     {
-                        File.Delete(FisherDataImport.FishingLeaderboardPath + ".backup");
+                        Console.WriteLine("Importing leaderboard...");
+                        FisherDataImport.ImportLeaderboardDataIntoSql(legacyLeaderboardData, repoManager.FishingLeaderboard, repoManager.FishData, userLookup);
+                        File.Move(FisherDataImport.FishingLeaderboardPath, $"{FisherDataImport.FishingLeaderboardPath}.{DateTime.Now.ToFileTimeUtc()}.backup");
                     }
-                    File.Move(FisherDataImport.FishingLeaderboardPath, FisherDataImport.FishingLeaderboardPath + ".backup");
+                    Console.WriteLine("Fisher data migration complete!");
                 }
                 #endregion
 

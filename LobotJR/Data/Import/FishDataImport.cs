@@ -13,16 +13,17 @@ namespace LobotJR.Data.Import
     public class FishDataImport
     {
         public static readonly string FishDataPath = "content/fishlist.ini";
+        public static bool HasLegacyFishData { get { return File.Exists(FishDataPath); } }
 
         private static IEnumerable<FishSize> CreateFishSizes()
         {
             return new FishSize[]
             {
-                new FishSize() { Id = 0, Name = "Tiny", Message = "You feel a light tug at your line!" },
-                new FishSize() { Id = 1, Name = "Small", Message = "Something nibbles at your bait!" },
-                new FishSize() { Id = 2, Name = "Medium", Message = "A strong tug snags your bait!" },
-                new FishSize() { Id = 3, Name = "Large", Message = "Whoa! Something big grabs your line!" },
-                new FishSize() { Id = 4, Name = "Huge", Message = "You're almost pulled into the water! Something HUGE is hooked!" }
+                new FishSize() { Id = 1, Name = "Tiny", Message = "You feel a light tug at your line!" },
+                new FishSize() { Id = 2, Name = "Small", Message = "Something nibbles at your bait!" },
+                new FishSize() { Id = 3, Name = "Medium", Message = "A strong tug snags your bait!" },
+                new FishSize() { Id = 4, Name = "Large", Message = "Whoa! Something big grabs your line!" },
+                new FishSize() { Id = 5, Name = "Huge", Message = "You're almost pulled into the water! Something HUGE is hooked!" }
             };
         }
 
@@ -51,7 +52,7 @@ namespace LobotJR.Data.Import
             var rarities = new List<FishRarity>();
             for (var i = 0; i < chances.Count; i++)
             {
-                rarities.Add(new FishRarity() { Id = i, Name = "", Weight = chances[i] });
+                rarities.Add(new FishRarity() { Id = i + 1, Name = "", Weight = chances[i] });
             }
             return rarities;
         }
@@ -64,7 +65,7 @@ namespace LobotJR.Data.Import
             foreach (var line in fileText)
             {
                 var data = File.ReadAllLines($"content/fishing/{line}", UTF8Encoding.Default);
-                var id = fishDatabase.Count;
+                var id = fishDatabase.Count + 1;
                 var name = data[0].Split('=')[1];
                 int.TryParse(data[1].Split('=')[1], out var sizeCategory);
                 float.TryParse(data[2].Split('=')[1], out var lengthMin);
@@ -94,23 +95,26 @@ namespace LobotJR.Data.Import
         /// </summary>
         /// <param name="fishDataPath">The path to the file containing the fish data.</param>
         /// <param name="fishRepository">The repository to import the the fish data to.</param>
-        /// <returns>Whether or not the data was imported.</returns>
-        public static bool ImportFishDataIntoSql(string fishDataPath, IRepository<Fish> fishRepository)
+        /// <exception cref="DirectoryNotFoundException">If the path to fishDataPath does not exist.</exception>
+        /// <exception cref="IOException">If the attempt to access the file at fishDataPath throws an IOException.</exception>
+        /// <exception cref="FileNotFoundException">If the file at fishDataPath does not exist.</exception>
+        public static void ImportFishDataIntoSql(string fishDataPath, IRepository<Fish> fishRepository)
         {
-            if (File.Exists(fishDataPath))
-            {
-                var fishDatabase = LoadLegacyFishData(fishDataPath);
-                var sizes = CreateFishSizes();
-                var rarities = CreateFishRarities(fishDatabase.Select(x => x.rarity).Distinct().Count());
+            var fishDatabase = LoadLegacyFishData(fishDataPath);
+            var sizes = CreateFishSizes();
+            var rarities = CreateFishRarities(fishDatabase.Select(x => x.rarity).Distinct().Count());
 
-                foreach (var fish in fishDatabase.OrderBy(x => x.rarity))
+            var ids = fishRepository.Read().Select(x => x.Id).ToList();
+            foreach (var fish in fishDatabase.OrderBy(x => x.rarity))
+            {
+                if (!ids.Contains(fish.ID))
                 {
                     fishRepository.Create(new Fish()
                     {
                         Id = fish.ID,
                         Name = fish.name,
-                        SizeCategory = sizes.First(x => x.Id == fish.sizeCategory - 1),
-                        Rarity = rarities.First(x => x.Id == fish.rarity - 1),
+                        SizeCategory = sizes.First(x => x.Id == fish.sizeCategory),
+                        Rarity = rarities.First(x => x.Id == fish.rarity),
                         FlavorText = fish.flavorText,
                         MinimumLength = fish.lengthRange[0],
                         MaximumLength = fish.lengthRange[1],
@@ -118,10 +122,8 @@ namespace LobotJR.Data.Import
                         MaximumWeight = fish.weightRange[1]
                     });
                 }
-                fishRepository.Commit();
-                return true;
             }
-            return false;
+            fishRepository.Commit();
         }
     }
 

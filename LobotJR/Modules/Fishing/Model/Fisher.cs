@@ -1,6 +1,7 @@
 ﻿using LobotJR.Data;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace LobotJR.Modules.Fishing.Model
@@ -13,6 +14,7 @@ namespace LobotJR.Modules.Fishing.Model
         /// <summary>
         /// The twitch id for the user.
         /// </summary>
+        [Required]
         public string UserId { get; set; }
         /// <summary>
         /// Collection of record catches for this user.

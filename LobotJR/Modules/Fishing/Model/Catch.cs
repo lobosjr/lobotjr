@@ -1,4 +1,5 @@
 ﻿using LobotJR.Data;
+using System.ComponentModel.DataAnnotations;
 
 namespace LobotJR.Modules.Fishing.Model
 {
@@ -10,10 +11,12 @@ namespace LobotJR.Modules.Fishing.Model
         /// <summary>
         /// The user that caught the fish.
         /// </summary>
+        [Required]
         public string UserId { get; set; }
         /// <summary>
         /// The fish that was caught.
         /// </summary>
+        [Required]
         public Fish Fish { get; set; }
         /// <summary>
         /// The length of the fish.
