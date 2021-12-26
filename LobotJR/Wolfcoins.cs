@@ -927,12 +927,24 @@ namespace Wolfcoins
             var json = JsonConvert.SerializeObject(xpList);
             var bytes = Encoding.UTF8.GetBytes(json);
             string backupPath = "backup/XP";
+            if (!Directory.Exists(backupPath))
+            {
+                Directory.CreateDirectory(backupPath);
+            }
             var json2 = JsonConvert.SerializeObject(classList);
             var bytes2 = Encoding.UTF8.GetBytes(json2);
             string backupPath2 = "backup/ClassData";
+            if (!Directory.Exists(backupPath2))
+            {
+                Directory.CreateDirectory(backupPath2);
+            }
             var json3 = JsonConvert.SerializeObject(coinList);
             var bytes3 = Encoding.UTF8.GetBytes(json3);
             string backupPath3 = "backup/Coins";
+            if (!Directory.Exists(backupPath3))
+            {
+                Directory.CreateDirectory(backupPath3);
+            }
             DateTime now = DateTime.Now;
             backupPath = backupPath + now.Day + now.Month + now.Year + now.Hour + now.Minute + now.Second;
             backupPath2 = backupPath2 + now.Day + now.Month + now.Year + now.Hour + now.Minute + now.Second;
