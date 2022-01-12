@@ -15,6 +15,7 @@ namespace LobotJR.Data
         public IRepository<Fisher> Fishers { get; }
         public IRepository<Catch> FishingLeaderboard { get; }
         public IRepository<TournamentResult> TournamentResults { get; private set; }
+        public IRepository<TournamentEntry> TournamentEntries { get; private set; }
         public IRepository<Fish> FishData { get; private set; }
 
         public SqliteRepositoryManager(SqliteContext context)
@@ -25,6 +26,7 @@ namespace LobotJR.Data
             Fishers = new SqliteRepository<Fisher>(context);
             FishingLeaderboard = new SqliteRepository<Catch>(context);
             TournamentResults = new SqliteRepository<TournamentResult>(context);
+            TournamentEntries = new SqliteRepository<TournamentEntry>(context);
 
             FishData = new SqliteRepository<Fish>(context);
         }

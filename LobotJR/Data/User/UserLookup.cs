@@ -40,13 +40,14 @@ namespace LobotJR.Data.User
         /// Gets a twitch id from it's associated username.
         /// </summary>
         /// <param name="username">The username.</param>
+        /// <param name="cache">Whether or not to cache the user if the id isn't found. Defaults to true.</param>
         /// <returns>The twitch id.</returns>
-        public string GetId(string username)
+        public string GetId(string username, bool cache = true)
         {
             var entry = UserMap.Read(x => x.Username.Equals(username, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             if (entry == null)
             {
-                if (!cacheMisses.Contains(username))
+                if (!cacheMisses.Contains(username) && cache)
                 {
                     cacheMisses.Add(username);
                 }

@@ -464,10 +464,21 @@ namespace TwitchBot
             #region Sql Data Setup
             var context = new SqliteContext();
             context.Database.Initialize(false);
+
             var repoManager = new SqliteRepositoryManager(context);
             var userLookup = new UserLookup(repoManager.Users, new AppSettings());
             var updater = new SqliteDatabaseUpdater(repoManager, context, userLookup, tokenData.BroadcastToken.AccessToken, clientData.ClientId);
-            updater.UpdateDatabase();
+
+            if (updater.GetDatabaseVersion(repoManager) < SqliteDatabaseUpdater.LatestVersion)
+            {
+                Console.WriteLine($"Database is out of date, updating to {SqliteDatabaseUpdater.LatestVersion}. This could take a few minutes.");
+                var updateResult = updater.UpdateDatabase();
+                if (!updateResult.Success)
+                {
+                    throw new Exception($"Error occurred updating database from {updateResult.PreviousVersion} to {updateResult.NewVersion}. {updateResult.DebugOutput}");
+                }
+                Console.WriteLine("Update complete!");
+            }
             var appSettings = repoManager.AppSettings.Read().FirstOrDefault();
             if (appSettings == null)
             {

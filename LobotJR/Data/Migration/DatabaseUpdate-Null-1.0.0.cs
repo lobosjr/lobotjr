@@ -2,6 +2,7 @@
 using NuGet.Versioning;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace LobotJR.Data.Migration
 {
@@ -72,11 +73,24 @@ namespace LobotJR.Data.Migration
 
             foreach (var tournament in repositoryManager.TournamentResults.Read())
             {
+                var names = tournament.Entries.Select(x => x.UserId).ToList();
                 foreach (var entry in tournament.Entries)
                 {
-                    entry.UserId = UserLookup.GetId(entry.UserId);
+                    entry.UserId = UserLookup.GetId(entry.UserId, false);
                 }
-                repositoryManager.TournamentResults.Update(tournament);
+                foreach (var entry in tournament.Entries.Where(x => x.UserId == null).ToList())
+                {
+                    repositoryManager.TournamentEntries.DeleteById(entry.Id);
+                }
+                tournament.Entries = tournament.Entries.Where(x => x.UserId != null).ToList();
+                if (tournament.Entries.Count > 0)
+                {
+                    repositoryManager.TournamentResults.Update(tournament);
+                }
+                else
+                {
+                    repositoryManager.TournamentResults.DeleteById(tournament.Id);
+                }
             }
             repositoryManager.TournamentResults.Commit();
             foreach (var userRole in repositoryManager.UserRoles.Read())
