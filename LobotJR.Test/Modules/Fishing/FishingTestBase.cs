@@ -16,7 +16,7 @@ namespace LobotJR.Test.Modules.Fishing
 
         protected ListRepository<Fish> FishDataMock;
         protected ListRepository<Fisher> FishersMock;
-        protected ListRepository<Catch> LeaderboardMock;
+        protected ListRepository<LeaderboardEntry> LeaderboardMock;
         protected ListRepository<TournamentResult> TournamentResultsMock;
         protected ListRepository<AppSettings> AppSettingsMock;
         protected ListRepository<UserMap> UserMapMock;
@@ -81,15 +81,24 @@ namespace LobotJR.Test.Modules.Fishing
             };
         }
 
-        private List<Catch> CreateLeaderboardFromFishers(List<Fish> fishData, List<Fisher> fisherData)
+        private List<LeaderboardEntry> CreateLeaderboardFromFishers(List<Fish> fishData, List<Fisher> fisherData)
         {
-            var output = new List<Catch>();
+            var output = new List<LeaderboardEntry>();
             var records = fisherData.Select(x => x.Records);
             foreach (var fish in fishData)
             {
                 var catches = fisherData.Select(x => x.Records.Where(y => y.Fish.Id == fish.Id).FirstOrDefault());
-                var ordered = catches.Where(x => x != null).OrderByDescending(x => x.Weight);
-                output.Add(ordered.First());
+                var ordered = catches.Where(x => x != null).OrderByDescending(x => x.Weight).FirstOrDefault();
+                if (ordered != null)
+                {
+                    output.Add(new LeaderboardEntry()
+                    {
+                        Fish = ordered.Fish,
+                        Length = ordered.Length,
+                        Weight = ordered.Weight,
+                        UserId = ordered.UserId
+                    });
+                }
             }
             return output;
         }
@@ -113,7 +122,7 @@ namespace LobotJR.Test.Modules.Fishing
             }.ToList();
             FishersMock = new ListRepository<Fisher>(FisherData);
 
-            LeaderboardMock = new ListRepository<Catch>(CreateLeaderboardFromFishers(FishData, FisherData));
+            LeaderboardMock = new ListRepository<LeaderboardEntry>(CreateLeaderboardFromFishers(FishData, FisherData));
 
             UserMapData = new UserMap[]
             {

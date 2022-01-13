@@ -13,7 +13,8 @@ namespace LobotJR.Data
         IRepository<UserMap> Users { get; }
         IRepository<UserRole> UserRoles { get; }
         IRepository<Fisher> Fishers { get; }
-        IRepository<Catch> FishingLeaderboard { get; }
+        IRepository<LeaderboardEntry> FishingLeaderboard { get; }
         IRepository<TournamentResult> TournamentResults { get; }
+        IRepository<TournamentEntry> TournamentEntries { get; }
     }
 }

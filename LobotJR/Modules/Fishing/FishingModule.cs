@@ -69,7 +69,7 @@ namespace LobotJR.Modules.Fishing
             PushNotification?.Invoke(fisher.UserId, new CommandResult("Heck! The fish got away. Maybe next time..."));
         }
 
-        private void FishingSystem_NewGlobalRecord(Catch catchData)
+        private void FishingSystem_NewGlobalRecord(LeaderboardEntry catchData)
         {
             var recordMessage = $"{UserLookup.GetUsername(catchData.UserId)} just caught the heaviest {catchData.Fish.Name} ever! It weighs {catchData.Weight} pounds!";
             PushNotification?.Invoke(null, new CommandResult() { Messages = new string[] { recordMessage } });
@@ -140,9 +140,9 @@ namespace LobotJR.Modules.Fishing
             }
         }
 
-        public CompactCollection<Catch> GlobalLeaderboardCompact(string data, string userId)
+        public CompactCollection<LeaderboardEntry> GlobalLeaderboardCompact(string data, string userId)
         {
-            return new CompactCollection<Catch>(FishingSystem.GetLeaderboard(), x => $"{x.Fish.Name}|{x.Length}|{x.Weight}|{UserLookup.GetUsername(x.UserId)};");
+            return new CompactCollection<LeaderboardEntry>(FishingSystem.GetLeaderboard(), x => $"{x.Fish.Name}|{x.Length}|{x.Weight}|{UserLookup.GetUsername(x.UserId)};");
         }
 
         public CommandResult GlobalLeaderboard(string data)

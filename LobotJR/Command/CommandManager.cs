@@ -114,7 +114,6 @@ namespace LobotJR.Command
             {
                 foreach (var subModule in module.SubModules)
                 {
-                    subModule.PushNotification += Module_PushNotification;
                     try
                     {
                         AddModule(subModule, prefix);

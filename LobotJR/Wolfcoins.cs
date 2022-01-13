@@ -81,7 +81,6 @@ namespace Wolfcoins
         public Data viewers = new Data();
         List<string> viewerList = new List<string>();
         public HashSet<string> subSet = new HashSet<string>();
-        public List<SubscriberData.Subscription> subsList = new List<SubscriberData.Subscription>();
         private readonly string path = "wolfcoins.json";
         private readonly string xpPath = "XP.json";
         private readonly string classPath = "classData.json";
@@ -556,18 +555,15 @@ namespace Wolfcoins
 
         public void UpdateSubs(string broadcastToken, string clientId)
         {
-            // ALERT: You can get rid of the dynamic lookup and just use a static channel id
-            // Your channel id is 28640725
             var userData = Users.Get(broadcastToken, clientId);
             var channelId = userData.Data.First().Id;
-            var nextLink = $"https://api.twitch.tv/kraken/channels/{channelId}/subscriptions?limit=100&offset=0";
-            var offset = 0;
+            var nextLink = $"https://api.twitch.tv/helix/subscriptions?broadcaster_id={channelId}&first=100";
             do
             {
                 var request = (HttpWebRequest)WebRequest.Create(nextLink);
                 request.Accept = "application/vnd.twitchtv.v5+json";
                 request.Headers.Add("Client-ID", clientId);
-                request.Headers.Add("Authorization", string.Format("OAuth {0}", broadcastToken));
+                request.Headers.Add("Authorization", string.Format("Bearer {0}", broadcastToken));
                 request.UserAgent = "LobosJrBot";
 
                 try
@@ -585,18 +581,20 @@ namespace Wolfcoins
                             {
                                 var data = reader.ReadToEnd();
                                 var subList = JsonConvert.DeserializeObject<SubscriberData.RootObject>(data);
-                                if (subList.subscriptions.Count > 0)
+                                if (subList.data.Count > 0)
                                 {
-                                    if (!string.IsNullOrWhiteSpace(subList._cursor))
+                                    if (!string.IsNullOrWhiteSpace(subList.pagination.cursor))
                                     {
-                                        nextLink = $"https://api.twitch.tv/kraken/channels/{channelId}/subscriptions?cursor={subList._cursor}";
+                                        nextLink = $"https://api.twitch.tv/helix/subscriptions?broadcaster_id={channelId}&after={subList.pagination.cursor}&first=100";
                                     }
                                     else
                                     {
-                                        offset += subList.subscriptions.Count;
-                                        nextLink = $"https://api.twitch.tv/kraken/channels/{channelId}/subscriptions?limit=100&offset={offset}";
+                                        nextLink = "";
                                     }
-                                    subsList.AddRange(subList.subscriptions);
+                                    foreach (var datum in subList.data)
+                                    {
+                                        subSet.Add(datum.user_name);
+                                    }
                                 }
                                 else
                                 {
@@ -614,10 +612,6 @@ namespace Wolfcoins
                 }
             } while (!string.IsNullOrWhiteSpace(nextLink));
 
-            foreach (var sub in subsList)
-            {
-                subSet.Add(sub.user.name);
-            }
             Console.WriteLine("Subscriber list may or may not have been updated!");
         }
 
@@ -927,12 +921,24 @@ namespace Wolfcoins
             var json = JsonConvert.SerializeObject(xpList);
             var bytes = Encoding.UTF8.GetBytes(json);
             string backupPath = "backup/XP";
+            if (!Directory.Exists(backupPath))
+            {
+                Directory.CreateDirectory(backupPath);
+            }
             var json2 = JsonConvert.SerializeObject(classList);
             var bytes2 = Encoding.UTF8.GetBytes(json2);
             string backupPath2 = "backup/ClassData";
+            if (!Directory.Exists(backupPath2))
+            {
+                Directory.CreateDirectory(backupPath2);
+            }
             var json3 = JsonConvert.SerializeObject(coinList);
             var bytes3 = Encoding.UTF8.GetBytes(json3);
             string backupPath3 = "backup/Coins";
+            if (!Directory.Exists(backupPath3))
+            {
+                Directory.CreateDirectory(backupPath3);
+            }
             DateTime now = DateTime.Now;
             backupPath = backupPath + now.Day + now.Month + now.Year + now.Hour + now.Minute + now.Second;
             backupPath2 = backupPath2 + now.Day + now.Month + now.Year + now.Hour + now.Minute + now.Second;

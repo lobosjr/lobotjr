@@ -17,7 +17,7 @@ namespace LobotJR.Modules.Fishing
 
         private readonly IRepository<Fish> FishData;
         private readonly IRepository<Fisher> Fishers;
-        private readonly IRepository<Catch> Leaderboard;
+        private readonly IRepository<LeaderboardEntry> Leaderboard;
 
         private readonly AppSettings Settings;
         /// <summary>
@@ -29,7 +29,7 @@ namespace LobotJR.Modules.Fishing
         /// Event handler for events related to the leaderboard.
         /// </summary>
         /// <param name="catchData">The catch data the leaderboard was updated with.</param>
-        public delegate void LeaderboardEventHandler(Catch catchData);
+        public delegate void LeaderboardEventHandler(LeaderboardEntry catchData);
 
         /// <summary>
         /// Event fired when a user hooks a fish.
@@ -57,7 +57,7 @@ namespace LobotJR.Modules.Fishing
         public FishingSystem(
             IRepository<Fish> fishData,
             IRepository<Fisher> fishers,
-            IRepository<Catch> leaderboard,
+            IRepository<LeaderboardEntry> leaderboard,
             IRepository<TournamentResult> tournamentResults,
             IRepository<AppSettings> appSettings)
         {
@@ -79,7 +79,7 @@ namespace LobotJR.Modules.Fishing
             FishGotAway?.Invoke(fisher);
         }
 
-        private void OnNewGlobalRecord(Catch catchData)
+        private void OnNewGlobalRecord(LeaderboardEntry catchData)
         {
             NewGlobalRecord?.Invoke(catchData);
         }
@@ -99,7 +99,7 @@ namespace LobotJR.Modules.Fishing
         /// </summary>
         /// <returns>A collection of catch data containing the largest catch of
         /// each fish.</returns>
-        public IEnumerable<Catch> GetLeaderboard()
+        public IEnumerable<LeaderboardEntry> GetLeaderboard()
         {
             return Leaderboard.Read();
         }
@@ -216,20 +216,27 @@ namespace LobotJR.Modules.Fishing
                 return false;
             }
 
+            var entry = new LeaderboardEntry()
+            {
+                Fish = catchData.Fish,
+                Length = catchData.Length,
+                Weight = catchData.Weight,
+                UserId = catchData.UserId
+            };
             var record = Leaderboard.Read(x => x.Fish.Equals(catchData.Fish)).FirstOrDefault();
             if (record == null || record.Weight < catchData.Weight)
             {
                 if (record == null)
                 {
-                    Leaderboard.Create(catchData);
+                    Leaderboard.Create(entry);
                 }
                 else
                 {
-                    record.CopyFrom(catchData);
+                    record.CopyFrom(entry);
                     Leaderboard.Update(record);
                 }
                 Leaderboard.Commit();
-                OnNewGlobalRecord(catchData);
+                OnNewGlobalRecord(entry);
                 return true;
             }
             return false;

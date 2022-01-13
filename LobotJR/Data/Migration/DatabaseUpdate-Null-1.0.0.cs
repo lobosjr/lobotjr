@@ -2,6 +2,7 @@
 using NuGet.Versioning;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace LobotJR.Data.Migration
 {
@@ -28,6 +29,7 @@ namespace LobotJR.Data.Migration
             {
                 "CREATE TABLE \"AppSettings\" ([Id] INTEGER PRIMARY KEY, [DatabaseVersion] nvarchar, [GeneralCacheUpdateTime] int NOT NULL, [FishingCastMinimum] int NOT NULL, [FishingCastMaximum] int NOT NULL, [FishingHookLength] int NOT NULL, [FishingUseNormalRarity] bit NOT NULL, [FishingUseNormalSizes] bit NOT NULL, [FishingGloatCost] int NOT NULL, [FishingTournamentDuration] int NOT NULL, [FishingTournamentInterval] int NOT NULL, [FishingTournamentCastMinimum] int NOT NULL, [FishingTournamentCastMaximum] int NOT NULL)",
                 "CREATE TABLE \"Catches\" ([Id] INTEGER PRIMARY KEY, [UserId] nvarchar, [Length] real NOT NULL, [Weight] real NOT NULL, [Points] int NOT NULL, [Fish_Id] int, [Fisher_Id] int, FOREIGN KEY (Fish_Id) REFERENCES \"Fish\"(Id), FOREIGN KEY (Fisher_Id) REFERENCES \"Fishers\"(Id))",
+                "CREATE TABLE \"LeaderboardEntries\" ([Id] INTEGER PRIMARY KEY, [UserId] nvarchar, [Length] real NOT NULL, [Weight] real NOT NULL, [Fish_Id] int, FOREIGN KEY (Fish_Id) REFERENCES \"Fish\"(Id))",
                 "CREATE TABLE \"Fish\" ([Id] INTEGER PRIMARY KEY, [Name] nvarchar, [MinimumLength] real NOT NULL, [MaximumLength] real NOT NULL, [MinimumWeight] real NOT NULL, [MaximumWeight] real NOT NULL, [FlavorText] nvarchar, [Rarity_Id] int, [SizeCategory_Id] int, FOREIGN KEY (Rarity_Id) REFERENCES \"FishRarities\"(Id), FOREIGN KEY (SizeCategory_Id) REFERENCES \"FishSizes\"(Id))",
                 "CREATE TABLE \"FishRarities\" ([Id] INTEGER PRIMARY KEY, [Name] nvarchar, [Weight] real NOT NULL)",
                 "CREATE TABLE \"FishSizes\" ([Id] INTEGER PRIMARY KEY, [Name] nvarchar, [Message] nvarchar)",
@@ -72,11 +74,24 @@ namespace LobotJR.Data.Migration
 
             foreach (var tournament in repositoryManager.TournamentResults.Read())
             {
+                var names = tournament.Entries.Select(x => x.UserId).ToList();
                 foreach (var entry in tournament.Entries)
                 {
-                    entry.UserId = UserLookup.GetId(entry.UserId);
+                    entry.UserId = UserLookup.GetId(entry.UserId, false);
                 }
-                repositoryManager.TournamentResults.Update(tournament);
+                foreach (var entry in tournament.Entries.Where(x => x.UserId == null).ToList())
+                {
+                    repositoryManager.TournamentEntries.DeleteById(entry.Id);
+                }
+                tournament.Entries = tournament.Entries.Where(x => x.UserId != null).ToList();
+                if (tournament.Entries.Count > 0)
+                {
+                    repositoryManager.TournamentResults.Update(tournament);
+                }
+                else
+                {
+                    repositoryManager.TournamentResults.DeleteById(tournament.Id);
+                }
             }
             repositoryManager.TournamentResults.Commit();
             foreach (var userRole in repositoryManager.UserRoles.Read())

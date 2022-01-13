@@ -1,4 +1,5 @@
-﻿using LobotJR.Shared.Authentication;
+﻿using CefSharp.Wpf;
+using LobotJR.Shared.Authentication;
 using LobotJR.Shared.Client;
 using LobotJR.Shared.Utility;
 using Microsoft.Win32;
@@ -8,8 +9,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Navigation;
 
 namespace LobotJR.Launcher
 {
@@ -18,13 +17,12 @@ namespace LobotJR.Launcher
     /// </summary>
     public partial class MainWindow : Window
     {
-        private const string _cancelAuthUri = "https://id.twitch.tv/oauth2/authorize";
+        private const string _cancelError = "error=access_denied";
 
-        private static IEnumerable<string> _chatScopes = new List<string>(new string[] { "chat:read", "chat:edit", "whispers:read", "whispers:edit", "channel:moderate" });
-        private static IEnumerable<string> _broadcastScopes = new List<string>(new string[] { "channel_subscriptions" });
+        private static readonly IEnumerable<string> _chatScopes = new List<string>(new string[] { "chat:read", "chat:edit", "whispers:read", "whispers:edit", "channel:moderate" });
+        private static readonly IEnumerable<string> _broadcastScopes = new List<string>(new string[] { "channel:read:subscriptions" });
 
         private ClientData _clientData;
-        private bool _isNavigating = false;
         private string _state = Guid.NewGuid().ToString();
 
         private TokenData _tokenData;
@@ -53,67 +51,6 @@ namespace LobotJR.Launcher
             }
         }
 
-        private void Browser_Navigated(object sender, NavigationEventArgs e)
-        {
-            if (_isNavigating)
-            {
-                // The wpf browser control doesn't have an event for redirects or load failures
-                // if we get to the navigated event twice without a load complete, it's probably
-                // a redirect, which means our twitch client data is wrong.
-                MessageBox.Show(this, "Unable to load twitch authentication page, please confirm your client data and try again.", "Twitch Authentication Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                LaunchClientDataUpdater(_clientData);
-
-            }
-            _isNavigating = true;
-
-            if (e.Uri.ToString().Equals(_cancelAuthUri))
-            {
-                Close();
-            }
-            else if (e.Uri.ToString().StartsWith(_clientData.RedirectUri))
-            {
-                if (_tokenData.ChatToken == null)
-                {
-                    _tokenData.ChatToken = HandleAuthResponse(e.Uri);
-                    var validationResponse = AuthToken.Validate(_tokenData.ChatToken.AccessToken);
-                    _tokenData.ChatUser = validationResponse.Login;
-                    if (_tokenData.ChatToken == null)
-                    {
-                        MessageBox.Show("Failed to re-obtain chat token, trying again.");
-                        LoadTwitchAuthPage(Browser, _chatScopes, "Bot Account");
-                    }
-                    else if (_tokenData.BroadcastToken == null)
-                    {
-                        LoadTwitchAuthPage(Browser, _broadcastScopes, "Streamer Account");
-                    }
-                    else
-                    {
-                        LaunchBot();
-                    }
-                }
-                else
-                {
-                    _tokenData.BroadcastToken = HandleAuthResponse(e.Uri);
-                    var validationResponse = AuthToken.Validate(_tokenData.BroadcastToken.AccessToken);
-                    _tokenData.BroadcastUser = validationResponse.Login;
-                    if (_tokenData.BroadcastToken == null)
-                    {
-                        MessageBox.Show("Failed to obtain broadcast token, trying again.");
-                        LoadTwitchAuthPage(Browser, _broadcastScopes, "Streamer Account");
-                    }
-                    else
-                    {
-                        LaunchBot();
-                    }
-                }
-            }
-        }
-
-        private void Browser_LoadCompleted(object sender, NavigationEventArgs e)
-        {
-            _isNavigating = false;
-        }
-
         private void SetBrowserEmulation()
         {
             var browserEmulationKey = @"SOFTWARE\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_BROWSER_EMULATION";
@@ -133,14 +70,17 @@ namespace LobotJR.Launcher
         private void LaunchBot()
         {
             FileUtils.WriteTokenData(_tokenData);
-            Hide();
-            using (var lobot = new Process())
+            Dispatcher.Invoke(() =>
             {
-                lobot.StartInfo.FileName = "LobotJR.exe";
-                lobot.StartInfo.UseShellExecute = true;
-                lobot.Start();
-            }
-            Close();
+                Hide();
+                using (var lobot = new Process())
+                {
+                    lobot.StartInfo.FileName = "LobotJR.exe";
+                    lobot.StartInfo.UseShellExecute = true;
+                    lobot.Start();
+                }
+                Close();
+            });
         }
 
         private TokenResponse HandleAuthResponse(Uri uri)
@@ -261,26 +201,77 @@ namespace LobotJR.Launcher
             }
         }
 
-        private void LoadTwitchAuthPage(WebBrowser control, IEnumerable<string> scopes, string title)
+        private void LoadTwitchAuthPage(ChromiumWebBrowser control, IEnumerable<string> scopes, string title)
         {
-            this.SetBrowserEmulation();
-            LoginLabel.Content = title;
+            SetBrowserEmulation();
+            Dispatcher.Invoke((Action)(() =>
+            {
+                LoginLabel.Content = title;
 
-            var builder = new UriBuilder("https", "id.twitch.tv");
-            builder.Path = "oauth2/authorize";
-            AddQuery(builder, "client_id", _clientData.ClientId);
-            AddQuery(builder, "redirect_uri", _clientData.RedirectUri);
-            AddQuery(builder, "response_type", "code");
-            AddQuery(builder, "scope", string.Join(" ", scopes));
-            AddQuery(builder, "force_verify", "true");
-            AddQuery(builder, "state", _state);
-            control.Navigate(builder.Uri);
+                var builder = new UriBuilder("https", "id.twitch.tv");
+                builder.Path = "oauth2/authorize";
+                AddQuery(builder, "client_id", _clientData.ClientId);
+                AddQuery(builder, "redirect_uri", _clientData.RedirectUri);
+                AddQuery(builder, "response_type", "code");
+                AddQuery(builder, "scope", string.Join(" ", scopes));
+                AddQuery(builder, "force_verify", "true");
+                AddQuery(builder, "state", _state);
+                control.Load(builder.Uri.ToString());
+            }));
         }
 
         private void UpdateClientData_Click(object sender, RoutedEventArgs e)
         {
             LaunchClientDataUpdater(_clientData);
             LoadTwitchAuthPage(Browser, _chatScopes, "Chat Account");
+        }
+
+        private void Browser_FrameLoadEnd(object sender, CefSharp.FrameLoadEndEventArgs e)
+        {
+            if (e.Url.StartsWith(_clientData.RedirectUri))
+            {
+                if (new Uri(e.Url).Query.Contains(_cancelError))
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        Close();
+                    });
+                }
+                else if (_tokenData.ChatToken == null)
+                {
+                    _tokenData.ChatToken = HandleAuthResponse(new Uri(e.Url));
+                    var validationResponse = AuthToken.Validate(_tokenData.ChatToken.AccessToken);
+                    _tokenData.ChatUser = validationResponse.Login;
+                    if (_tokenData.ChatToken == null)
+                    {
+                        MessageBox.Show("Failed to re-obtain chat token, trying again.");
+                        LoadTwitchAuthPage(Browser, _chatScopes, "Bot Account");
+                    }
+                    else if (_tokenData.BroadcastToken == null)
+                    {
+                        LoadTwitchAuthPage(Browser, _broadcastScopes, "Streamer Account");
+                    }
+                    else
+                    {
+                        LaunchBot();
+                    }
+                }
+                else
+                {
+                    _tokenData.BroadcastToken = HandleAuthResponse(new Uri(e.Url));
+                    var validationResponse = AuthToken.Validate(_tokenData.BroadcastToken.AccessToken);
+                    _tokenData.BroadcastUser = validationResponse.Login;
+                    if (_tokenData.BroadcastToken == null)
+                    {
+                        MessageBox.Show("Failed to obtain broadcast token, trying again.");
+                        LoadTwitchAuthPage(Browser, _broadcastScopes, "Streamer Account");
+                    }
+                    else
+                    {
+                        LaunchBot();
+                    }
+                }
+            }
         }
     }
 }

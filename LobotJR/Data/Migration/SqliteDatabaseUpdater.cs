@@ -1,5 +1,6 @@
 ﻿using LobotJR.Data.User;
 using NuGet.Versioning;
+using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data.Entity.Core;
@@ -58,7 +59,7 @@ namespace LobotJR.Data.Migration
 
         public string BackupDatabase(string databaseFile, SemanticVersion currentVersion)
         {
-            var backupFile = $"{databaseFile}-{currentVersion}.backup";
+            var backupFile = $"{databaseFile}-{currentVersion}-{DateTime.Now.ToFileTimeUtc()}.backup";
             File.Copy(databaseFile, backupFile);
             return backupFile;
         }

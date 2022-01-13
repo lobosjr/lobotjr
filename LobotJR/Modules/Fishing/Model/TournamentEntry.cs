@@ -1,4 +1,5 @@
 ﻿using LobotJR.Data;
+using System.ComponentModel.DataAnnotations;
 
 namespace LobotJR.Modules.Fishing.Model
 {
@@ -10,7 +11,8 @@ namespace LobotJR.Modules.Fishing.Model
         /// <summary>
         /// The id of the user this entry is for.
         /// </summary>
-        public string UserId { get; set; }  //This needs DB migration to not wipe the data.
+        [Required]
+        public string UserId { get; set; }
         /// <summary>
         /// The total points the user scored.
         /// </summary>

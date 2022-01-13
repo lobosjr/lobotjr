@@ -262,7 +262,7 @@ namespace LobotJR.Test.Systems.Fishing
         public void UpdatesGlobalLeaderboardWithExistingFishType()
         {
             LeaderboardMock.Data.Clear();
-            LeaderboardMock.Data.Add(new Catch()
+            LeaderboardMock.Data.Add(new LeaderboardEntry()
             {
                 Fish = FishData[0],
                 Weight = 10
@@ -290,7 +290,7 @@ namespace LobotJR.Test.Systems.Fishing
         public void UpdateGlobalLeaderboardReturnsFalseWhenCatchIsNotNewRecord()
         {
             LeaderboardMock.Data.Clear();
-            LeaderboardMock.Data.Add(new Catch()
+            LeaderboardMock.Data.Add(new LeaderboardEntry()
             {
                 Fish = FishData[0],
                 Weight = 100
@@ -445,7 +445,7 @@ namespace LobotJR.Test.Systems.Fishing
             var catchData = System.CatchFish(fisher);
             Assert.IsNotNull(catchData);
             Assert.AreEqual(1, LeaderboardMock.Data.Count);
-            callbackMock.Verify(x => x(It.IsAny<Catch>()), Times.Once);
+            callbackMock.Verify(x => x(It.IsAny<LeaderboardEntry>()), Times.Once);
         }
 
         [TestMethod]

@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace LobotJR.Data.Import
 {
@@ -17,86 +18,135 @@ namespace LobotJR.Data.Import
         public static readonly string FishingLeaderboardPath = "fishingLeaderboard.json";
 
         /// <summary>
-        /// Read the data from the legacy flat-file format, add them to the new
-        /// repository, and commit the new data.
+        /// Loads the list of fishers and their personal leaderboards from
+        /// legacy data files.
         /// </summary>
         /// <param name="fisherDataPath">The path to the file containing the fisher data.</param>
-        /// <param name="fisherRepository">The repository to import the fisher data to.</param>
-        /// <param name="fishRepository">The repository containing the fish data.</param>
-        /// <param name="userLookup">The user lookup system to convert the stored usernames into user ids.</param>
-        /// <param name="token">The oauth token used to fetch user ids.</param>
-        /// <param name="clientId">The client id used to identify the call to fetch the user ids.</param>
-        /// <returns>Whether or not the data was imported.</returns>
-        public static bool ImportFisherDataIntoSql(string fisherDataPath, IRepository<Fisher> fisherRepository, IRepository<Fish> fishRepository, UserLookup userLookup, string token, string clientId)
+        /// <returns>A collection of fisher leaderboards mapped to twitch usernames.</returns>
+        public static Dictionary<string, LegacyFisher> LoadLegacyFisherData(string fisherDataPath)
         {
-            if (File.Exists(fisherDataPath))
+            try
             {
-                var fisherList = JsonConvert.DeserializeObject<Dictionary<string, LegacyFisher>>(File.ReadAllText(FisherDataPath));
-                foreach (var fisher in fisherList)
-                {
-                    userLookup.GetId(fisher.Value.username);
-                }
-                userLookup.UpdateCache(token, clientId);
-                foreach (var fisher in fisherList)
-                {
-                    var records = new List<Catch>();
-                    foreach (var fish in fisher.Value.biggestFish)
-                    {
-                        records.Add(new Catch()
-                        {
-                            Fish = fishRepository.ReadById(fish.ID - 1),
-                            UserId = userLookup.GetId(fish.caughtBy),
-                            Length = fish.length,
-                            Weight = fish.weight
-                        });
-                    }
-                    fisherRepository.Create(new Fisher()
-                    {
-                        UserId = userLookup.GetId(fisher.Value.username),
-                        Records = records
-                    });
-                }
-                fisherRepository.Commit();
-                return true;
+                return JsonConvert.DeserializeObject<Dictionary<string, LegacyFisher>>(File.ReadAllText(fisherDataPath));
             }
-            return false;
+            catch
+            {
+                return new Dictionary<string, LegacyFisher>();
+            }
+        }
+
+        /// <summary>
+        /// Loads the global fishing leaderboard from legacy data files.
+        /// </summary>
+        /// <param name="fishingLeaderboardDataPath">The path to the file containing the leaderboard data.</param>
+        /// <returns>A collection of leaderboard records for each fish.</returns>
+        public static List<LegacyCatch> LoadLegacyFishingLeaderboardData(string fishingLeaderboardDataPath)
+        {
+            try
+            {
+                return JsonConvert.DeserializeObject<List<LegacyCatch>>(File.ReadAllText(fishingLeaderboardDataPath));
+            }
+            catch
+            {
+                return new List<LegacyCatch>();
+            }
+        }
+
+        /// <summary>
+        /// Fetches the twitch user ids for each username in a collection.
+        /// </summary>
+        /// <param name="usernames">A collection of twitch usernames.</param>
+        /// <param name="userLookup">The user lookup system to convert usernames into user ids.</param>
+        /// <param name="token">The OAuth token for making twitch API calls.</param>
+        /// <param name="clientId">The client id used to identify the call to fetch the user ids.</param>
+        public static void FetchUserIds(IEnumerable<string> usernames, UserLookup userLookup, string token, string clientId)
+        {
+            foreach (var fisher in usernames)
+            {
+                userLookup.GetId(fisher);
+            }
+            userLookup.UpdateCache(token, clientId);
         }
 
         /// <summary>
         /// Read the data from the legacy flat-file format, add them to the new
         /// repository, and commit the new data.
         /// </summary>
-        /// <param name="fishingLeaderboardDataPath">The path to the file containing the leaderboard data.</param>
+        /// <param name="fisherList">A dictionary mapping legacy personal leaderboards to twitch usernames.</param>
+        /// <param name="fisherRepository">The repository to import the fisher data to.</param>
+        /// <param name="fishRepository">The repository containing the fish data.</param>
+        /// <param name="userLookup">The user lookup system to convert the stored usernames into user ids.</param>
+        /// <exception cref="DirectoryNotFoundException">If the path to fisherDataPath does not exist.</exception>
+        /// <exception cref="IOException">If the attempt to access the file at fisherDataPath throws an IOException.</exception>
+        /// <exception cref="FileNotFoundException">If the file at fisherDataPath does not exist.</exception>
+        public static void ImportFisherDataIntoSql(Dictionary<string, LegacyFisher> fisherList, IRepository<Fisher> fisherRepository, IRepository<Fish> fishRepository, UserLookup userLookup)
+        {
+            foreach (var fisher in fisherList)
+            {
+                var records = new List<Catch>();
+                var fisherUserId = userLookup.GetId(fisher.Key);
+                if (fisherUserId != null)
+                {
+                    var existing = fisherRepository.Read(x => x.UserId.Equals(fisherUserId)).FirstOrDefault();
+                    var existingFish = existing?.Records ?? new List<Catch>();
+                    foreach (var fish in fisher.Value.biggestFish)
+                    {
+                        if (!existingFish.Any(x => x.Fish.Id == fish.ID))
+                        {
+                            records.Add(new Catch()
+                            {
+                                Fish = fishRepository.ReadById(fish.ID),
+                                UserId = fisherUserId,
+                                Length = fish.length,
+                                Weight = fish.weight
+                            });
+                        }
+                    }
+
+                    if (existing != null)
+                    {
+                        existing.Records = records;
+                        fisherRepository.Update(existing);
+                    }
+                    else
+                    {
+                        fisherRepository.Create(new Fisher()
+                        {
+                            UserId = fisherUserId,
+                            Records = records
+                        });
+                    }
+                }
+            }
+            fisherRepository.Commit();
+        }
+
+        /// <summary>
+        /// Reads the data for the global fishing leaderboard, converts them to
+        /// the current format, and imports them into the SQLite database.
+        /// </summary>
+        /// <param name="fishingLeaderboard">A list of catch data containing leaderboard records for each fish.</param>
         /// <param name="leaderboardRepository">The repository to import the leaderboard data to.</param>
         /// <param name="fishRepository">The repository containing the fish data.</param>
         /// <param name="userLookup">The user lookup system to convert the stored usernames into user ids.</param>
-        /// <param name="token">The oauth token used to fetch user ids.</param>
-        /// <param name="clientId">The client id used to identify the call to fetch the user ids.</param>
-        /// <returns>Whether or not the data was imported.</returns>
-        public static bool ImportLeaderboardDataIntoSql(string fishingLeaderboardDataPath, IRepository<Catch> leaderboardRepository, IRepository<Fish> fishRepository, UserLookup userLookup, string token, string clientId)
+        public static void ImportLeaderboardDataIntoSql(List<LegacyCatch> fishingLeaderboard, IRepository<LeaderboardEntry> leaderboardRepository, IRepository<Fish> fishRepository, UserLookup userLookup)
         {
-            if (File.Exists(fishingLeaderboardDataPath))
+            foreach (var record in fishingLeaderboard)
             {
-                var fishingLeaderboard = JsonConvert.DeserializeObject<List<LegacyCatch>>(File.ReadAllText(FishingLeaderboardPath));
-                foreach (var record in fishingLeaderboard)
+                var existing = leaderboardRepository.Read(x => x.Fish.Id == record.ID).FirstOrDefault();
+                var userId = userLookup.GetId(record.caughtBy);
+                if (existing == null && userId != null)
                 {
-                    userLookup.GetId(record.caughtBy);
-                }
-                userLookup.UpdateCache(token, clientId);
-                foreach (var record in fishingLeaderboard)
-                {
-                    leaderboardRepository.Create(new Catch()
+                    leaderboardRepository.Create(new LeaderboardEntry()
                     {
-                        Fish = fishRepository.ReadById(record.ID - 1),
-                        UserId = userLookup.GetId(record.caughtBy),
+                        Fish = fishRepository.ReadById(record.ID),
+                        UserId = userId,
                         Length = record.length,
                         Weight = record.weight
                     });
                 }
-                leaderboardRepository.Commit();
-                return true;
             }
-            return false;
+            leaderboardRepository.Commit();
         }
     }
 
