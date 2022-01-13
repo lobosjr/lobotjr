@@ -20,7 +20,7 @@ namespace LobotJR.Launcher
         private const string _cancelError = "error=access_denied";
 
         private static readonly IEnumerable<string> _chatScopes = new List<string>(new string[] { "chat:read", "chat:edit", "whispers:read", "whispers:edit", "channel:moderate" });
-        private static readonly IEnumerable<string> _broadcastScopes = new List<string>(new string[] { "channel_subscriptions" });
+        private static readonly IEnumerable<string> _broadcastScopes = new List<string>(new string[] { "channel:read:subscriptions" });
 
         private ClientData _clientData;
         private string _state = Guid.NewGuid().ToString();

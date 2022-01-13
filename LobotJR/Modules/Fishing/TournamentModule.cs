@@ -195,7 +195,7 @@ namespace LobotJR.Modules.Fishing
         {
             if (TournamentSystem.NextTournament == null)
             {
-                return new CompactCollection<TimeSpan>(new TimeSpan[0], null);
+                return new CompactCollection<TimeSpan>(new TimeSpan[0], x => x.ToString("c"));
             }
             else
             {

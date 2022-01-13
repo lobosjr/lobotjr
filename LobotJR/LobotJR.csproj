@@ -136,6 +136,7 @@
     <Compile Include="Modules\Fishing\FishingAdmin.cs" />
     <Compile Include="Modules\Fishing\FishingModule.cs" />
     <Compile Include="Modules\Fishing\FishingSystem.cs" />
+    <Compile Include="Modules\Fishing\Model\LeaderboardEntry.cs" />
     <Compile Include="Modules\Fishing\TournamentModule.cs" />
     <Compile Include="Modules\AccessControl\AccessControlModule.cs" />
     <Compile Include="Modules\Fishing\Model\Catch.cs" />

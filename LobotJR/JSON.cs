@@ -21,47 +21,32 @@ public class Data
 
 public class SubscriberData
 {
-    public class Links
+    public class Data
     {
-        public string next { get; set; }
-        public string self { get; set; }
+        public string broadcaster_id { get; set; }
+        public string broadcaster_login { get; set; }
+        public string broadcaster_name { get; set; }
+        public string gifter_id { get; set; }
+        public string gifter_login { get; set; }
+        public string gifter_name { get; set; }
+        public bool is_gift { get; set; }
+        public string tier { get; set; }
+        public string plan_name { get; set; }
+        public string user_id { get; set; }
+        public string user_name { get; set; }
+        public string user_login { get; set; }
     }
 
-    public class Links2
+    public class Pagination
     {
-        public string self { get; set; }
-    }
-
-    public class User
-    {
-        public int _id { get; set; }
-        public object logo { get; set; }
-        public bool staff { get; set; }
-        public string created_at { get; set; }
-        public string name { get; set; }
-        public string updated_at { get; set; }
-        public string display_name { get; set; }
-        public Links2 _links { get; set; }
-    }
-
-    public class Links3
-    {
-        public string self { get; set; }
-    }
-
-    public class Subscription
-    {
-        public string _id { get; set; }
-        public User user { get; set; }
-        public string created_at { get; set; }
-        public Links3 _links { get; set; }
+        public string cursor { get; set; }
     }
 
     public class RootObject
     {
-        public string _cursor { get; set; }
-        public int _total { get; set; }
-        public Links _links { get; set; }
-        public List<Subscription> subscriptions { get; set; }
+        public List<Data> data { get; set; }
+        public Pagination pagination { get; set; }
+        public int total { get; set; }
+        public int points { get; set; }
     }
 }

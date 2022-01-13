@@ -13,7 +13,7 @@ namespace LobotJR.Data
         public IRepository<UserMap> Users { get; private set; }
         public IRepository<UserRole> UserRoles { get; private set; }
         public IRepository<Fisher> Fishers { get; }
-        public IRepository<Catch> FishingLeaderboard { get; }
+        public IRepository<LeaderboardEntry> FishingLeaderboard { get; }
         public IRepository<TournamentResult> TournamentResults { get; private set; }
         public IRepository<TournamentEntry> TournamentEntries { get; private set; }
         public IRepository<Fish> FishData { get; private set; }
@@ -24,7 +24,7 @@ namespace LobotJR.Data
             Users = new SqliteRepository<UserMap>(context);
             UserRoles = new SqliteRepository<UserRole>(context);
             Fishers = new SqliteRepository<Fisher>(context);
-            FishingLeaderboard = new SqliteRepository<Catch>(context);
+            FishingLeaderboard = new SqliteRepository<LeaderboardEntry>(context);
             TournamentResults = new SqliteRepository<TournamentResult>(context);
             TournamentEntries = new SqliteRepository<TournamentEntry>(context);
 

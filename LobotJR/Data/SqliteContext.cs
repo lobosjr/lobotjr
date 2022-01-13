@@ -14,7 +14,7 @@ namespace LobotJR.Data
         public DbSet<UserMap> Users { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
         public DbSet<Fisher> Fishers { get; set; }
-        public DbSet<Catch> FishingLeaderboard { get; set; }
+        public DbSet<LeaderboardEntry> FishingLeaderboard { get; set; }
         public DbSet<TournamentResult> FishingTournaments { get; set; }
 
         

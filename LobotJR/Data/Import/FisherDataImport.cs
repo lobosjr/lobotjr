@@ -129,7 +129,7 @@ namespace LobotJR.Data.Import
         /// <param name="leaderboardRepository">The repository to import the leaderboard data to.</param>
         /// <param name="fishRepository">The repository containing the fish data.</param>
         /// <param name="userLookup">The user lookup system to convert the stored usernames into user ids.</param>
-        public static void ImportLeaderboardDataIntoSql(List<LegacyCatch> fishingLeaderboard, IRepository<Catch> leaderboardRepository, IRepository<Fish> fishRepository, UserLookup userLookup)
+        public static void ImportLeaderboardDataIntoSql(List<LegacyCatch> fishingLeaderboard, IRepository<LeaderboardEntry> leaderboardRepository, IRepository<Fish> fishRepository, UserLookup userLookup)
         {
             foreach (var record in fishingLeaderboard)
             {
@@ -137,7 +137,7 @@ namespace LobotJR.Data.Import
                 var userId = userLookup.GetId(record.caughtBy);
                 if (existing == null && userId != null)
                 {
-                    leaderboardRepository.Create(new Catch()
+                    leaderboardRepository.Create(new LeaderboardEntry()
                     {
                         Fish = fishRepository.ReadById(record.ID),
                         UserId = userId,
