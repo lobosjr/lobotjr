@@ -101,7 +101,9 @@ namespace LobotJR.Modules.Fishing
         /// each fish.</returns>
         public IEnumerable<LeaderboardEntry> GetLeaderboard()
         {
-            return Leaderboard.Read();
+            var leaderboard = Leaderboard.Read();
+            var fish = leaderboard.FirstOrDefault()?.Fish;
+            return leaderboard;
         }
 
         /// <summary>
@@ -184,7 +186,12 @@ namespace LobotJR.Modules.Fishing
                 return false;
             }
 
-            var record = fisher.Records?.Where(x => x.Fish.Equals(catchData.Fish)).FirstOrDefault();
+            if (fisher.Records == null)
+            {
+                fisher.Records = new List<Catch>();
+            }
+
+            var record = fisher.Records.Where(x => x.Fish.Equals(catchData.Fish)).FirstOrDefault();
             if (record == null || record.Weight < catchData.Weight)
             {
                 if (record == null)

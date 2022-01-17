@@ -19,7 +19,7 @@ namespace LobotJR.Modules.Fishing.Model
         /// <summary>
         /// Collection of record catches for this user.
         /// </summary>
-        public List<Catch> Records { get; set; }
+        public virtual List<Catch> Records { get; set; } = new List<Catch>();
         /// <summary>
         /// Whether the user has their line out to try and catch a fish.
         /// </summary>

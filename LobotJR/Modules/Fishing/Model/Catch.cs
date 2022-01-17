@@ -14,10 +14,15 @@ namespace LobotJR.Modules.Fishing.Model
         [Required]
         public string UserId { get; set; }
         /// <summary>
-        /// The fish that was caught.
+        /// The foreign key id for the fish that was caught.
         /// </summary>
         [Required]
-        public Fish Fish { get; set; }
+        public int FishId { get; set; }
+        /// <summary>
+        /// The fish that was caught.
+        /// </summary>
+        public virtual Fish Fish { get; set; }
+
         /// <summary>
         /// The length of the fish.
         /// </summary>
