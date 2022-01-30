@@ -8,13 +8,21 @@ namespace LobotJR.Modules.Fishing.Model
     public class Fish : TableObject
     {
         /// <summary>
+        /// The foreign key id for the fish's size category.
+        /// </summary>
+        public int SizeCategoryId { get; set; }
+        /// <summary>
         /// The size category of this fish.
         /// </summary>
-        public FishSize SizeCategory { get; set; }
+        public virtual FishSize SizeCategory { get; set; }
+        /// <summary>
+        /// The foreign key id for the fish's rarity.
+        /// </summary>
+        public int RarityId { get; set; }
         /// <summary>
         /// Rarity category of the fish.
         /// </summary>
-        public FishRarity Rarity { get; set; }
+        public virtual FishRarity Rarity { get; set; }
         /// <summary>
         /// The display name of the fish.
         /// </summary>

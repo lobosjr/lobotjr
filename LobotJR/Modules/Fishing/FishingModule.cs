@@ -81,7 +81,7 @@ namespace LobotJR.Modules.Fishing
             var fisher = FishingSystem.GetFisherById(userId);
             if (string.IsNullOrWhiteSpace(data))
             {
-                if (fisher != null)
+                if (fisher != null && fisher.Records != null)
                 {
                     return new CompactCollection<Catch>(fisher.Records, selectFunc);
                 }
