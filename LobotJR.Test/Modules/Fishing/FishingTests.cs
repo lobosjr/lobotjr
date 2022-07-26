@@ -25,7 +25,7 @@ namespace LobotJR.Test.Modules.Fishing
         {
             var handlerMock = new Mock<PushNotificationHandler>();
             Module.PushNotification += handlerMock.Object;
-            var fisher = FisherData.FirstOrDefault(x => x.UserId.Equals("00"));
+            var fisher = Manager.Fishers.Read().First();
             fisher.IsFishing = true;
             fisher.HookedTime = DateTime.Now;
             System.Process(true);
@@ -39,9 +39,9 @@ namespace LobotJR.Test.Modules.Fishing
         {
             var handlerMock = new Mock<PushNotificationHandler>();
             Module.PushNotification += handlerMock.Object;
-            var fisher = FisherData.FirstOrDefault(x => x.UserId.Equals("00"));
+            var fisher = Manager.Fishers.Read().First();
             fisher.IsFishing = true;
-            fisher.Hooked = FishData[0];
+            fisher.Hooked = Manager.FishData.Read().First();
             fisher.HookedTime = DateTime.Now.AddSeconds(-AppSettings.FishingHookLength);
             System.Process(true);
             handlerMock.Verify(x => x(It.IsAny<string>(), It.IsAny<CommandResult>()), Times.Once);
@@ -54,11 +54,16 @@ namespace LobotJR.Test.Modules.Fishing
         {
             var handlerMock = new Mock<PushNotificationHandler>();
             Module.PushNotification += handlerMock.Object;
-            LeaderboardMock.Data.Clear();
+            var leaderboard = Manager.FishingLeaderboard.Read();
+            foreach (var entry in leaderboard)
+            {
+                Manager.FishingLeaderboard.Delete(entry);
+            }
+            Manager.FishingLeaderboard.Commit();
             System.Tournament.StartTournament();
-            var fisher = FisherData.FirstOrDefault(x => x.UserId.Equals("00"));
+            var fisher = Manager.Fishers.Read().First();
             fisher.IsFishing = true;
-            fisher.Hooked = FishData[0];
+            fisher.Hooked = Manager.FishData.Read().First();
             fisher.HookedTime = DateTime.Now;
             Module.CatchFish("", fisher.UserId);
             handlerMock.Verify(x => x(It.IsAny<string>(), It.IsAny<CommandResult>()), Times.Once);
@@ -70,12 +75,14 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void RespondsWithPlayerLeaderboard()
         {
-            var response = Module.PlayerLeaderboard(null, "00");
+            var fisher = Manager.Fishers.Read().First();
+            var response = Module.PlayerLeaderboard(null, fisher.UserId);
             var responses = response.Responses;
+            var fishData = Manager.FishData.Read();
             Assert.IsTrue(response.Processed);
             Assert.IsNull(response.Errors);
-            Assert.AreEqual(FishData.Count + 1, responses.Count);
-            foreach (var fish in FishData)
+            Assert.AreEqual(fishData.Count() + 1, responses.Count);
+            foreach (var fish in fishData)
             {
                 Assert.IsTrue(responses.Any(x => x.Contains(fish.Name)));
             }
@@ -84,7 +91,7 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void RespondsWithCompactPlayerLeaderboard()
         {
-            var fisher = FisherData.FirstOrDefault(x => x.UserId.Equals("00"));
+            var fisher = Manager.Fishers.Read().First();
             var responses = Module.PlayerLeaderboardCompact(null, fisher.UserId);
             Assert.AreEqual(3, responses.Items.Count());
             var compact = responses.ToCompact();
@@ -103,13 +110,13 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void PlayerLeaderboardUserHasNoFishRecords()
         {
-            var noRecordsFisher = FisherData.FirstOrDefault(x => x.Records.Count == 0);
+            var noRecordsFisher = Manager.Fishers.Read(x => x.Records.Count == 0).First();
             var response = Module.PlayerLeaderboard(null, noRecordsFisher.UserId);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
             Assert.IsNull(response.Errors);
             Assert.AreEqual(1, responses.Count);
-            foreach (var fish in FishData)
+            foreach (var fish in Manager.FishData.Read())
             {
                 Assert.IsFalse(responses[0].Contains(fish.Name));
             }
@@ -118,7 +125,7 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void PlayerLeaderboardProvidesSpecificFishDetails()
         {
-            var fisher = FisherData.FirstOrDefault(x => x.UserId == "00");
+            var fisher = Manager.Fishers.Read().First();
             var fish = fisher.Records[0];
             var response = Module.PlayerLeaderboard("1", fisher.UserId);
             var responses = response.Responses;
@@ -136,7 +143,7 @@ namespace LobotJR.Test.Modules.Fishing
         {
             var response = Module.GlobalLeaderboard("");
             var responses = response.Responses;
-            var leaderboard = LeaderboardMock.Read();
+            var leaderboard = Manager.FishingLeaderboard.Read();
             foreach (var entry in leaderboard)
             {
                 Assert.IsTrue(
@@ -155,7 +162,7 @@ namespace LobotJR.Test.Modules.Fishing
         {
             var responses = Module.GlobalLeaderboardCompact("", "00");
             var compact = responses.ToCompact();
-            var leaderboard = LeaderboardMock.Read();
+            var leaderboard = Manager.FishingLeaderboard.Read();
             foreach (var entry in leaderboard)
             {
                 Assert.IsTrue(
@@ -172,7 +179,7 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void ReleasesSpecificFish()
         {
-            var fisher = FisherData.FirstOrDefault(x => x.UserId == "00");
+            var fisher = Manager.Fishers.Read().First();
             var fish = fisher.Records[0];
             var response = Module.ReleaseFish("1", fisher.UserId);
             var responses = response.Responses;
@@ -186,7 +193,8 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void ReleaseFishWithInvalidIdCausesError()
         {
-            var response = Module.ReleaseFish("0", "00");
+            var fisher = Manager.Fishers.Read().First();
+            var response = Module.ReleaseFish("0", fisher.UserId);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
             Assert.IsNull(response.Errors);
@@ -197,7 +205,8 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void ReleaseFishWithNoFishTellsPlayerToFish()
         {
-            var response = Module.ReleaseFish("1", "03");
+            var userid = UserLookup.GetId("Buzz");
+            var response = Module.ReleaseFish("1", userid);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
             Assert.IsNull(response.Errors);
@@ -208,7 +217,7 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void CancelsCast()
         {
-            var fisher = FisherData.FirstOrDefault(x => x.UserId == "00");
+            var fisher = Manager.Fishers.Read().First();
             fisher.IsFishing = true;
             var response = Module.CancelCast("", fisher.UserId);
             var responses = response.Responses;
@@ -221,7 +230,7 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void CancelCastFailsIfLineNotCast()
         {
-            var fisher = FisherData.FirstOrDefault(x => x.UserId == "00");
+            var fisher = Manager.Fishers.Read().First();
             fisher.IsFishing = false;
             var response = Module.CancelCast("", fisher.UserId);
             var responses = response.Responses;
@@ -234,12 +243,12 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void CatchesFish()
         {
-            var fisher = FisherData.FirstOrDefault(x => x.UserId == "00");
+            var fisher = Manager.Fishers.Read().First();
             System.Tournament.StartTournament();
             fisher.Records.Clear();
             fisher.IsFishing = true;
             fisher.HookedTime = DateTime.Now;
-            fisher.Hooked = FishData[0];
+            fisher.Hooked = Manager.FishData.Read().First();
             var response = Module.CatchFish("", fisher.UserId);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
@@ -254,7 +263,7 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void CatchFishFailsIfLineNotCast()
         {
-            var fisher = FisherData.FirstOrDefault(x => x.UserId == "00");
+            var fisher = Manager.Fishers.Read().First();
             System.Tournament.StartTournament();
             fisher.Records.Clear();
             fisher.IsFishing = false;
@@ -272,7 +281,7 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void CatchFishFailsIfNoFishBiting()
         {
-            var fisher = FisherData.FirstOrDefault(x => x.UserId == "00");
+            var fisher = Manager.Fishers.Read().First();
             System.Tournament.StartTournament();
             fisher.Records.Clear();
             fisher.IsFishing = true;
@@ -291,7 +300,7 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void CastsLine()
         {
-            var fisher = FisherData.FirstOrDefault(x => x.UserId == "00");
+            var fisher = Manager.Fishers.Read().First();
             fisher.IsFishing = false;
             var response = Module.Cast("", fisher.UserId);
             var responses = response.Responses;
@@ -304,7 +313,7 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void CastLineFailsFailsIfLineAlreadyCast()
         {
-            var fisher = FisherData.FirstOrDefault(x => x.UserId == "00");
+            var fisher = Manager.Fishers.Read().First();
             fisher.IsFishing = true;
             var response = Module.Cast("", fisher.UserId);
             var responses = response.Responses;
@@ -318,9 +327,9 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void CastLineFailsIfFishIsBiting()
         {
-            var fisher = FisherData.FirstOrDefault(x => x.UserId == "00");
+            var fisher = Manager.Fishers.Read().First();
             fisher.IsFishing = true;
-            fisher.Hooked = FishData[0];
+            fisher.Hooked = Manager.FishData.Read().First();
             var response = Module.Cast("", fisher.UserId);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
@@ -333,7 +342,7 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void Gloats()
         {
-            var fisher = FisherData.FirstOrDefault(x => x.UserId == "00");
+            var fisher = Manager.Fishers.Read().First();
             var response = Module.Gloat("1", fisher.UserId);
             var responses = response.Responses;
             var messages = response.Messages;
@@ -352,7 +361,7 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void GloatFailsWithInvalidFish()
         {
-            var fisher = FisherData.FirstOrDefault(x => x.UserId == "00");
+            var fisher = Manager.Fishers.Read().First();
             var response = Module.Gloat("", fisher.UserId);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
@@ -365,7 +374,7 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void GloatFailsWithNoFish()
         {
-            var fisher = FisherData.FirstOrDefault(x => x.UserId == "00");
+            var fisher = Manager.Fishers.Read().First();
             fisher.Records.Clear();
             var response = Module.Gloat("1", fisher.UserId);
             var responses = response.Responses;
@@ -379,7 +388,8 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void GloatFailsWithInsufficientCoins()
         {
-            var fisher = FisherData.FirstOrDefault(x => x.UserId == "01");
+            var userid = UserLookup.GetId("Fizz");
+            var fisher = Manager.Fishers.Read(x => x.UserId.Equals(userid)).First();
             var response = Module.Gloat("1", fisher.UserId);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
@@ -387,6 +397,7 @@ namespace LobotJR.Test.Modules.Fishing
             Assert.IsNull(response.Messages);
             Assert.AreEqual(1, responses.Count);
             Assert.IsTrue(responses[0].Contains("coins"));
+            Assert.IsFalse(responses[0].Contains("wolfcoins"));
         }
     }
 }

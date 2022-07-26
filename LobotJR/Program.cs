@@ -4284,7 +4284,7 @@ namespace TwitchBot
 
         }
 
-        static void UpdateTokens(TokenData tokenData, LobotJR.Shared.Client.ClientData clientData, bool force = false)
+        static async void UpdateTokens(TokenData tokenData, LobotJR.Shared.Client.ClientData clientData, bool force = false)
         {
             bool tokenUpdated = false;
             if (force || DateTime.Now >= tokenData.ChatToken.ExpirationDate)
@@ -4292,7 +4292,7 @@ namespace TwitchBot
                 tokenUpdated = true;
                 try
                 {
-                    tokenData.ChatToken = AuthToken.Refresh(clientData.ClientId, clientData.ClientSecret, tokenData.ChatToken.RefreshToken);
+                    tokenData.ChatToken = await AuthToken.Refresh(clientData.ClientId, clientData.ClientSecret, tokenData.ChatToken.RefreshToken);
                 }
                 catch (Exception e)
                 {
@@ -4304,7 +4304,7 @@ namespace TwitchBot
                 tokenUpdated = true;
                 try
                 {
-                    tokenData.BroadcastToken = AuthToken.Refresh(clientData.ClientId, clientData.ClientSecret, tokenData.BroadcastToken.RefreshToken);
+                    tokenData.BroadcastToken = await AuthToken.Refresh(clientData.ClientId, clientData.ClientSecret, tokenData.BroadcastToken.RefreshToken);
                 }
                 catch (Exception e)
                 {

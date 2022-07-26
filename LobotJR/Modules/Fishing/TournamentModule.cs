@@ -125,21 +125,23 @@ namespace LobotJR.Modules.Fishing
             if (tournament != null)
             {
                 var winner = tournament.Winner;
-                var output = new TournamentResultsResponse()
+                if (winner != null)
                 {
-                    Ended = tournament.Date,
-                    Participants = tournament.Entries.Count,
-                    Winner = winner.UserId,
-                    WinnerPoints = winner.Points
-
-                };
-                var userEntry = tournament.GetEntryById(userId);
-                if (userEntry != null)
-                {
-                    output.Rank = tournament.GetRankById(userEntry.UserId);
-                    output.UserPoints = userEntry.Points;
+                    var output = new TournamentResultsResponse()
+                    {
+                        Ended = tournament.Date,
+                        Participants = tournament.Entries.Count,
+                        Winner = winner.UserId,
+                        WinnerPoints = winner.Points
+                    };
+                    var userEntry = tournament.GetEntryById(userId);
+                    if (userEntry != null)
+                    {
+                        output.Rank = tournament.GetRankById(userEntry.UserId);
+                        output.UserPoints = userEntry.Points;
+                    }
+                    return output;
                 }
-                return output;
             }
             return null;
         }

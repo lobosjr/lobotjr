@@ -553,9 +553,9 @@ namespace Wolfcoins
             return -1;
         }
 
-        public void UpdateSubs(string broadcastToken, string clientId)
+        public async void UpdateSubs(string broadcastToken, string clientId)
         {
-            var userData = Users.Get(broadcastToken, clientId);
+            var userData = await Users.Get(broadcastToken, clientId);
             var channelId = userData.Data.First().Id;
             var nextLink = $"https://api.twitch.tv/helix/subscriptions?broadcaster_id={channelId}&first=100";
             do

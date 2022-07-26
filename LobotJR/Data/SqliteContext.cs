@@ -1,6 +1,7 @@
 ﻿using LobotJR.Command;
 using LobotJR.Data.User;
 using LobotJR.Modules.Fishing.Model;
+using System.Data.Common;
 using System.Data.Entity;
 
 namespace LobotJR.Data
@@ -11,6 +12,8 @@ namespace LobotJR.Data
     public class SqliteContext : DbContext
     {
         public DbSet<AppSettings> AppSettings { get; set; }
+
+        /** User data */
         public DbSet<UserMap> Users { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
         public DbSet<Fisher> Fishers { get; set; }
@@ -20,6 +23,10 @@ namespace LobotJR.Data
         
         /** Content data */
         public DbSet<Fish> FishData { get; set; }
+
+        public SqliteContext() { }
+
+        public SqliteContext(DbConnection connection) : base(connection, true) { }
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {

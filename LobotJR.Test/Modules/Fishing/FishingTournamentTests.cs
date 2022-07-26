@@ -39,6 +39,16 @@ namespace LobotJR.Test.Modules.Fishing
             };
         }
 
+        private void ClearTournaments()
+        {
+            var tournamentResults = Manager.TournamentResults.Read();
+            foreach (var entry in tournamentResults)
+            {
+                Manager.TournamentResults.Delete(entry);
+            }
+            Manager.TournamentResults.Commit();
+        }
+
         [TestInitialize]
         public void Setup()
         {
@@ -59,7 +69,7 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void PushesNotificationOnTournamentEnd()
         {
-            var user = UserMapData.First(x => x.TwitchId.Equals("00"));
+            var user = Manager.Users.Read().First();
             var handlerMock = new Mock<PushNotificationHandler>();
             System.Tournament.StartTournament();
             TournamentModule.PushNotification += handlerMock.Object;
@@ -87,7 +97,7 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void PushesNotificationOnTournamentEndByStreamStopping()
         {
-            var user = UserMapData.First(x => x.TwitchId.Equals("00"));
+            var user = Manager.Users.Read().First();
             var handlerMock = new Mock<PushNotificationHandler>();
             System.Tournament.StartTournament();
             TournamentModule.PushNotification += handlerMock.Object;
@@ -120,7 +130,7 @@ namespace LobotJR.Test.Modules.Fishing
             Assert.IsNotNull(results.Responses);
             Assert.AreEqual(3, results.Responses.Count);
             Assert.IsTrue(results.Responses.Any(x => x.Contains("30 seconds")));
-            Assert.IsTrue(results.Responses.Any(x => x.Contains("02") && x.Contains("30")));
+            Assert.IsTrue(results.Responses.Any(x => x.Contains("12") && x.Contains("30")));
             Assert.IsTrue(results.Responses.Any(x => x.Contains("3rd") && x.Contains("10")));
         }
 
@@ -132,7 +142,7 @@ namespace LobotJR.Test.Modules.Fishing
             Assert.IsNotNull(results.Responses);
             Assert.AreEqual(2, results.Responses.Count);
             Assert.IsTrue(results.Responses.Any(x => x.Contains("30 seconds")));
-            Assert.IsTrue(results.Responses.Any(x => x.Contains("02") && x.Contains("30")));
+            Assert.IsTrue(results.Responses.Any(x => x.Contains("12") && x.Contains("30")));
         }
 
         [TestMethod]
@@ -150,7 +160,7 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void TournamentResultsGetsErrorMessageWhenNoTournamentHasCompleted()
         {
-            TournamentResultsData.Clear();
+            ClearTournaments();
             var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentResults")).FirstOrDefault();
             var results = command.Executor("", UserLookup.GetId("Foo"));
             Assert.IsNotNull(results.Responses);
@@ -188,7 +198,8 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void TournamentResultsCompactReturnsNullIfNoTournamentsHaveTakenPlace()
         {
-            TournamentResultsData.Clear();
+            ClearTournaments();
+            var leftovers = Manager.TournamentResults.Read().ToArray();
             var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentResults")).FirstOrDefault();
             var results = command.CompactExecutor("", UserLookup.GetId("Buzz"));
             Assert.IsNull(results);

@@ -7,10 +7,10 @@ namespace LobotJR.Data
 {
     public class SqliteRepository<TEntity> : IRepository<TEntity> where TEntity : class
     {
-        private readonly SqliteContext context;
+        private readonly DbContext context;
         private readonly DbSet<TEntity> dbSet;
 
-        public SqliteRepository(SqliteContext context)
+        public SqliteRepository(DbContext context)
         {
             this.context = context;
             dbSet = context.Set<TEntity>();

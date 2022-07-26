@@ -61,14 +61,14 @@ namespace LobotJR.Data.User
         /// </summary>
         /// <param name="token">A valid twitch OAuth token.</param>
         /// <param name="clientId">The client id the app is running under.</param>
-        public void UpdateCache(string token, string clientId)
+        public async void UpdateCache(string token, string clientId)
         {
             while (cacheMisses.Count > 0)
             {
                 var limit = Math.Min(cacheMisses.Count, 100);
                 var removed = cacheMisses.GetRange(0, limit);
                 cacheMisses.RemoveRange(0, limit);
-                var response = Users.Get(token, clientId, removed);
+                var response = await Users.Get(token, clientId, removed);
                 foreach (var entry in response.Data)
                 {
                     var existing = UserMap.Read(x => x.TwitchId.Equals(entry.Id)).FirstOrDefault();

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace LobotJR.Launcher
@@ -33,10 +34,10 @@ namespace LobotJR.Launcher
             InitializeComponent();
         }
 
-        private void Window_Loaded(object sender, RoutedEventArgs e)
+        private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
             _clientData = LoadClientData();
-            _tokenData = LoadTokenData();
+            _tokenData = await LoadTokenData();
             if (_tokenData.ChatToken == null)
             {
                 LoadTwitchAuthPage(Browser, _chatScopes, "Bot Account");
@@ -83,7 +84,7 @@ namespace LobotJR.Launcher
             });
         }
 
-        private TokenResponse HandleAuthResponse(Uri uri)
+        private async Task<TokenResponse> HandleAuthResponse(Uri uri)
         {
             // If you're not familiar with Linq, this is going to look like complete nonsense,
             // but it's basically just a way to turn the url we get back into something we can actually use
@@ -94,7 +95,7 @@ namespace LobotJR.Launcher
             {
                 _state = Guid.NewGuid().ToString();
 
-                var tokenData = AuthToken.Fetch(_clientData.ClientId, _clientData.ClientSecret, returnValues["code"], _clientData.RedirectUri);
+                var tokenData = await AuthToken.Fetch(_clientData.ClientId, _clientData.ClientSecret, returnValues["code"], _clientData.RedirectUri);
                 return tokenData;
             }
             else
@@ -143,7 +144,7 @@ namespace LobotJR.Launcher
             return clientData;
         }
 
-        private TokenData LoadTokenData()
+        private async Task<TokenData> LoadTokenData()
         {
             if (FileUtils.HasTokenData())
             {
@@ -152,10 +153,10 @@ namespace LobotJR.Launcher
                 {
                     if (tokenData.ChatToken != null)
                     {
-                        var validationResponse = AuthToken.Validate(tokenData.ChatToken.AccessToken);
+                        var validationResponse = await AuthToken.Validate(tokenData.ChatToken.AccessToken);
                         if (validationResponse == null)
                         {
-                            tokenData.ChatToken = AuthToken.Refresh(_clientData.ClientId, _clientData.ClientSecret, tokenData.ChatToken.RefreshToken);
+                            tokenData.ChatToken = await AuthToken.Refresh(_clientData.ClientId, _clientData.ClientSecret, tokenData.ChatToken.RefreshToken);
                         }
                         else if (!validationResponse.Login.Equals(tokenData.ChatUser) || _chatScopes.Any(x => !validationResponse.Scopes.Contains(x)))
                         {
@@ -164,10 +165,10 @@ namespace LobotJR.Launcher
                     }
                     if (tokenData.BroadcastToken != null)
                     {
-                        var validationResponse = AuthToken.Validate(tokenData.BroadcastToken.AccessToken);
+                        var validationResponse = await AuthToken .Validate(tokenData.BroadcastToken.AccessToken);
                         if (validationResponse == null)
                         {
-                            tokenData.BroadcastToken = AuthToken.Refresh(_clientData.ClientId, _clientData.ClientSecret, tokenData.BroadcastToken.RefreshToken);
+                            tokenData.BroadcastToken = await AuthToken.Refresh(_clientData.ClientId, _clientData.ClientSecret, tokenData.BroadcastToken.RefreshToken);
                         }
                         else if (!validationResponse.Login.Equals(tokenData.BroadcastUser) || _broadcastScopes.Any(x => !validationResponse.Scopes.Contains(x)))
                         {
@@ -226,7 +227,7 @@ namespace LobotJR.Launcher
             LoadTwitchAuthPage(Browser, _chatScopes, "Chat Account");
         }
 
-        private void Browser_FrameLoadEnd(object sender, CefSharp.FrameLoadEndEventArgs e)
+        private async void Browser_FrameLoadEnd(object sender, CefSharp.FrameLoadEndEventArgs e)
         {
             if (e.Url.StartsWith(_clientData.RedirectUri))
             {
@@ -239,8 +240,8 @@ namespace LobotJR.Launcher
                 }
                 else if (_tokenData.ChatToken == null)
                 {
-                    _tokenData.ChatToken = HandleAuthResponse(new Uri(e.Url));
-                    var validationResponse = AuthToken.Validate(_tokenData.ChatToken.AccessToken);
+                    _tokenData.ChatToken = await HandleAuthResponse(new Uri(e.Url));
+                    var validationResponse = await AuthToken .Validate(_tokenData.ChatToken.AccessToken);
                     _tokenData.ChatUser = validationResponse.Login;
                     if (_tokenData.ChatToken == null)
                     {
@@ -258,8 +259,8 @@ namespace LobotJR.Launcher
                 }
                 else
                 {
-                    _tokenData.BroadcastToken = HandleAuthResponse(new Uri(e.Url));
-                    var validationResponse = AuthToken.Validate(_tokenData.BroadcastToken.AccessToken);
+                    _tokenData.BroadcastToken = await HandleAuthResponse(new Uri(e.Url));
+                    var validationResponse = await AuthToken.Validate(_tokenData.BroadcastToken.AccessToken);
                     _tokenData.BroadcastUser = validationResponse.Login;
                     if (_tokenData.BroadcastToken == null)
                     {

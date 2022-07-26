@@ -1,8 +1,11 @@
-﻿using LobotJR.Shared.Utility;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using RestSharp;
+using RestSharp.Serializers.NewtonsoftJson;
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Threading.Tasks;
 
 namespace LobotJR.Shared.User
 {
@@ -18,16 +21,22 @@ namespace LobotJR.Shared.User
         /// <param name="token">A bearer token.</param>
         /// <param name="clientId">The client id the app is running under.</param>
         /// <returns>The user data of the authenticated user.</returns>
-        public static UserResponse Get(string token, string clientId)
+        public static async Task<UserResponse> Get(string token, string clientId)
         {
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             var client = new RestClient("https://api.twitch.tv");
-            client.AddHandler("application/json", () => NewtonsoftDeserializer.Default);
-            var request = new RestRequest("helix/users", Method.GET);
+            client.UseNewtonsoftJson(new JsonSerializerSettings()
+            {
+                ContractResolver = new DefaultContractResolver()
+                {
+                    NamingStrategy = new SnakeCaseNamingStrategy(true, false, true)
+                }
+            });
+            var request = new RestRequest("helix/users", Method.Get);
             request.AddHeader("Accept", "application/json");
             request.AddHeader("Authorization", $"Bearer {token}");
             request.AddHeader("Client-ID", clientId);
-            var response = client.Execute<UserResponse>(request);
+            var response = await client.ExecuteAsync<UserResponse>(request);
             switch (response.StatusCode)
             {
                 case HttpStatusCode.OK:
@@ -46,12 +55,18 @@ namespace LobotJR.Shared.User
         /// <param name="clientId">The clied id the app is running under.</param>
         /// <param name="users">A collection of usernames.</param>
         /// <returns>The user data of the users in the collection.</returns>
-        public static UserResponse Get(string token, string clientId, IEnumerable<string> users)
+        public static async Task<UserResponse> Get(string token, string clientId, IEnumerable<string> users)
         {
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             var client = new RestClient("https://api.twitch.tv");
-            client.AddHandler("application/json", () => NewtonsoftDeserializer.Default);
-            var request = new RestRequest("helix/users", Method.GET);
+            client.UseNewtonsoftJson(new JsonSerializerSettings()
+            {
+                ContractResolver = new DefaultContractResolver()
+                {
+                    NamingStrategy = new SnakeCaseNamingStrategy(true, false, true)
+                }
+            });
+            var request = new RestRequest("helix/users", Method.Get);
             request.AddHeader("Accept", "application/json");
             request.AddHeader("Authorization", $"Bearer {token}");
             request.AddHeader("Client-ID", clientId);
@@ -59,7 +74,7 @@ namespace LobotJR.Shared.User
             {
                 request.AddParameter("login", user, ParameterType.QueryString);
             }
-            var response = client.Execute<UserResponse>(request);
+            var response = await client.ExecuteAsync<UserResponse>(request);
             switch (response.StatusCode)
             {
                 case HttpStatusCode.OK:

@@ -29,7 +29,7 @@ namespace LobotJR.Test.Modules.Fishing
             var response = AdminModule.DebugCatch("");
             Assert.IsTrue(response.Processed);
             Assert.AreNotEqual(0, response.Debug.Count);
-            Assert.IsTrue(response.Debug.Any(x => FishData.Any(y => x.Contains(y.Name))));
+            Assert.IsTrue(response.Debug.Any(x => Manager.FishData.Read().Any(y => x.Contains(y.Name))));
         }
     }
 }
