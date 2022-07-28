@@ -274,15 +274,18 @@ namespace LobotJR.Test.Systems.Fishing
         {
             var fish = Manager.FishData.Read().First();
             var entry = Manager.FishingLeaderboard.Read(x => x.Fish.Id == fish.Id).First();
+            var newUser = Manager.Fishers.Read(x => !x.UserId.Equals(entry.UserId)).First();
             var catchData = new Catch()
             {
                 Fish = fish,
+                UserId = newUser.UserId,
                 Weight = entry.Weight + 1
             };
             var result = System.UpdateGlobalLeaderboard(catchData);
             var leaderboard = System.GetLeaderboard();
             Assert.IsTrue(result);
             Assert.AreEqual(catchData.Weight, leaderboard.First().Weight);
+            Assert.AreEqual(newUser.UserId, leaderboard.First().UserId);
         }
 
         [TestMethod]

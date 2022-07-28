@@ -37,6 +37,7 @@ namespace LobotJR.Modules.Fishing.Model
         /// <param name="other">Another leaderboard entry.</param>
         public void CopyFrom(LeaderboardEntry other)
         {
+            UserId = other.UserId;
             Length = other.Length;
             Weight = other.Weight;
         }
