@@ -116,6 +116,7 @@ namespace LobotJR.Modules.Fishing
         {
             if (CurrentTournament != null)
             {
+                CurrentTournament.SortResults();
                 TournamentResults.Create(CurrentTournament);
                 TournamentResults.Commit();
                 DateTime? next;

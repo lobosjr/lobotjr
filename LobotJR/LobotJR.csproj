@@ -106,6 +106,8 @@
     <Compile Include="Command\ICompactResponse.cs" />
     <Compile Include="Command\UserRole.cs" />
     <Compile Include="Data\AppSettings.cs" />
+    <Compile Include="Data\Import\FileSystem.cs" />
+    <Compile Include="Data\Import\IFileSystem.cs" />
     <Compile Include="Data\Migration\DatabaseUpdate-Null-1.0.0.cs" />
     <Compile Include="Data\Migration\DatabaseUpdate-1.0.0-1.0.1.cs" />
     <Compile Include="Data\Migration\DatabaseMigrationResult.cs" />

@@ -21,6 +21,12 @@ namespace LobotJR.Test.Modules.Fishing
         }
 
         [TestMethod]
+        public void ImportsFishData()
+        {
+
+        }
+
+        [TestMethod]
         public void PushesNotificationOnFishHooked()
         {
             var handlerMock = new Mock<PushNotificationHandler>();

@@ -67,6 +67,19 @@ namespace LobotJR.Test.Modules.Fishing
         }
 
         [TestMethod]
+        public void CalculatesResultsOnTournamentEnd()
+        {
+            var firstFisher = Manager.Fishers.Read().First();
+            var secondFisher = Manager.Fishers.Read(x => !x.UserId.Equals(firstFisher.UserId)).First();
+            System.Tournament.StartTournament();
+            System.Tournament.CurrentTournament.Entries.Add(new TournamentEntry(firstFisher.UserId, 100));
+            System.Tournament.CurrentTournament.Entries.Add(new TournamentEntry(secondFisher.UserId, 200));
+            System.Tournament.EndTournament(true);
+            var results = Manager.TournamentResults.Read().OrderByDescending(x => x.Date).First();
+            Assert.AreEqual(secondFisher.UserId, results.Winner.UserId);
+        }
+
+        [TestMethod]
         public void PushesNotificationOnTournamentEnd()
         {
             var user = Manager.Users.Read().First();
