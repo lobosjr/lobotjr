@@ -2,9 +2,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace LobotJR.Data.User
 {
+    public class CacheUpdateResult
+    {
+        public List<string> UpdatedUsers { get; set; } = new List<string>();
+        public List<string> FailedUsers { get; set; } = new List<string>();
+    }
+
     /// <summary>
     /// Provides a lookup for users by id or username. If a username is not
     /// found, their id will be looked up from the twitch API, and either their
@@ -17,6 +24,7 @@ namespace LobotJR.Data.User
         private readonly AppSettings appSettings;
         private readonly List<string> cacheMisses = new List<string>();
 
+        public int UpdateTime { get { return appSettings.GeneralCacheUpdateTime; } }
         public IRepository<UserMap> UserMap { get; private set; }
 
         public UserLookup(IRepository<UserMap> userMap, AppSettings appSettings)
@@ -61,14 +69,17 @@ namespace LobotJR.Data.User
         /// </summary>
         /// <param name="token">A valid twitch OAuth token.</param>
         /// <param name="clientId">The client id the app is running under.</param>
-        public async void UpdateCache(string token, string clientId)
+        public async Task<CacheUpdateResult> UpdateCache(string token, string clientId)
         {
+            var results = new CacheUpdateResult();
             while (cacheMisses.Count > 0)
             {
                 var limit = Math.Min(cacheMisses.Count, 100);
                 var removed = cacheMisses.GetRange(0, limit);
                 cacheMisses.RemoveRange(0, limit);
                 var response = await Users.Get(token, clientId, removed);
+                results.UpdatedUsers.AddRange(response.Data.Select(x => x.DisplayName));
+                results.FailedUsers.AddRange(removed.Except(results.UpdatedUsers));
                 foreach (var entry in response.Data)
                 {
                     var existing = UserMap.Read(x => x.TwitchId.Equals(entry.Id)).FirstOrDefault();
@@ -89,6 +100,7 @@ namespace LobotJR.Data.User
             }
             UserMap.Commit();
             lastUpdate = DateTime.Now;
+            return results;
         }
 
         /// <summary>
