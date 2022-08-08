@@ -102,7 +102,7 @@ namespace LobotJR.Modules.Fishing
             var responses = new List<string>(new string[] { $"The most recent tournament ended {sinceEnded.ToCommonString()} ago with {result.Participants} {pluralized}." });
             if (result.Rank > 0)
             {
-                if (result.Winner.Equals(userId, StringComparison.OrdinalIgnoreCase))
+                if (result.Winner.Equals(UserLookup.GetUsername(userId), StringComparison.OrdinalIgnoreCase))
                 {
                     responses.Add($"You won the tournament with {result.WinnerPoints} points.");
                 }
@@ -131,7 +131,7 @@ namespace LobotJR.Modules.Fishing
                     {
                         Ended = tournament.Date,
                         Participants = tournament.Entries.Count,
-                        Winner = winner.UserId,
+                        Winner = UserLookup.GetUsername(winner.UserId),
                         WinnerPoints = winner.Points
                     };
                     var userEntry = tournament.GetEntryById(userId);
