@@ -4,18 +4,29 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:LobotJR.Launcher"
-        xmlns:wpf="clr-namespace:CefSharp.Wpf;assembly=CefSharp.Wpf"
         mc:Ignorable="d"
-        Title="Authenticate LobotJr" Height="750" Width="500" Loaded="Window_Loaded">
+        Title="Authenticate LobotJr" Height="250" Width="450" Loaded="Window_Loaded" ResizeMode="NoResize" SizeToContent="Height">
     <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="3*" />
+            <ColumnDefinition Width="7*" />
+        </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
-            <RowDefinition />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <Label x:Name="LoginLabel" Content="Chat Account" FontWeight="Bold" FontSize="18" HorizontalAlignment="Center" />
-        <!-- WebBrowser x:Name="Browser" Navigated="Browser_Navigated" LoadCompleted="Browser_LoadCompleted" Grid.Row="1" /-->
-        <wpf:ChromiumWebBrowser x:Name="Browser" FrameLoadEnd="Browser_FrameLoadEnd" Grid.Row="1" />
-        <Button x:Name="UpdateClientData" Content="Update Client Data" Grid.Row="2" ToolTip="Use this to verify client data if the auth pages aren't loading." FontSize="18" FontWeight="Bold" Click="UpdateClientData_Click"/>
+        <TextBlock x:Name="InstructionText" Grid.ColumnSpan="2" Margin="10,10,10,0" TextWrapping="Wrap" VerticalAlignment="Top" Text="Your authentication tokens have expired. Copy each authentication URL into your browser, then log into twitch. Once that's done, copy the URL from your browser into the response box for each account, then click Validate."/>
+        <Label x:Name="ChatAccountLabel" Content="Chat Response:" Margin="0,4,5,0" VerticalAlignment="Center" Grid.Row="2" Grid.Column="0" HorizontalAlignment="Right"/>
+        <Button x:Name="ChatUrl" Height="23" Margin="10,8,10,0" Content="Copy Chat Account Login URL" VerticalAlignment="Top" Grid.Row="1" Grid.ColumnSpan="2" TabIndex="0" Click="ChatUrl_Click"/>
+        <TextBox x:Name="ChatToken" Height="23" Margin="5,8,10,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Grid.Row="2" Grid.Column="1" TabIndex="1"/>
+        <Label x:Name="StreamerAccountLabel" Content="Streamer Response:" Margin="0,4,5,0" VerticalAlignment="Center" Grid.Row="4" Grid.Column="0" HorizontalAlignment="Right"/>
+        <Button x:Name="StreamerUrl" Height="23" Margin="10,8,10,0" Content="Copy Streamer Account Login URL" VerticalAlignment="Top" Grid.Row="3" Grid.ColumnSpan="2" TabIndex="2" Click="StreamerUrl_Click"/>
+        <TextBox x:Name="StreamerToken" Height="23" Margin="5,8,10,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Grid.Row="4" Grid.Column="1" TabIndex="3"/>
+        <Button x:Name="UpdateClientData" Content="Update Client Data" Grid.Column="0" Margin="10,10,0,10" Grid.Row="5" HorizontalAlignment="Left" Width="115" IsCancel="True" TabIndex="4" Click="UpdateClientData_Click" Height="23"/>
+        <Button x:Name="Validate" Content="Validate" Grid.Column="1" Margin="0,10,10,10" Grid.Row="5" HorizontalAlignment="Right" Width="75" IsDefault="True" TabIndex="5" Click="Validate_Click"/>
     </Grid>
 </Window>
