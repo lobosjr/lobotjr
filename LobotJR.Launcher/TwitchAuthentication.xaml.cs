@@ -1,5 +1,4 @@
-﻿using CefSharp.Wpf;
-using LobotJR.Shared.Authentication;
+﻿using LobotJR.Shared.Authentication;
 using LobotJR.Shared.Client;
 using LobotJR.Shared.Utility;
 using Microsoft.Win32;
