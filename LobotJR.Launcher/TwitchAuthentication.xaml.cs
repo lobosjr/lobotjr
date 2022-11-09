@@ -49,6 +49,7 @@ namespace LobotJR.Launcher
 
             _chatUrlCaption = ChatUrl.Content.ToString();
             _streamerUrlCaption = ChatUrl.Content.ToString();
+            SetEnabled(false);
 
             _clientData = LoadClientData();
             _tokenData = await LoadTokenData();
@@ -57,6 +58,20 @@ namespace LobotJR.Launcher
             {
                 ValidateTokens();
             }
+            else
+            {
+                SetEnabled(true);
+            }
+        }
+
+        private void SetEnabled(bool enabled)
+        {
+            ChatToken.IsEnabled = enabled;
+            ChatUrl.IsEnabled = enabled;
+            StreamerToken.IsEnabled = enabled;
+            StreamerUrl.IsEnabled = enabled;
+            Validate.IsEnabled = enabled;
+            UpdateClientData.IsEnabled = enabled;
         }
 
         private void _timer_Tick(object sender, EventArgs e)
@@ -245,16 +260,16 @@ namespace LobotJR.Launcher
             _streamerUrlTimer = 3;
         }
 
-        private void Validate_Click(object sender, RoutedEventArgs e)
+        private async void Validate_Click(object sender, RoutedEventArgs e)
         {
             if (!string.IsNullOrWhiteSpace(ChatToken.Text))
             {
-                _tokenData.ChatToken = HandleAuthResponse(new Uri(ChatToken.Text)).GetAwaiter().GetResult();
+                _tokenData.ChatToken = await HandleAuthResponse(new Uri(ChatToken.Text));
             }
 
             if (!string.IsNullOrWhiteSpace(StreamerToken.Text))
             {
-                _tokenData.BroadcastToken = HandleAuthResponse(new Uri(StreamerToken.Text)).GetAwaiter().GetResult();
+                _tokenData.BroadcastToken = await HandleAuthResponse(new Uri(StreamerToken.Text));
             }
 
             ValidateTokens();
@@ -262,31 +277,39 @@ namespace LobotJR.Launcher
 
         private async void ValidateTokens()
         {
-            ChatToken.Text = "Token validation failed. Try again.";
+            var resultText = "Token validation failed. Try again.";
+            ChatToken.Text = "Validating token...";
             if (_tokenData.ChatToken != null)
             {
                 var validationResponse = await AuthToken.Validate(_tokenData.ChatToken.AccessToken);
                 _tokenData.ChatUser = validationResponse.Login;
                 if (_tokenData.ChatToken != null)
                 {
-                    ChatToken.Text = "Token validated successfully!";
+                    resultText = "Token validated successfully!";
                 }
             }
+            ChatToken.Text = resultText;
 
-            StreamerToken.Text = "Token validation failed. Try again.";
+            resultText = "Token validation failed. Try again.";
+            StreamerToken.Text = "Validating token...";
             if (_tokenData.BroadcastToken != null)
             {
                 var validationResponse = await AuthToken.Validate(_tokenData.BroadcastToken.AccessToken);
                 _tokenData.BroadcastUser = validationResponse.Login;
                 if (_tokenData.BroadcastToken != null)
                 {
-                    StreamerToken.Text = "Token validated successfully!";
+                    resultText = "Token validated successfully!";
                 }
             }
+            StreamerToken.Text = resultText;
 
             if (_tokenData.ChatToken != null && _tokenData.BroadcastToken != null)
             {
                 LaunchBot();
+            }
+            else
+            {
+                SetEnabled(true);
             }
         }
     }

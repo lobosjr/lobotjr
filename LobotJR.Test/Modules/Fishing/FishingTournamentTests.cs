@@ -143,7 +143,7 @@ namespace LobotJR.Test.Modules.Fishing
             Assert.IsNotNull(results.Responses);
             Assert.AreEqual(3, results.Responses.Count);
             Assert.IsTrue(results.Responses.Any(x => x.Contains("30 seconds")));
-            Assert.IsTrue(results.Responses.Any(x => x.Contains("12") && x.Contains("30")));
+            Assert.IsTrue(results.Responses.Any(x => x.Contains("Fizz") && x.Contains("30")));
             Assert.IsTrue(results.Responses.Any(x => x.Contains("3rd") && x.Contains("10")));
         }
 
@@ -155,7 +155,7 @@ namespace LobotJR.Test.Modules.Fishing
             Assert.IsNotNull(results.Responses);
             Assert.AreEqual(2, results.Responses.Count);
             Assert.IsTrue(results.Responses.Any(x => x.Contains("30 seconds")));
-            Assert.IsTrue(results.Responses.Any(x => x.Contains("12") && x.Contains("30")));
+            Assert.IsTrue(results.Responses.Any(x => x.Contains("Fizz") && x.Contains("30")));
         }
 
         [TestMethod]
@@ -187,7 +187,7 @@ namespace LobotJR.Test.Modules.Fishing
             var results = command.CompactExecutor("", UserLookup.GetId("Buzz"));
             var resultObject = ResultsFromCompact(results.ToCompact().First());
             Assert.IsNotNull(resultObject);
-            Assert.AreEqual(UserLookup.GetId("Fizz"), resultObject.Winner);
+            Assert.AreEqual("Fizz", resultObject.Winner);
             Assert.AreEqual(3, resultObject.Participants);
             Assert.AreEqual(30, resultObject.WinnerPoints);
             Assert.AreEqual(0, resultObject.Rank);
@@ -201,7 +201,7 @@ namespace LobotJR.Test.Modules.Fishing
             var results = command.CompactExecutor("", UserLookup.GetId("Foo"));
             var resultObject = ResultsFromCompact(results.ToCompact().First());
             Assert.IsNotNull(resultObject);
-            Assert.AreEqual(UserLookup.GetId("Fizz"), resultObject.Winner);
+            Assert.AreEqual("Fizz", resultObject.Winner);
             Assert.AreEqual(3, resultObject.Participants);
             Assert.AreEqual(30, resultObject.WinnerPoints);
             Assert.AreEqual(3, resultObject.Rank);
