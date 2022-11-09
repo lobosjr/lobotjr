@@ -51,7 +51,7 @@ namespace LobotJR.Launcher
             _streamerUrlCaption = ChatUrl.Content.ToString();
 
             _clientData = LoadClientData();
-            _tokenData = LoadTokenData();
+            _tokenData = await LoadTokenData();
 
             if (_tokenData.ChatToken != null || _tokenData.BroadcastToken != null)
             {
@@ -104,7 +104,7 @@ namespace LobotJR.Launcher
 
             if (returnValues["state"] == _state)
             {
-                var tokenData = AuthToken.Fetch(_clientData.ClientId, _clientData.ClientSecret, returnValues["code"], _clientData.RedirectUri);
+                var tokenData = await AuthToken.Fetch(_clientData.ClientId, _clientData.ClientSecret, returnValues["code"], _clientData.RedirectUri);
                 return tokenData;
             }
             else
@@ -249,23 +249,23 @@ namespace LobotJR.Launcher
         {
             if (!string.IsNullOrWhiteSpace(ChatToken.Text))
             {
-                _tokenData.ChatToken = HandleAuthResponse(new Uri(ChatToken.Text));
+                _tokenData.ChatToken = HandleAuthResponse(new Uri(ChatToken.Text)).GetAwaiter().GetResult();
             }
 
             if (!string.IsNullOrWhiteSpace(StreamerToken.Text))
             {
-                _tokenData.BroadcastToken = HandleAuthResponse(new Uri(StreamerToken.Text));
+                _tokenData.BroadcastToken = HandleAuthResponse(new Uri(StreamerToken.Text)).GetAwaiter().GetResult();
             }
 
             ValidateTokens();
         }
 
-        private void ValidateTokens()
+        private async void ValidateTokens()
         {
             ChatToken.Text = "Token validation failed. Try again.";
             if (_tokenData.ChatToken != null)
             {
-                var validationResponse = AuthToken.Validate(_tokenData.ChatToken.AccessToken);
+                var validationResponse = await AuthToken.Validate(_tokenData.ChatToken.AccessToken);
                 _tokenData.ChatUser = validationResponse.Login;
                 if (_tokenData.ChatToken != null)
                 {
@@ -276,7 +276,7 @@ namespace LobotJR.Launcher
             StreamerToken.Text = "Token validation failed. Try again.";
             if (_tokenData.BroadcastToken != null)
             {
-                var validationResponse = AuthToken.Validate(_tokenData.BroadcastToken.AccessToken);
+                var validationResponse = await AuthToken.Validate(_tokenData.BroadcastToken.AccessToken);
                 _tokenData.BroadcastUser = validationResponse.Login;
                 if (_tokenData.BroadcastToken != null)
                 {
