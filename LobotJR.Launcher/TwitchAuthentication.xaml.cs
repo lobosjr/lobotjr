@@ -262,6 +262,8 @@ namespace LobotJR.Launcher
 
         private async void Validate_Click(object sender, RoutedEventArgs e)
         {
+            SetEnabled(false);
+
             if (!string.IsNullOrWhiteSpace(ChatToken.Text))
             {
                 _tokenData.ChatToken = await HandleAuthResponse(new Uri(ChatToken.Text));
