@@ -156,6 +156,7 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
+    <Compile Include="Utils\ChatController.cs" />
     <Compile Include="Utils\Extensions.cs" />
     <Compile Include="Wolfcoins.cs" />
   </ItemGroup>
