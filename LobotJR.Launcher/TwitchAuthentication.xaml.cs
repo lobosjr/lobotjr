@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -39,7 +40,7 @@ namespace LobotJR.Launcher
             InitializeComponent();
         }
 
-        private void Window_Loaded(object sender, RoutedEventArgs e)
+        private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
             _timer = new DispatcherTimer();
             _timer.Interval = TimeSpan.FromSeconds(1);
@@ -48,14 +49,29 @@ namespace LobotJR.Launcher
 
             _chatUrlCaption = ChatUrl.Content.ToString();
             _streamerUrlCaption = ChatUrl.Content.ToString();
+            SetEnabled(false);
 
             _clientData = LoadClientData();
-            _tokenData = LoadTokenData();
+            _tokenData = await LoadTokenData();
 
             if (_tokenData.ChatToken != null || _tokenData.BroadcastToken != null)
             {
                 ValidateTokens();
             }
+            else
+            {
+                SetEnabled(true);
+            }
+        }
+
+        private void SetEnabled(bool enabled)
+        {
+            ChatToken.IsEnabled = enabled;
+            ChatUrl.IsEnabled = enabled;
+            StreamerToken.IsEnabled = enabled;
+            StreamerUrl.IsEnabled = enabled;
+            Validate.IsEnabled = enabled;
+            UpdateClientData.IsEnabled = enabled;
         }
 
         private void _timer_Tick(object sender, EventArgs e)
@@ -96,14 +112,14 @@ namespace LobotJR.Launcher
             });
         }
 
-        private TokenResponse HandleAuthResponse(Uri uri)
+        private async Task<TokenResponse> HandleAuthResponse(Uri uri)
         {
             var returnValues = uri.Query.Substring(1).Split('&')
                 .Select(x => x.Split('=')).ToDictionary(key => key[0], value => value[1]);
 
             if (returnValues["state"] == _state)
             {
-                var tokenData = AuthToken.Fetch(_clientData.ClientId, _clientData.ClientSecret, returnValues["code"], _clientData.RedirectUri);
+                var tokenData = await AuthToken.Fetch(_clientData.ClientId, _clientData.ClientSecret, returnValues["code"], _clientData.RedirectUri);
                 return tokenData;
             }
             else
@@ -151,7 +167,7 @@ namespace LobotJR.Launcher
             return clientData;
         }
 
-        private TokenData LoadTokenData()
+        private async Task<TokenData> LoadTokenData()
         {
             if (FileUtils.HasTokenData())
             {
@@ -160,10 +176,10 @@ namespace LobotJR.Launcher
                 {
                     if (tokenData.ChatToken != null)
                     {
-                        var validationResponse = AuthToken.Validate(tokenData.ChatToken.AccessToken);
+                        var validationResponse = await AuthToken.Validate(tokenData.ChatToken.AccessToken);
                         if (validationResponse == null)
                         {
-                            tokenData.ChatToken = AuthToken.Refresh(_clientData.ClientId, _clientData.ClientSecret, tokenData.ChatToken.RefreshToken);
+                            tokenData.ChatToken = await AuthToken.Refresh(_clientData.ClientId, _clientData.ClientSecret, tokenData.ChatToken.RefreshToken);
                         }
                         else if (!validationResponse.Login.Equals(tokenData.ChatUser) || _chatScopes.Any(x => !validationResponse.Scopes.Contains(x)))
                         {
@@ -172,10 +188,10 @@ namespace LobotJR.Launcher
                     }
                     if (tokenData.BroadcastToken != null)
                     {
-                        var validationResponse = AuthToken.Validate(tokenData.BroadcastToken.AccessToken);
+                        var validationResponse = await AuthToken .Validate(tokenData.BroadcastToken.AccessToken);
                         if (validationResponse == null)
                         {
-                            tokenData.BroadcastToken = AuthToken.Refresh(_clientData.ClientId, _clientData.ClientSecret, tokenData.BroadcastToken.RefreshToken);
+                            tokenData.BroadcastToken = await AuthToken.Refresh(_clientData.ClientId, _clientData.ClientSecret, tokenData.BroadcastToken.RefreshToken);
                         }
                         else if (!validationResponse.Login.Equals(tokenData.BroadcastUser) || _broadcastScopes.Any(x => !validationResponse.Scopes.Contains(x)))
                         {
@@ -244,48 +260,58 @@ namespace LobotJR.Launcher
             _streamerUrlTimer = 3;
         }
 
-        private void Validate_Click(object sender, RoutedEventArgs e)
+        private async void Validate_Click(object sender, RoutedEventArgs e)
         {
+            SetEnabled(false);
+
             if (!string.IsNullOrWhiteSpace(ChatToken.Text))
             {
-                _tokenData.ChatToken = HandleAuthResponse(new Uri(ChatToken.Text));
+                _tokenData.ChatToken = await HandleAuthResponse(new Uri(ChatToken.Text));
             }
 
             if (!string.IsNullOrWhiteSpace(StreamerToken.Text))
             {
-                _tokenData.BroadcastToken = HandleAuthResponse(new Uri(StreamerToken.Text));
+                _tokenData.BroadcastToken = await HandleAuthResponse(new Uri(StreamerToken.Text));
             }
 
             ValidateTokens();
         }
 
-        private void ValidateTokens()
+        private async void ValidateTokens()
         {
-            ChatToken.Text = "Token validation failed. Try again.";
+            var resultText = "Token validation failed. Try again.";
+            ChatToken.Text = "Validating token...";
             if (_tokenData.ChatToken != null)
             {
-                var validationResponse = AuthToken.Validate(_tokenData.ChatToken.AccessToken);
+                var validationResponse = await AuthToken.Validate(_tokenData.ChatToken.AccessToken);
                 _tokenData.ChatUser = validationResponse.Login;
                 if (_tokenData.ChatToken != null)
                 {
-                    ChatToken.Text = "Token validated successfully!";
+                    resultText = "Token validated successfully!";
                 }
             }
+            ChatToken.Text = resultText;
 
-            StreamerToken.Text = "Token validation failed. Try again.";
+            resultText = "Token validation failed. Try again.";
+            StreamerToken.Text = "Validating token...";
             if (_tokenData.BroadcastToken != null)
             {
-                var validationResponse = AuthToken.Validate(_tokenData.BroadcastToken.AccessToken);
+                var validationResponse = await AuthToken.Validate(_tokenData.BroadcastToken.AccessToken);
                 _tokenData.BroadcastUser = validationResponse.Login;
                 if (_tokenData.BroadcastToken != null)
                 {
-                    StreamerToken.Text = "Token validated successfully!";
+                    resultText = "Token validated successfully!";
                 }
             }
+            StreamerToken.Text = resultText;
 
             if (_tokenData.ChatToken != null && _tokenData.BroadcastToken != null)
             {
                 LaunchBot();
+            }
+            else
+            {
+                SetEnabled(true);
             }
         }
     }

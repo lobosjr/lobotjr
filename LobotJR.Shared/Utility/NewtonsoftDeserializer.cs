@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using RestSharp;
-using RestSharp.Deserializers;
+using RestSharp.Serializers;
 
 namespace LobotJR.Shared.Utility
 {
@@ -9,7 +9,7 @@ namespace LobotJR.Shared.Utility
     {
         public static NewtonsoftDeserializer Default { get; private set; } = new NewtonsoftDeserializer();
 
-        T IDeserializer.Deserialize<T>(IRestResponse response)
+        T IDeserializer.Deserialize<T>(RestResponse response)
         {
             var resolver = new DefaultContractResolver();
             resolver.NamingStrategy = new SnakeCaseNamingStrategy(true, false, true);

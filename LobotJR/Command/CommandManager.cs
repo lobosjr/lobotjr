@@ -282,8 +282,8 @@ namespace LobotJR.Command
                 request.UserId = UserLookup.GetId(user);
                 if (request.UserId == null && !CanExecuteAnonymously(request.CommandId))
                 {
-                    return new CommandResult("User ID not found in cache, please try again in a few minutes. "
-                        + "If you continue to see this error, please let the streamer or a mod know.");
+                    return new CommandResult("It looks like we don't have your user ID. Give me some time to set up your character. "
+                        + $"This can take up to {UserLookup.UpdateTime} minutes.");
                 }
                 if (CanUserExecute(request.CommandId, request.UserId))
                 {

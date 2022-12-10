@@ -603,7 +603,16 @@ namespace TwitchBot
                     #region System Processing
                     if (userLookup.IsUpdateTime(DateTime.Now))
                     {
-                        userLookup.UpdateCache(tokenData.BroadcastToken.AccessToken, clientData.ClientId);
+                        var cacheUpdateResults = userLookup.UpdateCache(tokenData.BroadcastToken.AccessToken, clientData.ClientId).GetAwaiter().GetResult();
+                        foreach (var user in cacheUpdateResults.UpdatedUsers)
+                        {
+                            Whisper(user, "All done! Whisper me \"!cast\" to fish!", group);
+                        }
+                        foreach (var user in cacheUpdateResults.FailedUsers)
+                        {
+                            Whisper(user, "Uh oh, we couldn't get your user id from twitch. Let the streamer know as there may be a problem.", group);
+                            Console.WriteLine($"Failed to lookup id for user {user}. It's possible the username we're getting from IRC doesn't match, maybe due to special characters or something? Not sure...");
+                        }
                     }
                     systemManager.Process(broadcasting);
                     #endregion
@@ -1860,8 +1869,15 @@ namespace TwitchBot
                                     {
                                         if (parties.ContainsKey(myClass.groupID) && parties[myClass.groupID].status == PARTY_FORMING)
                                         {
-                                            parties[myClass.groupID].status = PARTY_READY;
-                                            Whisper(parties[myClass.groupID], "Party set to 'Ready'. Be careful adventuring without a full party!", group);
+                                            if (parties[myClass.groupID].members.Any(x => x.pendingInvite))
+                                            {
+                                                Whisper(whisperSender, "One or more members have not accepted their invitation.", group);
+                                            }
+                                            else
+                                            {
+                                                parties[myClass.groupID].status = PARTY_READY;
+                                                Whisper(parties[myClass.groupID], "Party set to 'Ready'. Be careful adventuring without a full party!", group);
+                                            }
                                         }
                                     }
                                 }
@@ -4284,7 +4300,7 @@ namespace TwitchBot
 
         }
 
-        static void UpdateTokens(TokenData tokenData, LobotJR.Shared.Client.ClientData clientData, bool force = false)
+        static async void UpdateTokens(TokenData tokenData, LobotJR.Shared.Client.ClientData clientData, bool force = false)
         {
             bool tokenUpdated = false;
             if (force || DateTime.Now >= tokenData.ChatToken.ExpirationDate)
@@ -4292,7 +4308,7 @@ namespace TwitchBot
                 tokenUpdated = true;
                 try
                 {
-                    tokenData.ChatToken = AuthToken.Refresh(clientData.ClientId, clientData.ClientSecret, tokenData.ChatToken.RefreshToken);
+                    tokenData.ChatToken = await AuthToken.Refresh(clientData.ClientId, clientData.ClientSecret, tokenData.ChatToken.RefreshToken);
                 }
                 catch (Exception e)
                 {
@@ -4304,7 +4320,7 @@ namespace TwitchBot
                 tokenUpdated = true;
                 try
                 {
-                    tokenData.BroadcastToken = AuthToken.Refresh(clientData.ClientId, clientData.ClientSecret, tokenData.BroadcastToken.RefreshToken);
+                    tokenData.BroadcastToken = await AuthToken.Refresh(clientData.ClientId, clientData.ClientSecret, tokenData.BroadcastToken.RefreshToken);
                 }
                 catch (Exception e)
                 {

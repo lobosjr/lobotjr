@@ -78,5 +78,13 @@ namespace LobotJR.Modules.Fishing.Model
         {
             return Entries.IndexOf(Entries.FirstOrDefault(x => x.UserId.Equals(userId))) + 1;
         }
+
+        /// <summary>
+        /// Sorts the entries to ensure the winner is the first in the list.
+        /// </summary>
+        public void SortResults()
+        {
+            Entries = Entries.OrderByDescending(x => x.Points).ToList();
+        }
     }
 }

@@ -14,8 +14,18 @@ namespace LobotJR.Data.Import
     /// </summary>
     public class FisherDataImport
     {
+        /// <summary>
+        /// Default path to the legacy fisher data file.
+        /// </summary>
         public static readonly string FisherDataPath = "fishing.json";
+        /// <summary>
+        /// Default path to the legacy fishing leaderboard file.
+        /// </summary>
         public static readonly string FishingLeaderboardPath = "fishingLeaderboard.json";
+        /// <summary>
+        /// File system implementation to use for reading file data.
+        /// </summary>
+        public static IFileSystem FileSystem = new FileSystem();
 
         /// <summary>
         /// Loads the list of fishers and their personal leaderboards from
@@ -27,7 +37,7 @@ namespace LobotJR.Data.Import
         {
             try
             {
-                return JsonConvert.DeserializeObject<Dictionary<string, LegacyFisher>>(File.ReadAllText(fisherDataPath));
+                return JsonConvert.DeserializeObject<Dictionary<string, LegacyFisher>>(FileSystem.ReadAllText(fisherDataPath));
             }
             catch
             {
@@ -44,7 +54,7 @@ namespace LobotJR.Data.Import
         {
             try
             {
-                return JsonConvert.DeserializeObject<List<LegacyCatch>>(File.ReadAllText(fishingLeaderboardDataPath));
+                return JsonConvert.DeserializeObject<List<LegacyCatch>>(FileSystem.ReadAllText(fishingLeaderboardDataPath));
             }
             catch
             {

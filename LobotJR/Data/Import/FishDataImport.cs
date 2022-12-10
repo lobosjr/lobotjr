@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace LobotJR.Data.Import
 {
@@ -12,8 +11,18 @@ namespace LobotJR.Data.Import
     /// </summary>
     public class FishDataImport
     {
+        /// <summary>
+        /// Default path to the legacy fish list file.
+        /// </summary>
         public static readonly string FishDataPath = "content/fishlist.ini";
-        public static bool HasLegacyFishData { get { return File.Exists(FishDataPath); } }
+        /// <summary>
+        /// File system implementation to use for reading file data.
+        /// </summary>
+        public static IFileSystem FileSystem = new FileSystem();
+        /// <summary>
+        /// Whether or not the current file system has a legacy fish data file.
+        /// </summary>
+        public static bool HasLegacyFishData { get { return FileSystem.Exists(FishDataPath); } }
 
         private static IEnumerable<FishSize> CreateFishSizes()
         {
@@ -59,12 +68,12 @@ namespace LobotJR.Data.Import
 
         private static IEnumerable<LegacyFish> LoadLegacyFishData(string fishDataPath)
         {
-            var fileText = File.ReadAllLines(fishDataPath, UTF8Encoding.Default);
+            var fileText = FileSystem.ReadAllLines(fishDataPath);
 
             var fishDatabase = new List<LegacyFish>();
             foreach (var line in fileText)
             {
-                var data = File.ReadAllLines($"content/fishing/{line}", UTF8Encoding.Default);
+                var data = FileSystem.ReadAllLines($"content/fishing/{line}");
                 var id = fishDatabase.Count + 1;
                 var name = data[0].Split('=')[1];
                 int.TryParse(data[1].Split('=')[1], out var sizeCategory);

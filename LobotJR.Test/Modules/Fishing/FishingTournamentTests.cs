@@ -39,6 +39,16 @@ namespace LobotJR.Test.Modules.Fishing
             };
         }
 
+        private void ClearTournaments()
+        {
+            var tournamentResults = Manager.TournamentResults.Read();
+            foreach (var entry in tournamentResults)
+            {
+                Manager.TournamentResults.Delete(entry);
+            }
+            Manager.TournamentResults.Commit();
+        }
+
         [TestInitialize]
         public void Setup()
         {
@@ -57,9 +67,22 @@ namespace LobotJR.Test.Modules.Fishing
         }
 
         [TestMethod]
+        public void CalculatesResultsOnTournamentEnd()
+        {
+            var firstFisher = Manager.Fishers.Read().First();
+            var secondFisher = Manager.Fishers.Read(x => !x.UserId.Equals(firstFisher.UserId)).First();
+            System.Tournament.StartTournament();
+            System.Tournament.CurrentTournament.Entries.Add(new TournamentEntry(firstFisher.UserId, 100));
+            System.Tournament.CurrentTournament.Entries.Add(new TournamentEntry(secondFisher.UserId, 200));
+            System.Tournament.EndTournament(true);
+            var results = Manager.TournamentResults.Read().OrderByDescending(x => x.Date).First();
+            Assert.AreEqual(secondFisher.UserId, results.Winner.UserId);
+        }
+
+        [TestMethod]
         public void PushesNotificationOnTournamentEnd()
         {
-            var user = UserMapData.First(x => x.TwitchId.Equals("00"));
+            var user = Manager.Users.Read().First();
             var handlerMock = new Mock<PushNotificationHandler>();
             System.Tournament.StartTournament();
             TournamentModule.PushNotification += handlerMock.Object;
@@ -87,7 +110,7 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void PushesNotificationOnTournamentEndByStreamStopping()
         {
-            var user = UserMapData.First(x => x.TwitchId.Equals("00"));
+            var user = Manager.Users.Read().First();
             var handlerMock = new Mock<PushNotificationHandler>();
             System.Tournament.StartTournament();
             TournamentModule.PushNotification += handlerMock.Object;
@@ -120,7 +143,7 @@ namespace LobotJR.Test.Modules.Fishing
             Assert.IsNotNull(results.Responses);
             Assert.AreEqual(3, results.Responses.Count);
             Assert.IsTrue(results.Responses.Any(x => x.Contains("30 seconds")));
-            Assert.IsTrue(results.Responses.Any(x => x.Contains("02") && x.Contains("30")));
+            Assert.IsTrue(results.Responses.Any(x => x.Contains("Fizz") && x.Contains("30")));
             Assert.IsTrue(results.Responses.Any(x => x.Contains("3rd") && x.Contains("10")));
         }
 
@@ -132,7 +155,7 @@ namespace LobotJR.Test.Modules.Fishing
             Assert.IsNotNull(results.Responses);
             Assert.AreEqual(2, results.Responses.Count);
             Assert.IsTrue(results.Responses.Any(x => x.Contains("30 seconds")));
-            Assert.IsTrue(results.Responses.Any(x => x.Contains("02") && x.Contains("30")));
+            Assert.IsTrue(results.Responses.Any(x => x.Contains("Fizz") && x.Contains("30")));
         }
 
         [TestMethod]
@@ -150,7 +173,7 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void TournamentResultsGetsErrorMessageWhenNoTournamentHasCompleted()
         {
-            TournamentResultsData.Clear();
+            ClearTournaments();
             var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentResults")).FirstOrDefault();
             var results = command.Executor("", UserLookup.GetId("Foo"));
             Assert.IsNotNull(results.Responses);
@@ -164,7 +187,7 @@ namespace LobotJR.Test.Modules.Fishing
             var results = command.CompactExecutor("", UserLookup.GetId("Buzz"));
             var resultObject = ResultsFromCompact(results.ToCompact().First());
             Assert.IsNotNull(resultObject);
-            Assert.AreEqual(UserLookup.GetId("Fizz"), resultObject.Winner);
+            Assert.AreEqual("Fizz", resultObject.Winner);
             Assert.AreEqual(3, resultObject.Participants);
             Assert.AreEqual(30, resultObject.WinnerPoints);
             Assert.AreEqual(0, resultObject.Rank);
@@ -178,7 +201,7 @@ namespace LobotJR.Test.Modules.Fishing
             var results = command.CompactExecutor("", UserLookup.GetId("Foo"));
             var resultObject = ResultsFromCompact(results.ToCompact().First());
             Assert.IsNotNull(resultObject);
-            Assert.AreEqual(UserLookup.GetId("Fizz"), resultObject.Winner);
+            Assert.AreEqual("Fizz", resultObject.Winner);
             Assert.AreEqual(3, resultObject.Participants);
             Assert.AreEqual(30, resultObject.WinnerPoints);
             Assert.AreEqual(3, resultObject.Rank);
@@ -188,7 +211,8 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void TournamentResultsCompactReturnsNullIfNoTournamentsHaveTakenPlace()
         {
-            TournamentResultsData.Clear();
+            ClearTournaments();
+            var leftovers = Manager.TournamentResults.Read().ToArray();
             var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentResults")).FirstOrDefault();
             var results = command.CompactExecutor("", UserLookup.GetId("Buzz"));
             Assert.IsNull(results);
