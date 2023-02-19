@@ -2,7 +2,6 @@
 using LobotJR.Data.User;
 using LobotJR.Modules;
 using System.Collections.Generic;
-using Wolfcoins;
 
 namespace LobotJR.Command
 {
@@ -33,8 +32,7 @@ namespace LobotJR.Command
         /// Loads all registered command modules.
         /// </summary>
         /// <param name="systemManager">System manager containing all loaded systems.</param>
-        /// <param name="wolfcoins">Holds data about wolfcoins in legacy format.</param>
-        void LoadAllModules(ISystemManager systemManager, Currency wolfcoins);
+        void LoadAllModules(ISystemManager systemManager);
         /// <summary>
         /// Loads all registered command modules.
         /// <param name="modules">An array of modules to load.</param>

@@ -414,12 +414,6 @@ namespace TwitchBot
             userLookup = new UserLookup(repoManager.Users, appSettings);
             #endregion
 
-            #region System Setup
-            var systemManager = new SystemManager(repoManager, repoManager);
-            systemManager.LoadAllSystems();
-            #endregion
-
-
             if (connected)
             {
                 UpdateTokens(tokenData, clientData);
@@ -441,9 +435,14 @@ namespace TwitchBot
                 wolfcoins.UpdateViewers(channel);
                 wolfcoins.UpdateSubs(tokenData.BroadcastToken.AccessToken, clientData.ClientId);
 
+                #region System Setup
+                var systemManager = new SystemManager(repoManager, repoManager);
+                systemManager.LoadAllSystems(wolfcoins.coinList);
+                #endregion
+
                 #region Command Manager Setup
                 var commandManager = new CommandManager(repoManager, userLookup);
-                commandManager.LoadAllModules(systemManager, wolfcoins);
+                commandManager.LoadAllModules(systemManager);
                 commandManager.PushNotifications +=
                     (string userId, CommandResult commandResult) =>
                     {
@@ -475,7 +474,7 @@ namespace TwitchBot
                     if (hasFisherData)
                     {
                         Console.WriteLine("Importing user records...");
-                        FisherDataImport.ImportFisherDataIntoSql(legacyFisherData, repoManager.Fishers, repoManager.FishData, userLookup);
+                        FisherDataImport.ImportFisherDataIntoSql(legacyFisherData, repoManager.FishData, repoManager.Catches, userLookup);
                         File.Move(FisherDataImport.FisherDataPath, $"{FisherDataImport.FisherDataPath}.{DateTime.Now.ToFileTimeUtc()}.backup");
                     }
                     if (hasLeaderboardData)
@@ -3694,8 +3693,8 @@ namespace TwitchBot
                                         {
                                             broadcasting = true;
                                             awardLast = DateTime.Now;
-                                            var fishingSystem = systemManager.Get<FishingSystem>();
-                                            fishingSystem.Tournament.NextTournament = DateTime.Now.AddMinutes(15);
+                                            var tournamentSystem = systemManager.Get<TournamentSystem>();
+                                            tournamentSystem.NextTournament = DateTime.Now.AddMinutes(15);
 
                                             irc.sendChatMessage("Wolfcoins & XP will be awarded.");
                                         }

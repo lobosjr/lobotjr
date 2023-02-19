@@ -1,6 +1,7 @@
 ﻿using LobotJR.Data;
+using LobotJR.Modules.Fishing;
 using LobotJR.Modules.Fishing.Model;
-using LobotJR.Test.Modules.Fishing;
+using LobotJR.Test.Mocks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using System;
@@ -11,85 +12,35 @@ using static LobotJR.Modules.Fishing.FishingSystem;
 namespace LobotJR.Test.Systems.Fishing
 {
     [TestClass]
-    public class FishingSystemTests : FishingTestBase
+    public class FishingSystemTests
     {
+        private SqliteRepositoryManager Manager;
+        private FishingSystem FishingSystem;
+
         [TestInitialize]
         public void Initialize()
         {
-            InitializeFishingModule();
+            Manager = new SqliteRepositoryManager(MockContext.Create());
+
+            FishingSystem = new FishingSystem(
+                Manager.Users,
+                Manager.FishData,
+                Manager.AppSettings);
         }
 
         [TestMethod]
         public void GetsFisherById()
         {
-            var fisher = Manager.Fishers.Read().First();
-            var retrieved = System.GetFisherById(fisher.UserId);
-            Assert.AreEqual(fisher, retrieved);
+            var userId = Manager.Users.Read().First().TwitchId;
+            var retrieved = FishingSystem.GetFisherById(userId);
+            Assert.AreEqual(userId, retrieved.UserId);
         }
 
         [TestMethod]
-        public void GetFisherByIdGetsNullOnMissingFisher()
+        public void CreatesFisherWhenNoneExist()
         {
-            var retrieved = System.GetFisherById("Invalid Id");
-            Assert.IsNull(retrieved);
-        }
-
-        [TestMethod]
-        public void GetsLeaderboard()
-        {
-            var leaderboard = Manager.FishingLeaderboard.Read();
-            var retrieved = System.GetLeaderboard();
+            var retrieved = FishingSystem.GetFisherById("Invalid Id");
             Assert.IsNotNull(retrieved);
-            Assert.AreEqual(leaderboard.Count(), retrieved.Count());
-            for (var i = 0; i < leaderboard.Count(); i++)
-            {
-                var lEntry = leaderboard.ElementAt(i);
-                var rEntry = retrieved.ElementAt(i);
-                Assert.IsTrue(lEntry.DeeplyEquals(rEntry));
-            }
-        }
-
-        [TestMethod]
-        public void DeletesFish()
-        {
-            var fisher = Manager.Fishers.ReadById(1);
-            var fish = fisher.Records[0];
-            System.DeleteFish(fisher, fish);
-            Assert.IsFalse(fisher.Records.Any(x => x.Fish.Id.Equals(fish.Fish.Id)));
-        }
-
-        [TestMethod]
-        public void DeleteFishDoesNothingOnMissingFish()
-        {
-            var fisher = Manager.Fishers.ReadById(1);
-            var recordCount = fisher.Records.Count;
-            System.DeleteFish(fisher, new Catch() { Id = -1 });
-            Assert.AreEqual(recordCount, fisher.Records.Count);
-        }
-        
-        [TestMethod]
-        public void DeleteFishDoesNothingOnNullFish()
-        {
-            var fisher = Manager.Fishers.ReadById(1);
-            var recordCount = fisher.Records.Count;
-            System.DeleteFish(fisher, null);
-            Assert.AreEqual(recordCount, fisher.Records.Count);
-        }
-
-        [TestMethod]
-        public void DeleteFishDoesNothingOnMissingFisher()
-        {
-            var fisherCount = Manager.Fishers.Read().Count();
-            System.DeleteFish(null, new Catch());
-            Assert.AreEqual(fisherCount, Manager.Fishers.Read().Count());
-        }
-
-        [TestMethod]
-        public void DeleteFishDoesNothingOnNullFisher()
-        {
-            var fisherCount = Manager.Fishers.Read().Count();
-            System.DeleteFish(null, new Catch());
-            Assert.AreEqual(fisherCount, Manager.Fishers.Read().Count());
         }
 
         [TestMethod]
@@ -105,7 +56,7 @@ namespace LobotJR.Test.Systems.Fishing
                     MaximumLength = 20,
                 }
             };
-            var catchData = System.CalculateFishSizes(fisher);
+            var catchData = FishingSystem.CalculateFishSizes(fisher);
             Assert.IsTrue(fisher.Hooked.MinimumWeight <= catchData.Weight);
             Assert.IsTrue(fisher.Hooked.MaximumWeight >= catchData.Weight);
             Assert.IsTrue(fisher.Hooked.MinimumLength <= catchData.Length);
@@ -132,7 +83,7 @@ namespace LobotJR.Test.Systems.Fishing
             var samples = new List<Catch>();
             for (var i = 0; i < sampleSize; i++)
             {
-                samples.Add(System.CalculateFishSizes(fisher));
+                samples.Add(FishingSystem.CalculateFishSizes(fisher));
             }
             var minGroupSize = samples.Count(x => x.Length <= minLengthGroup && x.Weight <= minWeightGroup);
             var maxGroupSize = samples.Count(x => x.Length >= maxLengthGroup && x.Weight >= maxWeightGroup);
@@ -162,12 +113,13 @@ namespace LobotJR.Test.Systems.Fishing
             var lengthStdMin = lengthMean - lengthRange / 6;
             var lengthStdMax = lengthMean + lengthRange / 6;
 
-            AppSettings.FishingUseNormalSizes = true;
+            var appSettings = Manager.AppSettings.Read().First();
+            appSettings.FishingUseNormalSizes = true;
             var sampleSize = 10000;
             var samples = new List<Catch>();
             for (var i = 0; i < sampleSize; i++)
             {
-                samples.Add(System.CalculateFishSizes(fisher));
+                samples.Add(FishingSystem.CalculateFishSizes(fisher));
             }
             var oneStdGroupSizeWeight = samples.Count(x => x.Weight >= weightStdMin && x.Weight <= weightStdMax);
             var oneStdGroupSizeLength = samples.Count(x => x.Length >= lengthStdMin && x.Length <= lengthStdMax);
@@ -180,174 +132,34 @@ namespace LobotJR.Test.Systems.Fishing
         }
 
         [TestMethod]
-        public void UpdatesPersonalLeaderboardWithNewFishType()
-        {
-            var fisher = Manager.Fishers.Read().First();
-            fisher.Records.Clear();
-            var catchData = new Catch()
-            {
-                Fish = Manager.FishData.Read().First(),
-                UserId = fisher.UserId,
-                Weight = 100
-            };
-            var result = System.UpdatePersonalLeaderboard(fisher, catchData);
-            Assert.IsTrue(result);
-            Assert.AreEqual(1, fisher.Records.Count);
-            Assert.AreEqual(catchData.Fish.Id, fisher.Records[0].Fish.Id);
-        }
-
-        [TestMethod]
-        public void UpdatesPersonalLeaderboardWithExistingFishType()
-        {
-            var fisher = Manager.Fishers.Read().First();
-            var fish = Manager.FishData.Read().First();
-            var existing = fisher.Records.First(x => x.FishId == fish.Id);
-            var catchData = new Catch()
-            {
-                Fish = fish,
-                UserId = fisher.UserId,
-                Weight = existing.Weight + 1
-            };
-            var result = System.UpdatePersonalLeaderboard(fisher, catchData);
-            Assert.IsTrue(result);
-            Assert.AreEqual(catchData.Weight, fisher.Records[0].Weight);
-        }
-
-        [TestMethod]
-        public void UpdatePersonalLeaderboardReturnsFalseWithNullFisher()
-        {
-            var result = System.UpdatePersonalLeaderboard(null, new Catch());
-            Assert.IsFalse(result);
-        }
-
-        [TestMethod]
-        public void UpdatePersonalLeaderboardReturnsFalseWithNullCatchData()
-        {
-            var result = System.UpdatePersonalLeaderboard(new Fisher(), null);
-            Assert.IsFalse(result);
-        }
-
-        [TestMethod]
-        public void UpdatePersonalLeaderboardReturnsFalseWhenCatchIsNotNewRecord()
-        {
-            var fisher = Manager.Fishers.Read().First();
-            fisher.Records.Clear();
-            fisher.Records.Add(new Catch()
-            {
-                Fish = Manager.FishData.Read().First(),
-                Weight = 100
-            });
-            var catchData = new Catch()
-            {
-                Fish = Manager.FishData.Read().First(),
-                Weight = 10
-            };
-            var result = System.UpdatePersonalLeaderboard(fisher, catchData);
-            Assert.IsFalse(result);
-            Assert.AreEqual(1, fisher.Records.Count);
-            Assert.AreNotEqual(catchData.Weight, fisher.Records[0].Weight);
-        }
-
-        [TestMethod]
-        public void UpdatesGlobalLeaderboardWithNewFishType()
-        {
-            var fish = Manager.FishData.Read().First();
-            var entry = Manager.FishingLeaderboard.Read(x => x.Fish.Id == fish.Id).First();
-            Manager.FishingLeaderboard.Delete(entry);
-            Manager.FishingLeaderboard.Commit();
-            var initialCount = Manager.FishingLeaderboard.Read().Count();
-            var catchData = new Catch()
-            {
-                Fish = Manager.FishData.Read().First(),
-                UserId = Manager.Fishers.Read().First().UserId,
-                Weight = 100
-            };
-            var result = System.UpdateGlobalLeaderboard(catchData);
-            var leaderboard = System.GetLeaderboard();
-            Assert.IsTrue(result);
-            Assert.AreEqual(initialCount + 1, leaderboard.Count());
-            Assert.AreEqual(catchData.Weight, leaderboard.First(x => x.Fish.Id == fish.Id).Weight);
-        }
-
-        [TestMethod]
-        public void UpdatesGlobalLeaderboardWithExistingFishType()
-        {
-            var fish = Manager.FishData.Read().First();
-            var entry = Manager.FishingLeaderboard.Read(x => x.Fish.Id == fish.Id).First();
-            var newUser = Manager.Fishers.Read(x => !x.UserId.Equals(entry.UserId)).First();
-            var catchData = new Catch()
-            {
-                Fish = fish,
-                UserId = newUser.UserId,
-                Weight = entry.Weight + 1
-            };
-            var result = System.UpdateGlobalLeaderboard(catchData);
-            var leaderboard = System.GetLeaderboard();
-            Assert.IsTrue(result);
-            Assert.AreEqual(catchData.Weight, leaderboard.First().Weight);
-            Assert.AreEqual(newUser.UserId, leaderboard.First().UserId);
-        }
-
-        [TestMethod]
-        public void UpdateGlobalLeaderboardReturnsFalseWithNullCatchData()
-        {
-            var result = System.UpdateGlobalLeaderboard(null);
-            Assert.IsFalse(result);
-        }
-
-        [TestMethod]
-        public void UpdateGlobalLeaderboardReturnsFalseWhenCatchIsNotNewRecord()
-        {
-            var fish = Manager.FishData.Read().First();
-            var entry = Manager.FishingLeaderboard.Read(x => x.Fish.Id == fish.Id).First();
-            var catchData = new Catch()
-            {
-                Fish = fish,
-                Weight = entry.Weight - 1
-            };
-            var result = System.UpdateGlobalLeaderboard(catchData);
-            var leaderboard = System.GetLeaderboard();
-            Assert.IsFalse(result);
-            Assert.AreNotEqual(catchData.Weight, leaderboard.First().Weight);
-        }
-
-        [TestMethod]
         public void CastsLine()
         {
-            var fisher = Manager.Fishers.Read().First();
+            var userId = Manager.Users.Read().First().TwitchId;
+            var fisher = FishingSystem.GetFisherById(userId);
             fisher.IsFishing = false;
-            System.Cast(fisher.UserId);
+            FishingSystem.Cast(fisher.UserId);
+            var appSettings = Manager.AppSettings.Read().First();
             Assert.IsTrue(fisher.IsFishing);
-            Assert.IsTrue(fisher.HookedTime >= DateTime.Now.AddSeconds(AppSettings.FishingCastMinimum));
-            Assert.IsTrue(fisher.HookedTime <= DateTime.Now.AddSeconds(AppSettings.FishingCastMaximum));
+            Assert.IsTrue(fisher.HookedTime >= DateTime.Now.AddSeconds(appSettings.FishingCastMinimum));
+            Assert.IsTrue(fisher.HookedTime <= DateTime.Now.AddSeconds(appSettings.FishingCastMaximum));
         }
 
         [TestMethod]
         public void CastCreatesNewFisherIfNoneExistsWithMatchingUserId()
         {
             var newId = "NewId";
-            System.Cast(newId);
-            var newFisher = Manager.Fishers.Read(x => x.UserId.Equals(newId)).First();
+            FishingSystem.Cast(newId);
+            var newFisher = FishingSystem.GetFisherById(newId);
             Assert.IsNotNull(newFisher);
-        }
-
-        [TestMethod]
-        public void CastSetsHookTimeWithTournamentSettingsWhileTournamentActive()
-        {
-            var fisher = Manager.Fishers.Read().First();
-            fisher.IsFishing = false;
-            System.Tournament.StartTournament();
-            System.Cast(fisher.UserId);
-            Assert.IsTrue(fisher.IsFishing);
-            Assert.IsTrue(fisher.HookedTime >= DateTime.Now.AddSeconds(AppSettings.FishingTournamentCastMinimum));
-            Assert.IsTrue(fisher.HookedTime <= DateTime.Now.AddSeconds(AppSettings.FishingTournamentCastMaximum));
+            Assert.IsTrue(newFisher.IsFishing);
         }
 
         [TestMethod]
         public void HooksFish()
         {
-            var fisher = Manager.Fishers.Read().First();
-            var result = System.HookFish(fisher);
+            var userId = Manager.Users.Read().First().TwitchId;
+            var fisher = FishingSystem.GetFisherById(userId);
+            var result = FishingSystem.HookFish(fisher);
             Assert.IsTrue(result);
             Assert.IsNotNull(fisher.Hooked);
         }
@@ -355,14 +167,16 @@ namespace LobotJR.Test.Systems.Fishing
         [TestMethod]
         public void HooksFishWithNormalRarityDistribution()
         {
-            var fisher = Manager.Fishers.Read().First();
-            AppSettings.FishingUseNormalRarity = true;
+            var userId = Manager.Users.Read().First().TwitchId;
+            var fisher = FishingSystem.GetFisherById(userId);
+            var appSettings = Manager.AppSettings.Read().First();
+            appSettings.FishingUseNormalRarity = true;
             var rarities = Manager.FishData.Read().Select(x => x.Rarity).Distinct().ToArray();
             var sampleSize = 10000;
             var samples = new List<Fish>();
             for (var i = 0; i < sampleSize; i++)
             {
-                System.HookFish(fisher);
+                FishingSystem.HookFish(fisher);
                 samples.Add(fisher.Hooked);
             }
             var commonCount = samples.Count(x => x.Rarity.Equals(rarities[0]));
@@ -376,13 +190,14 @@ namespace LobotJR.Test.Systems.Fishing
         [TestMethod]
         public void HooksFishWithWeightedRarityDistribution()
         {
-            var fisher = Manager.Fishers.Read().First();
+            var userId = Manager.Users.Read().First().TwitchId;
+            var fisher = FishingSystem.GetFisherById(userId);
             var rarities = Manager.FishData.Read().Select(x => x.Rarity).Distinct().ToArray();
             var sampleSize = 10000;
             var samples = new List<Fish>();
             for (var i = 0; i < sampleSize; i++)
             {
-                System.HookFish(fisher);
+                FishingSystem.HookFish(fisher);
                 samples.Add(fisher.Hooked);
             }
             var weightTotal = (float)rarities.Sum(x => x.Weight);
@@ -400,11 +215,12 @@ namespace LobotJR.Test.Systems.Fishing
         [TestMethod]
         public void UnhooksFish()
         {
-            var fisher = Manager.Fishers.Read().First();
+            var userId = Manager.Users.Read().First().TwitchId;
+            var fisher = FishingSystem.GetFisherById(userId);
             fisher.IsFishing = true;
             fisher.Hooked = new Fish();
             fisher.HookedTime = DateTime.Now;
-            System.UnhookFish(fisher);
+            FishingSystem.UnhookFish(fisher);
             Assert.IsFalse(fisher.IsFishing);
             Assert.IsNull(fisher.Hooked);
             Assert.IsNull(fisher.HookedTime);
@@ -413,9 +229,10 @@ namespace LobotJR.Test.Systems.Fishing
         [TestMethod]
         public void CatchesFish()
         {
-            var fisher = Manager.Fishers.Read().First();
+            var userId = Manager.Users.Read().First().TwitchId;
+            var fisher = FishingSystem.GetFisherById(userId);
             fisher.Hooked = Manager.FishData.Read().First();
-            var catchData = System.CatchFish(fisher);
+            var catchData = FishingSystem.CatchFish(fisher);
             Assert.IsNotNull(catchData);
             Assert.AreEqual(Manager.FishData.Read().First().Id, catchData.Fish.Id);
             Assert.AreEqual(fisher.UserId, catchData.UserId);
@@ -424,48 +241,30 @@ namespace LobotJR.Test.Systems.Fishing
         [TestMethod]
         public void CatchFishDoesNothingWhenFisherIsNull()
         {
-            var catchData = System.CatchFish(null);
+            var catchData = FishingSystem.CatchFish(null);
             Assert.IsNull(catchData);
         }
 
         [TestMethod]
         public void CatchFishDoesNothingIfNoFishHooked()
         {
-            var fisher = Manager.Fishers.Read().First();
+            var userId = Manager.Users.Read().First().TwitchId;
+            var fisher = FishingSystem.GetFisherById(userId);
             fisher.Hooked = null;
-            var catchData = System.CatchFish(fisher);
+            var catchData = FishingSystem.CatchFish(fisher);
             Assert.IsNull(catchData);
-        }
-
-        [TestMethod]
-        public void CatchFishUpdatesLeaderboardWhileTournamentActive()
-        {
-            var fisher = Manager.Fishers.Read().First();
-            fisher.Hooked = Manager.FishData.Read().First();
-            var callbackMock = new Mock<LeaderboardEventHandler>();
-            System.NewGlobalRecord += callbackMock.Object;
-            var leaderboard = Manager.FishingLeaderboard.Read();
-            foreach (var entry in leaderboard)
-            {
-                Manager.FishingLeaderboard.Delete(entry);
-            }
-            Manager.FishingLeaderboard.Commit();
-            System.Tournament.StartTournament();
-            var catchData = System.CatchFish(fisher);
-            Assert.IsNotNull(catchData);
-            Assert.AreEqual(1, Manager.FishingLeaderboard.Read().Count());
-            callbackMock.Verify(x => x(It.IsAny<LeaderboardEntry>()), Times.Once);
         }
 
         [TestMethod]
         public void ProcessHooksFish()
         {
-            var fisher = Manager.Fishers.Read().First();
+            var userId = Manager.Users.Read().First().TwitchId;
+            var fisher = FishingSystem.GetFisherById(userId);
             fisher.IsFishing = true;
             fisher.HookedTime = DateTime.Now;
             var callbackMock = new Mock<FisherEventHandler>();
-            System.FishHooked += callbackMock.Object;
-            System.Process(true);
+            FishingSystem.FishHooked += callbackMock.Object;
+            FishingSystem.Process(true);
             Assert.IsNotNull(fisher.Hooked);
             callbackMock.Verify(x => x(fisher), Times.Once);
         }
@@ -473,13 +272,15 @@ namespace LobotJR.Test.Systems.Fishing
         [TestMethod]
         public void ProcessReleasesFish()
         {
-            var fisher = Manager.Fishers.Read().First();
+            var userId = Manager.Users.Read().First().TwitchId;
+            var fisher = FishingSystem.GetFisherById(userId);
+            var appSettings = Manager.AppSettings.Read().First();
             fisher.IsFishing = true;
-            fisher.HookedTime = DateTime.Now.AddSeconds(-AppSettings.FishingHookLength);
+            fisher.HookedTime = DateTime.Now.AddSeconds(-appSettings.FishingHookLength);
             fisher.Hooked = Manager.FishData.Read().First();
             var callbackMock = new Mock<FisherEventHandler>();
-            System.FishGotAway += callbackMock.Object;
-            System.Process(true);
+            FishingSystem.FishGotAway += callbackMock.Object;
+            FishingSystem.Process(true);
             Assert.IsFalse(fisher.IsFishing);
             Assert.IsNull(fisher.Hooked);
             Assert.IsNull(fisher.HookedTime);

@@ -53,8 +53,9 @@ namespace LobotJR.Test.Command
         [TestMethod]
         public void IsValidCommandMatchesWildcardAtStart()
         {
-            var module = CommandModuleMock.Object;
-            Assert.IsTrue(CommandManager.IsValidCommand($"*.{module.SubModules.FirstOrDefault().Name}.*"));
+            var module = SubCommandModuleMock.Object;
+            var part = module.Name.Substring(module.Name.IndexOf('.') + 1);
+            Assert.IsTrue(CommandManager.IsValidCommand($"*.{part}.*"));
         }
 
         [TestMethod]

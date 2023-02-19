@@ -26,6 +26,7 @@ namespace LobotJR.Test.Command
         protected IEnumerable<CommandHandler> CommandHandlers;
         protected IEnumerable<CommandHandler> SubCommandHandlers;
         protected CommandManager CommandManager;
+        protected SqliteRepositoryManager Manager;
 
         protected Dictionary<string, Mock<CommandExecutor>> ExecutorMocks;
         protected Mock<AnonymousExecutor> AnonymousExecutorMock;
@@ -59,7 +60,7 @@ namespace LobotJR.Test.Command
                 new CommandHandler("Foobar", ExecutorMocks["Foobar"].Object, "Foobar"),
             };
             SubCommandModuleMock = new Mock<ICommandModule>();
-            SubCommandModuleMock.Setup(x => x.Name).Returns("SubMock");
+            SubCommandModuleMock.Setup(x => x.Name).Returns("CommandMock.SubMock");
             SubCommandModuleMock.Setup(x => x.Commands).Returns(SubCommandHandlers);
 
 
@@ -78,7 +79,6 @@ namespace LobotJR.Test.Command
             CommandModuleMock = new Mock<ICommandModule>();
             CommandModuleMock.Setup(x => x.Name).Returns("CommandMock");
             CommandModuleMock.Setup(x => x.Commands).Returns(CommandHandlers);
-            CommandModuleMock.Setup(x => x.SubModules).Returns(new ICommandModule[] { SubCommandModuleMock.Object });
             UserRoles = new List<UserRole>(new UserRole[]
             {
                 new UserRole("TestRole",
@@ -113,11 +113,10 @@ namespace LobotJR.Test.Command
             RepositoryManagerMock = new Mock<IRepositoryManager>();
             RepositoryManagerMock.Setup(x => x.Users).Returns(UserMapMock.Object);
             RepositoryManagerMock.Setup(x => x.UserRoles).Returns(UserRoleMock.Object);
-            var appSettings = new ListRepository<AppSettings>();
-            appSettings.Data.Add(new AppSettings());
-            RepositoryManagerMock.Setup(x => x.AppSettings).Returns(appSettings);
+            Manager = new SqliteRepositoryManager(MockContext.Create());
+            RepositoryManagerMock.Setup(x => x.AppSettings).Returns(Manager.AppSettings);
             CommandManager = new CommandManager(RepositoryManagerMock.Object, new UserLookup(UserMapMock.Object, new AppSettings()));
-            CommandManager.LoadModules(CommandModuleMock.Object);
+            CommandManager.LoadModules(CommandModuleMock.Object, SubCommandModuleMock.Object);
         }
     }
 }

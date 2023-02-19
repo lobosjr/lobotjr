@@ -8,68 +8,70 @@ using System;
 using System.Linq;
 using static LobotJR.Modules.Fishing.TournamentSystem;
 
-namespace LobotJR.Test.Systems.Fishing
+namespace LobotJR.Test.TournamentSystems.Fishing
 {
     [TestClass]
     public class TournamentSystemTests
     {
-        private ListRepository<Fisher> Fishers;
-        private ListRepository<TournamentResult> TournamentResults;
-        private ListRepository<AppSettings> AppSettings;
-        private TournamentSystem System;
+        private SqliteRepositoryManager Manager;
+        private FishingSystem FishingSystem;
+        private TournamentSystem TournamentSystem;
 
         [TestInitialize]
         public void Initialize()
         {
-            Fishers = new ListRepository<Fisher>();
-            TournamentResults = new ListRepository<TournamentResult>();
-            AppSettings = new ListRepository<AppSettings>();
-            AppSettings.Data.Add(new AppSettings());
-            System = new TournamentSystem(Fishers, TournamentResults, AppSettings);
+            Manager = new SqliteRepositoryManager(MockContext.Create());
+
+
+            FishingSystem = new FishingSystem(
+                Manager.Users,
+                Manager.FishData,
+                Manager.AppSettings);
+            var leaderboardSystem = new LeaderboardSystem(Manager.Catches, Manager.FishingLeaderboard);
+            TournamentSystem = new TournamentSystem(FishingSystem, leaderboardSystem, Manager.TournamentResults, Manager.AppSettings);
         }
 
         [TestMethod]
         public void AddsTournamentPoints()
         {
-            var fisher = new Fisher() { Id = 0, UserId = "00" };
-            Fishers.Data.Add(fisher);
-            System.CurrentTournament = new TournamentResult();
-            System.CurrentTournament.Entries.Add(new TournamentEntry(fisher.UserId, 10));
-            var points = System.AddTournamentPoints(fisher.UserId, 10);
+            var userId = Manager.Users.Read().First().TwitchId;
+            TournamentSystem.CurrentTournament = new TournamentResult();
+            TournamentSystem.CurrentTournament.Entries.Add(new TournamentEntry(userId, 10));
+            var points = TournamentSystem.AddTournamentPoints(userId, 10);
             Assert.AreEqual(20, points);
-            Assert.AreEqual(1, System.CurrentTournament.Entries.Count);
-            Assert.AreEqual(points, System.CurrentTournament.Entries[0].Points);
+            Assert.AreEqual(1, TournamentSystem.CurrentTournament.Entries.Count);
+            Assert.AreEqual(points, TournamentSystem.CurrentTournament.Entries[0].Points);
         }
 
         [TestMethod]
         public void AddTournamentPointsAddsUserIfNoEntryExists()
         {
-            var fisher = new Fisher() { Id = 0, UserId = "00" };
-            System.CurrentTournament = new TournamentResult();
-            var points = System.AddTournamentPoints(fisher.UserId, 10);
+            var userId = Manager.Users.Read().First().TwitchId;
+            TournamentSystem.CurrentTournament = new TournamentResult();
+            var points = TournamentSystem.AddTournamentPoints(userId, 10);
             Assert.AreEqual(10, points);
-            Assert.AreEqual(1, System.CurrentTournament.Entries.Count);
-            Assert.AreEqual(fisher.UserId, System.CurrentTournament.Entries[0].UserId);
-            Assert.AreEqual(points, System.CurrentTournament.Entries[0].Points);
+            Assert.AreEqual(1, TournamentSystem.CurrentTournament.Entries.Count);
+            Assert.AreEqual(userId, TournamentSystem.CurrentTournament.Entries[0].UserId);
+            Assert.AreEqual(points, TournamentSystem.CurrentTournament.Entries[0].Points);
         }
 
         [TestMethod]
         public void AddTournamentPointsDoesNothingIfNoTournamentRunning()
         {
-            var fisher = new Fisher() { Id = 0, UserId = "00" };
-            var points = System.AddTournamentPoints(fisher.UserId, 10);
+            var userId = Manager.Users.Read().First().TwitchId;
+            var points = TournamentSystem.AddTournamentPoints(userId, 10);
             Assert.AreEqual(-1, points);
-            Assert.IsNull(System.CurrentTournament);
+            Assert.IsNull(TournamentSystem.CurrentTournament);
         }
 
         [TestMethod]
         public void StartsTournament()
         {
             var callbackMock = new Mock<TournamentStartHandler>();
-            System.TournamentStarted += callbackMock.Object;
-            System.StartTournament();
-            Assert.IsNotNull(System.CurrentTournament);
-            Assert.IsNull(System.NextTournament);
+            TournamentSystem.TournamentStarted += callbackMock.Object;
+            TournamentSystem.StartTournament();
+            Assert.IsNotNull(TournamentSystem.CurrentTournament);
+            Assert.IsNull(TournamentSystem.NextTournament);
             callbackMock.Verify(x => x(It.IsAny<DateTime>()), Times.Once);
         }
 
@@ -77,21 +79,37 @@ namespace LobotJR.Test.Systems.Fishing
         public void StartTournamentDoesNothingIfTournamentAlreadyRunning()
         {
             var tournament = new TournamentResult() { Id = 123 };
-            System.CurrentTournament = tournament;
-            System.StartTournament();
-            Assert.AreEqual(tournament.Id, System.CurrentTournament.Id);
+            TournamentSystem.CurrentTournament = tournament;
+            TournamentSystem.StartTournament();
+            Assert.AreEqual(tournament.Id, TournamentSystem.CurrentTournament.Id);
         }
 
         [TestMethod]
         public void StartTournamentCancelsFishingUsers()
         {
-            var fisher = new Fisher() { Id = 0, UserId = "00", IsFishing = true, Hooked = new Fish(), HookedTime = DateTime.Now };
-            Fishers.Data.Add(fisher);
-            System.StartTournament();
-            Assert.IsNotNull(System.CurrentTournament);
+            var userId = Manager.Users.Read().First().TwitchId;
+            var fisher = FishingSystem.GetFisherById(userId);
+            FishingSystem.Cast(userId);
+            FishingSystem.HookFish(fisher);
+            TournamentSystem.StartTournament();
+            Assert.IsNotNull(TournamentSystem.CurrentTournament);
             Assert.IsFalse(fisher.IsFishing);
             Assert.IsNull(fisher.Hooked);
             Assert.IsNull(fisher.HookedTime);
+        }
+
+        [TestMethod]
+        public void StartTournamentUpdatesCastTimes()
+        {
+            var userId = Manager.Users.Read().First().TwitchId;
+            var fisher = FishingSystem.GetFisherById(userId);
+            var appSettings = Manager.AppSettings.Read().First();
+            fisher.IsFishing = false;
+            TournamentSystem.StartTournament();
+            FishingSystem.Cast(fisher.UserId);
+            Assert.IsTrue(fisher.IsFishing);
+            Assert.IsTrue(fisher.HookedTime >= DateTime.Now.AddSeconds(appSettings.FishingTournamentCastMinimum));
+            Assert.IsTrue(fisher.HookedTime <= DateTime.Now.AddSeconds(appSettings.FishingTournamentCastMaximum));
         }
 
         [TestMethod]
@@ -99,54 +117,87 @@ namespace LobotJR.Test.Systems.Fishing
         {
             var tournament = new TournamentResult() { Id = 123 };
             var callbackMock = new Mock<TournamentEndHandler>();
-            System.TournamentEnded += callbackMock.Object;
-            System.CurrentTournament = tournament;
-            System.NextTournament = null;
-            System.EndTournament(true);
-            Assert.IsNull(System.CurrentTournament);
-            Assert.IsNotNull(System.NextTournament);
-            Assert.IsTrue(TournamentResults.Data.Any(x => x.Id == tournament.Id));
+            TournamentSystem.TournamentEnded += callbackMock.Object;
+            TournamentSystem.CurrentTournament = tournament;
+            TournamentSystem.NextTournament = null;
+            TournamentSystem.EndTournament(true);
+            Assert.IsNull(TournamentSystem.CurrentTournament);
+            Assert.IsNotNull(TournamentSystem.NextTournament);
+            Assert.IsTrue(Manager.TournamentResults.Read(x => x.Id == tournament.Id).Any());
             callbackMock.Verify(x => x(It.IsAny<TournamentResult>(), It.IsAny<DateTime>()));
         }
 
         [TestMethod]
         public void EndTournamentDoesNothingIfNoTournamentRunning()
         {
-            System.NextTournament = null;
-            System.EndTournament(true);
-            Assert.IsNull(System.CurrentTournament);
-            Assert.AreEqual(0, TournamentResults.Data.Count);
+            var resultCount = Manager.TournamentResults.Read().Count();
+            TournamentSystem.NextTournament = null;
+            TournamentSystem.EndTournament(true);
+            Assert.IsNull(TournamentSystem.CurrentTournament);
+            Assert.AreEqual(resultCount, Manager.TournamentResults.Read().Count());
+        }
+
+        [TestMethod]
+        public void EndTournamentResetsCastTimes()
+        {
+            var userId = Manager.Users.Read().First().TwitchId;
+            var fisher = FishingSystem.GetFisherById(userId);
+            var appSettings = Manager.AppSettings.Read().First();
+            fisher.IsFishing = false;
+            TournamentSystem.StartTournament();
+            TournamentSystem.EndTournament(true);
+            FishingSystem.Cast(fisher.UserId);
+            Assert.IsTrue(fisher.IsFishing);
+            Assert.IsTrue(fisher.HookedTime >= DateTime.Now.AddSeconds(appSettings.FishingCastMinimum));
+            Assert.IsTrue(fisher.HookedTime <= DateTime.Now.AddSeconds(appSettings.FishingCastMaximum));
+        }
+
+        [TestMethod]
+        public void GetsTournamentResults()
+        {
+            var expectedResults = Manager.TournamentResults.Read().OrderByDescending(x => x.Date).First();
+            var actualResults = TournamentSystem.GetLatestResults();
+            Assert.AreEqual(expectedResults.Id, actualResults.Id);
+        }
+
+        [TestMethod]
+        public void GetResultForUser()
+        {
+            var userId = Manager.Users.Read().First().TwitchId;
+            var expectedResults = Manager.TournamentResults.Read(x => x.Entries.Any(y => y.UserId.Equals(userId)));
+            var actualResults = TournamentSystem.GetResultsForUser(userId);
+            Assert.AreEqual(expectedResults.Count(), actualResults.Count());
         }
 
         [TestMethod]
         public void ProcessStartsTournamentOnTimer()
         {
-            System.NextTournament = DateTime.Now;
-            System.Process(true);
-            Assert.IsNotNull(System.CurrentTournament);
-            Assert.IsNull(System.NextTournament);
+            TournamentSystem.NextTournament = DateTime.Now;
+            TournamentSystem.Process(true);
+            Assert.IsNotNull(TournamentSystem.CurrentTournament);
+            Assert.IsNull(TournamentSystem.NextTournament);
         }
 
         [TestMethod]
         public void ProcessEndsTournamentOnTimer()
         {
-            System.CurrentTournament = new TournamentResult()
+            TournamentSystem.CurrentTournament = new TournamentResult()
             {
                 Date = DateTime.Now
             };
-            System.NextTournament = null;
-            System.Process(true);
-            Assert.IsNull(System.CurrentTournament);
-            Assert.IsNotNull(System.NextTournament);
+            TournamentSystem.NextTournament = null;
+            TournamentSystem.Process(true);
+            Assert.IsNull(TournamentSystem.CurrentTournament);
+            Assert.IsNotNull(TournamentSystem.NextTournament);
         }
 
         [TestMethod]
         public void ProcessCancelsTournamentWhenBroadcastingEnds()
         {
-            System.CurrentTournament = new TournamentResult();
-            System.Process(false);
-            Assert.IsNull(System.CurrentTournament);
-            Assert.IsNull(System.NextTournament);
+            TournamentSystem.CurrentTournament = new TournamentResult();
+            TournamentSystem.Process(false);
+            Assert.IsNull(TournamentSystem.CurrentTournament);
+            Assert.IsNull(TournamentSystem.NextTournament);
         }
     }
 }

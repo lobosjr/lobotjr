@@ -7,8 +7,9 @@ namespace LobotJR.Modules.Fishing
     public class FishingAdmin : ICommandModule
     {
         private readonly FishingSystem FishingSystem;
+        private readonly TournamentSystem TournamentSystem;
 
-        public string Name => "Admin";
+        public string Name => "Fishing.Admin";
 
         public event PushNotificationHandler PushNotification;
 
@@ -16,9 +17,10 @@ namespace LobotJR.Modules.Fishing
 
         public IEnumerable<ICommandModule> SubModules => null;
 
-        public FishingAdmin(FishingSystem fishingSystem)
+        public FishingAdmin(FishingSystem fishingSystem, TournamentSystem tournamentSystem)
         {
             FishingSystem = fishingSystem;
+            TournamentSystem = tournamentSystem;
             Commands = new List<CommandHandler>(new CommandHandler[]
             {
                 new CommandHandler("DebugTournament", DebugTournament, "debugtournament", "debug-tournament"),
@@ -28,7 +30,7 @@ namespace LobotJR.Modules.Fishing
 
         public CommandResult DebugTournament(string data)
         {
-            FishingSystem.Tournament.StartTournament();
+            TournamentSystem.StartTournament();
             return new CommandResult() { Processed = true };
         }
 

@@ -1,4 +1,5 @@
 ﻿using LobotJR.Data;
+using LobotJR.Data.User;
 using LobotJR.Modules.Fishing.Model;
 using LobotJR.Utils;
 using System;
@@ -16,20 +17,20 @@ namespace LobotJR.Modules.Fishing
         private readonly int[] Chances = new int[] { 40, 70, 95, 99, 100 };
 
         private readonly IRepository<Fish> FishData;
-        private readonly IRepository<Fisher> Fishers;
-        private readonly IRepository<LeaderboardEntry> Leaderboard;
-
+        private readonly List<Fisher> Fishers;
         private readonly AppSettings Settings;
+
         /// <summary>
         /// Event handler for events related to a specific user.
         /// </summary>
         /// <param name="fisher">The fisher object for the user.</param>
         public delegate void FisherEventHandler(Fisher fisher);
         /// <summary>
-        /// Event handler for events related to the leaderboard.
+        /// Event handler for when a fisher catches a fish.
         /// </summary>
-        /// <param name="catchData">The catch data the leaderboard was updated with.</param>
-        public delegate void LeaderboardEventHandler(LeaderboardEntry catchData);
+        /// <param name="fisher">The fisher object for the user.</param>
+        /// <param name="catchData">The catch data for the fish caught.</param>
+        public delegate void FishCatchEventHandler(Fisher fisher, Catch catchData);
 
         /// <summary>
         /// Event fired when a user hooks a fish.
@@ -40,14 +41,12 @@ namespace LobotJR.Modules.Fishing
         /// </summary>
         public event FisherEventHandler FishGotAway;
         /// <summary>
-        /// Event fired when a user's catch sets a new record.
+        /// Event fired when a user catches a fish.
         /// </summary>
-        public event LeaderboardEventHandler NewGlobalRecord;
+        public event FishCatchEventHandler FishCaught;
 
-        /// <summary>
-        /// The tournament system that manages fishing tournaments.
-        /// </summary>
-        public TournamentSystem Tournament { get; set; }
+        public int CastTimeMinimum { get; set; }
+        public int CastTimeMaximum { get; set; }
 
         /// <summary>
         /// The cost in wolfcoins for a user to gloat about their fishing.
@@ -55,18 +54,15 @@ namespace LobotJR.Modules.Fishing
         public int GloatCost { get { return Settings != null ? Settings.FishingGloatCost : -1; } }
 
         public FishingSystem(
+            IRepository<UserMap> userMap,
             IRepository<Fish> fishData,
-            IRepository<Fisher> fishers,
-            IRepository<LeaderboardEntry> leaderboard,
-            IRepository<TournamentResult> tournamentResults,
             IRepository<AppSettings> appSettings)
         {
+            Fishers = userMap.Read().Select(x => new Fisher() { UserId = x.TwitchId }).ToList();
             FishData = fishData;
-            Fishers = fishers;
-            Leaderboard = leaderboard;
-
             Settings = appSettings.Read().First();
-            Tournament = new TournamentSystem(fishers, tournamentResults, appSettings);
+            CastTimeMinimum = Settings.FishingCastMinimum;
+            CastTimeMaximum = Settings.FishingCastMaximum;
         }
 
         private void OnFishHooked(Fisher fisher)
@@ -79,45 +75,37 @@ namespace LobotJR.Modules.Fishing
             FishGotAway?.Invoke(fisher);
         }
 
-        private void OnNewGlobalRecord(LeaderboardEntry catchData)
+        private void OnFishCaught(Fisher fisher, Catch catchData)
         {
-            NewGlobalRecord?.Invoke(catchData);
+            FishCaught?.Invoke(fisher, catchData);
         }
 
         /// <summary>
-        /// Gets a fisher object for a given user id.
+        /// Gets or creates a fisher object for a given user id.
         /// </summary>
         /// <param name="userId">The twitch id for the user.</param>
         /// <returns>The fisher object for the user.</returns>
         public Fisher GetFisherById(string userId)
         {
-            return Fishers.Read(x => x.UserId.Equals(userId)).FirstOrDefault();
-        }
-
-        /// <summary>
-        /// Gets the global leaderboard records.
-        /// </summary>
-        /// <returns>A collection of catch data containing the largest catch of
-        /// each fish.</returns>
-        public IEnumerable<LeaderboardEntry> GetLeaderboard()
-        {
-            var leaderboard = Leaderboard.Read();
-            var fish = leaderboard.FirstOrDefault()?.Fish;
-            return leaderboard;
-        }
-
-        /// <summary>
-        /// Deletes a fish from a user's records.
-        /// </summary>
-        /// <param name="fisher">The fisher object for the user.</param>
-        /// <param name="fish">The catch data for the record to remove.</param>
-        public void DeleteFish(Fisher fisher, Catch fish)
-        {
-            if (fisher != null && fish != null)
+            var fisher = Fishers.FirstOrDefault(x => x.UserId.Equals(userId));
+            if (fisher == null)
             {
-                fisher.Records?.Remove(fish);
-                Fishers.Update(fisher);
-                Fishers.Commit();
+                fisher = new Fisher() { UserId = userId };
+                Fishers.Add(fisher);
+            }
+            return fisher;
+        }
+
+        /// <summary>
+        /// Resets all fishers by clearing any cast lines or hooked fish.
+        /// </summary>
+        public void ResetFishers()
+        {
+            foreach (var fisher in Fishers)
+            {
+                fisher.IsFishing = false;
+                fisher.Hooked = null;
+                fisher.HookedTime = null;
             }
         }
 
@@ -171,85 +159,6 @@ namespace LobotJR.Modules.Fishing
         }
 
         /// <summary>
-        /// Updates the personal leaderboard with new data if the catch object
-        /// would set a new record.
-        /// </summary>
-        /// <param name="fisher">The fisher object for the user catching the
-        /// fish.</param>
-        /// <param name="catchData">An object with catch data to use for the
-        /// update.</param>
-        /// <returns>Whether or not the leaderboard was updated.</returns>
-        public bool UpdatePersonalLeaderboard(Fisher fisher, Catch catchData)
-        {
-            if (fisher == null || catchData == null)
-            {
-                return false;
-            }
-
-            if (fisher.Records == null)
-            {
-                fisher.Records = new List<Catch>();
-            }
-
-            var record = fisher.Records.Where(x => x.Fish.Equals(catchData.Fish)).FirstOrDefault();
-            if (record == null || record.Weight < catchData.Weight)
-            {
-                if (record == null)
-                {
-                    fisher.Records.Add(catchData);
-                }
-                else
-                {
-                    record.CopyFrom(catchData);
-                }
-                Fishers.Update(fisher);
-                Fishers.Commit();
-                return true;
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// Updates the global leaderboard with new data if the catch object
-        /// would set a new record.
-        /// </summary>
-        /// <param name="catchData">An object with catch data to use for the
-        /// update.</param>
-        /// <returns>Whether or not the leaderboard was updated.</returns>
-        public bool UpdateGlobalLeaderboard(Catch catchData)
-        {
-            if (catchData == null)
-            {
-                return false;
-            }
-
-            var entry = new LeaderboardEntry()
-            {
-                Fish = catchData.Fish,
-                Length = catchData.Length,
-                Weight = catchData.Weight,
-                UserId = catchData.UserId
-            };
-            var record = Leaderboard.Read(x => x.Fish.Equals(catchData.Fish)).FirstOrDefault();
-            if (record == null || record.Weight < catchData.Weight)
-            {
-                if (record == null)
-                {
-                    Leaderboard.Create(entry);
-                }
-                else
-                {
-                    record.CopyFrom(entry);
-                    Leaderboard.Update(record);
-                }
-                Leaderboard.Commit();
-                OnNewGlobalRecord(entry);
-                return true;
-            }
-            return false;
-        }
-
-        /// <summary>
         /// Casts the line out for a user, starting the fishing process.
         /// </summary>
         /// <param name="userId">The twitch id of the user to begin fishing for.</param>
@@ -257,31 +166,21 @@ namespace LobotJR.Modules.Fishing
         {
             var fisher = GetFisherById(userId);
             var hookTime = DateTime.Now;
-            if (Tournament.IsRunning)
-            {
-                hookTime = hookTime.AddSeconds(Random.Next(Settings.FishingTournamentCastMinimum, Settings.FishingTournamentCastMaximum + 1));
-            }
-            else
-            {
-                hookTime = hookTime.AddSeconds(Random.Next(Settings.FishingCastMinimum, Settings.FishingCastMaximum + 1));
-            }
+            hookTime = hookTime.AddSeconds(Random.Next(CastTimeMinimum, CastTimeMaximum + 1));
             if (fisher == null)
             {
-                fisher = new Fisher()
+                Fishers.Add(new Fisher()
                 {
                     UserId = userId,
                     IsFishing = true,
                     HookedTime = hookTime
-                };
-                Fishers.Create(fisher);
+                });
             }
             else
             {
                 fisher.IsFishing = true;
                 fisher.HookedTime = hookTime;
-                Fishers.Update(fisher);
             }
-            Fishers.Commit();
         }
 
         /// <summary>
@@ -335,15 +234,13 @@ namespace LobotJR.Modules.Fishing
             if (fisher != null)
             {
                 catchData = CalculateFishSizes(fisher);
-                if (catchData != null && Tournament.IsRunning)
-                {
-                    UpdatePersonalLeaderboard(fisher, catchData);
-                    UpdateGlobalLeaderboard(catchData);
-                    Tournament.AddTournamentPoints(fisher.UserId, catchData.Points);
-                }
                 fisher.IsFishing = false;
                 fisher.Hooked = null;
                 fisher.HookedTime = null;
+                if (catchData != null)
+                {
+                    OnFishCaught(fisher, catchData);
+                }
             }
             return catchData;
         }
@@ -354,7 +251,7 @@ namespace LobotJR.Modules.Fishing
         public void Process(bool broadcasting)
         {
             var messages = new Dictionary<string, IEnumerable<string>>();
-            foreach (var fisher in Fishers.Read(x => x.IsFishing))
+            foreach (var fisher in Fishers.Where(x => x.IsFishing))
             {
                 if (fisher != null
                     && fisher.IsFishing
@@ -375,8 +272,6 @@ namespace LobotJR.Modules.Fishing
                     OnFishGotAway(fisher);
                 }
             }
-
-            Tournament.Process(broadcasting);
         }
     }
 }

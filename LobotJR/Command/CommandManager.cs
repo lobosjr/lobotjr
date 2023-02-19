@@ -3,11 +3,11 @@ using LobotJR.Data.User;
 using LobotJR.Modules;
 using LobotJR.Modules.AccessControl;
 using LobotJR.Modules.Fishing;
+using LobotJR.Modules.Gloat;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using Wolfcoins;
 
 namespace LobotJR.Command
 {
@@ -84,17 +84,8 @@ namespace LobotJR.Command
             }
         }
 
-        private void AddModule(ICommandModule module, string prefix = null)
+        private void AddModule(ICommandModule module)
         {
-            if (prefix != null)
-            {
-                prefix = $"{prefix}.{module.Name}";
-            }
-            else
-            {
-                prefix = module.Name;
-            }
-
             module.PushNotification += Module_PushNotification;
 
             var exceptions = new List<Exception>();
@@ -102,26 +93,11 @@ namespace LobotJR.Command
             {
                 try
                 {
-                    AddCommand(command, prefix);
+                    AddCommand(command, module.Name);
                 }
                 catch (AggregateException e)
                 {
                     exceptions.Add(e);
-                }
-            }
-
-            if (module.SubModules != null)
-            {
-                foreach (var subModule in module.SubModules)
-                {
-                    try
-                    {
-                        AddModule(subModule, prefix);
-                    }
-                    catch (AggregateException ae)
-                    {
-                        exceptions.AddRange(ae.InnerExceptions);
-                    }
                 }
             }
 
@@ -158,10 +134,15 @@ namespace LobotJR.Command
         /// Loads all registered command modules.
         /// </summary>
         /// <param name="systemManager">System manager containing all loaded systems.</param>
-        public void LoadAllModules(ISystemManager systemManager, Currency wolfcoins)
+        public void LoadAllModules(ISystemManager systemManager)
         {
+
             LoadModules(new AccessControlModule(this),
-                new FishingModule(UserLookup, systemManager.Get<FishingSystem>(), RepositoryManager.TournamentResults, wolfcoins.coinList));
+                new FishingModule(systemManager.Get<FishingSystem>(), systemManager.Get<TournamentSystem>(), systemManager.Get<LeaderboardSystem>()),
+                new FishingAdmin(systemManager.Get<FishingSystem>(), systemManager.Get<TournamentSystem>()),
+                new TournamentModule(systemManager.Get<TournamentSystem>(), UserLookup),
+                new LeaderboardModule(systemManager.Get<LeaderboardSystem>(), UserLookup),
+                new GloatModule(systemManager.Get<GloatSystem>(), UserLookup));
         }
 
         /// <summary>

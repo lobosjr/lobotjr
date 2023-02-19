@@ -1,6 +1,7 @@
 ﻿using LobotJR.Data;
 using LobotJR.Modules.Fishing.Model;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace LobotJR.Modules.Fishing
@@ -10,8 +11,9 @@ namespace LobotJR.Modules.Fishing
     /// </summary>
     public class TournamentSystem : ISystem
     {
-        private readonly IRepository<Fisher> Fishers;
         private readonly IRepository<TournamentResult> TournamentResults;
+        private readonly FishingSystem FishingSystem;
+        private readonly LeaderboardSystem LeaderboardSystem;
         private readonly AppSettings Settings;
 
         /// <summary>
@@ -34,7 +36,7 @@ namespace LobotJR.Modules.Fishing
         /// Event fired when a tournament ends.
         /// </summary>
         public event TournamentEndHandler TournamentEnded;
-        
+
         /// <summary>
         /// The current tournament, if one is running.
         /// </summary>
@@ -49,15 +51,47 @@ namespace LobotJR.Modules.Fishing
         public bool IsRunning { get { return CurrentTournament != null; } }
 
         public TournamentSystem(
-            IRepository<Fisher> fishers,
+            FishingSystem fishingSystem,
+            LeaderboardSystem leaderboardSystem,
             IRepository<TournamentResult> tournamentResults,
             IRepository<AppSettings> appSettings)
         {
-            Fishers = fishers;
+            FishingSystem = fishingSystem;
+            LeaderboardSystem = leaderboardSystem;
             TournamentResults = tournamentResults;
-            
+
             Settings = appSettings.Read().First();
             NextTournament = DateTime.Now.AddMinutes(Settings.FishingTournamentInterval);
+            fishingSystem.FishCaught += FishingSystem_FishCaught;
+        }
+
+        private void FishingSystem_FishCaught(Fisher fisher, Catch catchData)
+        {
+            if (IsRunning)
+            {
+                LeaderboardSystem.UpdatePersonalLeaderboard(fisher.UserId, catchData);
+                LeaderboardSystem.UpdateGlobalLeaderboard(catchData);
+                AddTournamentPoints(fisher.UserId, catchData.Points);
+            }
+        }
+
+        /// <summary>
+        /// Retrieves the most recent tournament results.
+        /// </summary>
+        /// <returns>The result data from the most recent tournament.</returns>
+        public TournamentResult GetLatestResults()
+        {
+            return TournamentResults.Read().OrderByDescending(x => x.Date).FirstOrDefault();
+        }
+
+        /// <summary>
+        /// Retrieves all tournament results that contain an entry for a specific user.
+        /// </summary>
+        /// <param name="userId">The id of the user to check for.</param>
+        /// <returns>An enumerable collection of all tournament results where that user participated.</returns>
+        public IEnumerable<TournamentResult> GetResultsForUser(string userId)
+        {
+            return TournamentResults.Read(x => x.GetEntryById(userId) != null);
         }
 
         /// <summary>
@@ -90,15 +124,9 @@ namespace LobotJR.Modules.Fishing
         {
             if (CurrentTournament == null)
             {
-                var fishers = Fishers.Read(x => x.IsFishing).ToList();
-                foreach (var fisher in fishers)
-                {
-                    fisher.IsFishing = false;
-                    fisher.Hooked = null;
-                    fisher.HookedTime = null;
-                    Fishers.Update(fisher);
-                }
-                Fishers.Commit();
+                FishingSystem.ResetFishers();
+                FishingSystem.CastTimeMinimum = Settings.FishingTournamentCastMinimum;
+                FishingSystem.CastTimeMaximum = Settings.FishingTournamentCastMaximum;
 
                 CurrentTournament = new TournamentResult
                 {
@@ -119,6 +147,8 @@ namespace LobotJR.Modules.Fishing
                 CurrentTournament.SortResults();
                 TournamentResults.Create(CurrentTournament);
                 TournamentResults.Commit();
+                FishingSystem.CastTimeMinimum = Settings.FishingCastMinimum;
+                FishingSystem.CastTimeMaximum = Settings.FishingCastMaximum;
                 DateTime? next;
                 if (broadcasting)
                 {

@@ -1,5 +1,7 @@
-﻿using LobotJR.Data;
+﻿using Autofac;
+using LobotJR.Data;
 using LobotJR.Modules.Fishing;
+using LobotJR.Modules.Gloat;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -44,9 +46,19 @@ namespace LobotJR.Modules
         /// <summary>
         /// Loads and initializes all systems.
         /// </summary>
-        public void LoadAllSystems()
+        public void LoadAllSystems(Dictionary<string, int> wolfcoins)
         {
-            Systems.Add(new FishingSystem(ContentManager.FishData, RepositoryManager.Fishers, RepositoryManager.FishingLeaderboard, RepositoryManager.TournamentResults, RepositoryManager.AppSettings));
+            /*
+            var builder = new ContainerBuilder();
+            builder.RegisterType<SqliteRepositoryManager>().As<IRepositoryManager>().As<IContentManager>().SingleInstance();
+            builder.RegisterType<FishingSystem>().AsSelf();
+            */
+            var fishingSystem = new FishingSystem(RepositoryManager.Users, ContentManager.FishData, RepositoryManager.AppSettings);
+            var leaderboardSystem = new LeaderboardSystem(RepositoryManager.Catches, RepositoryManager.FishingLeaderboard);
+            Systems.Add(fishingSystem);
+            Systems.Add(leaderboardSystem);
+            Systems.Add(new TournamentSystem(fishingSystem, leaderboardSystem, RepositoryManager.TournamentResults, RepositoryManager.AppSettings));
+            Systems.Add(new GloatSystem(RepositoryManager.Catches, RepositoryManager.AppSettings, wolfcoins));
         }
 
         /// <summary>

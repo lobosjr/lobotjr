@@ -1,7 +1,10 @@
 ﻿using LobotJR.Command;
+using LobotJR.Data;
+using LobotJR.Data.User;
 using LobotJR.Modules;
 using LobotJR.Modules.Fishing;
 using LobotJR.Modules.Fishing.Model;
+using LobotJR.Test.Mocks;
 using LobotJR.Utils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
@@ -11,7 +14,7 @@ using System.Linq;
 namespace LobotJR.Test.Modules.Fishing
 {
     [TestClass]
-    public class FishingTournamentTests : FishingTestBase
+    public class TournamentModuleTests
     {
         private TournamentResultsResponse ResultsFromCompact(string compact)
         {
@@ -49,10 +52,24 @@ namespace LobotJR.Test.Modules.Fishing
             Manager.TournamentResults.Commit();
         }
 
+        private SqliteRepositoryManager Manager;
+        private UserLookup UserLookup;
+        private TournamentSystem TournamentSystem;
+        private TournamentModule TournamentModule;
+
         [TestInitialize]
-        public void Setup()
+        public void Initialize()
         {
-            InitializeFishingModule();
+            Manager = new SqliteRepositoryManager(MockContext.Create());
+            UserLookup = new UserLookup(Manager.Users, Manager.AppSettings.Read().First());
+
+            var fishingSystem = new FishingSystem(
+                Manager.Users,
+                Manager.FishData,
+                Manager.AppSettings);
+            var leaderboardSystem = new LeaderboardSystem(Manager.Catches, Manager.FishingLeaderboard);
+            TournamentSystem = new TournamentSystem(fishingSystem, leaderboardSystem, Manager.TournamentResults, Manager.AppSettings);
+            TournamentModule = new TournamentModule(TournamentSystem, UserLookup);
         }
 
         [TestMethod]
@@ -60,7 +77,7 @@ namespace LobotJR.Test.Modules.Fishing
         {
             var handlerMock = new Mock<PushNotificationHandler>();
             TournamentModule.PushNotification += handlerMock.Object;
-            System.Tournament.StartTournament();
+            TournamentSystem.StartTournament();
             handlerMock.Verify(x => x(null, It.IsAny<CommandResult>()), Times.Once);
             var result = handlerMock.Invocations[0].Arguments[1] as CommandResult;
             Assert.IsTrue(result.Messages.Any(x => x.Contains("!cast")));
@@ -69,14 +86,14 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void CalculatesResultsOnTournamentEnd()
         {
-            var firstFisher = Manager.Fishers.Read().First();
-            var secondFisher = Manager.Fishers.Read(x => !x.UserId.Equals(firstFisher.UserId)).First();
-            System.Tournament.StartTournament();
-            System.Tournament.CurrentTournament.Entries.Add(new TournamentEntry(firstFisher.UserId, 100));
-            System.Tournament.CurrentTournament.Entries.Add(new TournamentEntry(secondFisher.UserId, 200));
-            System.Tournament.EndTournament(true);
+            var firstFisher = Manager.Users.Read().First();
+            var secondFisher = Manager.Users.Read(x => !x.TwitchId.Equals(firstFisher.TwitchId)).First();
+            TournamentSystem.StartTournament();
+            TournamentSystem.CurrentTournament.Entries.Add(new TournamentEntry(firstFisher.TwitchId, 100));
+            TournamentSystem.CurrentTournament.Entries.Add(new TournamentEntry(secondFisher.TwitchId, 200));
+            TournamentSystem.EndTournament(true);
             var results = Manager.TournamentResults.Read().OrderByDescending(x => x.Date).First();
-            Assert.AreEqual(secondFisher.UserId, results.Winner.UserId);
+            Assert.AreEqual(secondFisher.TwitchId, results.Winner.UserId);
         }
 
         [TestMethod]
@@ -84,10 +101,10 @@ namespace LobotJR.Test.Modules.Fishing
         {
             var user = Manager.Users.Read().First();
             var handlerMock = new Mock<PushNotificationHandler>();
-            System.Tournament.StartTournament();
+            TournamentSystem.StartTournament();
             TournamentModule.PushNotification += handlerMock.Object;
-            System.Tournament.CurrentTournament.Entries.Add(new TournamentEntry(user.TwitchId, 100));
-            System.Tournament.EndTournament(true);
+            TournamentSystem.CurrentTournament.Entries.Add(new TournamentEntry(user.TwitchId, 100));
+            TournamentSystem.EndTournament(true);
             handlerMock.Verify(x => x(null, It.IsAny<CommandResult>()), Times.Once);
             var result = handlerMock.Invocations[0].Arguments[1] as CommandResult;
             Assert.IsTrue(result.Messages.Any(x => x.Contains("end")));
@@ -98,9 +115,9 @@ namespace LobotJR.Test.Modules.Fishing
         public void PushesNotificationOnTournamentEndWithNoParticipants()
         {
             var handlerMock = new Mock<PushNotificationHandler>();
-            System.Tournament.StartTournament();
+            TournamentSystem.StartTournament();
             TournamentModule.PushNotification += handlerMock.Object;
-            System.Tournament.EndTournament(true);
+            TournamentSystem.EndTournament(true);
             handlerMock.Verify(x => x(null, It.IsAny<CommandResult>()), Times.Once);
             var result = handlerMock.Invocations[0].Arguments[1] as CommandResult;
             Assert.IsTrue(result.Messages.Any(x => x.Contains("end")));
@@ -112,10 +129,10 @@ namespace LobotJR.Test.Modules.Fishing
         {
             var user = Manager.Users.Read().First();
             var handlerMock = new Mock<PushNotificationHandler>();
-            System.Tournament.StartTournament();
+            TournamentSystem.StartTournament();
             TournamentModule.PushNotification += handlerMock.Object;
-            System.Tournament.CurrentTournament.Entries.Add(new TournamentEntry(user.TwitchId, 100));
-            System.Tournament.EndTournament(false);
+            TournamentSystem.CurrentTournament.Entries.Add(new TournamentEntry(user.TwitchId, 100));
+            TournamentSystem.EndTournament(false);
             handlerMock.Verify(x => x(null, It.IsAny<CommandResult>()), Times.Once);
             var result = handlerMock.Invocations[0].Arguments[1] as CommandResult;
             Assert.IsTrue(result.Messages.Any(x => x.Contains("offline")));
@@ -126,9 +143,9 @@ namespace LobotJR.Test.Modules.Fishing
         public void PushesNotificationOnTournamentEndByStreamStoppingWithNoParticipants()
         {
             var handlerMock = new Mock<PushNotificationHandler>();
-            System.Tournament.StartTournament();
+            TournamentSystem.StartTournament();
             TournamentModule.PushNotification += handlerMock.Object;
-            System.Tournament.EndTournament(false);
+            TournamentSystem.EndTournament(false);
             handlerMock.Verify(x => x(null, It.IsAny<CommandResult>()), Times.Once);
             var result = handlerMock.Invocations[0].Arguments[1] as CommandResult;
             Assert.IsTrue(result.Messages.Any(x => x.Contains("offline")));
