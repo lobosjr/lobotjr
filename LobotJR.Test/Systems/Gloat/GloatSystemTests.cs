@@ -1,5 +1,5 @@
-﻿using LobotJR.Data;
-using LobotJR.Modules.Gloat;
+﻿using LobotJR.Command.System.Gloat;
+using LobotJR.Data;
 using LobotJR.Test.Mocks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;

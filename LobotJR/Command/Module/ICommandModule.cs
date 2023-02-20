@@ -1,7 +1,6 @@
-﻿using LobotJR.Command;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
-namespace LobotJR.Modules
+namespace LobotJR.Command.Module
 {
     /// <summary>
     /// Handler for push notification events.

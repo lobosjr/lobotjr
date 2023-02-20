@@ -1,5 +1,5 @@
-﻿using LobotJR.Data.User;
-using LobotJR.Modules.Fishing.Model;
+﻿using LobotJR.Command.Model.Fishing;
+using LobotJR.Data.User;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;

@@ -1,7 +1,7 @@
 ﻿using LobotJR.Command;
+using LobotJR.Command.Module;
 using LobotJR.Data;
 using LobotJR.Data.User;
-using LobotJR.Modules;
 using LobotJR.Test.Mocks;
 using Moq;
 using System;

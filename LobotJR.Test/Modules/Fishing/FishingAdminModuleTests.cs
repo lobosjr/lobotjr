@@ -1,5 +1,6 @@
-﻿using LobotJR.Data;
-using LobotJR.Modules.Fishing;
+﻿using LobotJR.Command.Module.Fishing;
+using LobotJR.Command.System.Fishing;
+using LobotJR.Data;
 using LobotJR.Test.Mocks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Linq;

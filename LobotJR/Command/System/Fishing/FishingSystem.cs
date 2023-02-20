@@ -1,12 +1,12 @@
-﻿using LobotJR.Data;
+﻿using LobotJR.Command.Model.Fishing;
+using LobotJR.Data;
 using LobotJR.Data.User;
-using LobotJR.Modules.Fishing.Model;
 using LobotJR.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LobotJR.Modules.Fishing
+namespace LobotJR.Command.System.Fishing
 {
     /// <summary>
     /// Runs the logic for the fishing system.

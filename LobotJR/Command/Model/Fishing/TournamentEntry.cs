@@ -1,7 +1,7 @@
 ﻿using LobotJR.Data;
 using System.ComponentModel.DataAnnotations;
 
-namespace LobotJR.Modules.Fishing.Model
+namespace LobotJR.Command.Model.Fishing
 {
     /// <summary>
     /// An entry in a fishing tournament.

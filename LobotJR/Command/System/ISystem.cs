@@ -1,4 +1,4 @@
-﻿namespace LobotJR.Modules
+﻿namespace LobotJR.Command.System
 {
     /// <summary>
     /// Describes a system that processes the logic of a module continuously,

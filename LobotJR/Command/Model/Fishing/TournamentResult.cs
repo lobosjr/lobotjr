@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LobotJR.Modules.Fishing.Model
+namespace LobotJR.Command.Model.Fishing
 {
     /// <summary>
     /// Holds the results of a fishing tournament, including entries for each

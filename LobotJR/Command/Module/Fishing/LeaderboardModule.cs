@@ -1,13 +1,13 @@
-﻿using LobotJR.Command;
+﻿using LobotJR.Command.Model.Fishing;
+using LobotJR.Command.System.Fishing;
 using LobotJR.Data.User;
-using LobotJR.Modules.Fishing.Model;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LobotJR.Modules.Fishing
+namespace LobotJR.Command.Module.Fishing
 {
     /// <summary>
-    /// Module of access control commands.
+    /// Module of fishing leaderboard commands.
     /// </summary>
     public class LeaderboardModule : ICommandModule
     {
@@ -20,7 +20,7 @@ namespace LobotJR.Modules.Fishing
         public string Name => "Fishing.Leaderboard";
 
         /// <summary>
-        /// Notifications when a tournament starts or ends.
+        /// Notifications when a new fishing record is set..
         /// </summary>
         public event PushNotificationHandler PushNotification;
 

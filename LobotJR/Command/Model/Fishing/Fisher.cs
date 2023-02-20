@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace LobotJR.Modules.Fishing.Model
+namespace LobotJR.Command.Model.Fishing
 {
     /// <summary>
     /// Represents a user's fishing data.

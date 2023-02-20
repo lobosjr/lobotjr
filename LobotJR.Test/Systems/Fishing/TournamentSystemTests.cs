@@ -1,12 +1,12 @@
-﻿using LobotJR.Data;
-using LobotJR.Modules.Fishing;
-using LobotJR.Modules.Fishing.Model;
+﻿using LobotJR.Command.Model.Fishing;
+using LobotJR.Command.System.Fishing;
+using LobotJR.Data;
 using LobotJR.Test.Mocks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using System;
 using System.Linq;
-using static LobotJR.Modules.Fishing.TournamentSystem;
+using static LobotJR.Command.System.Fishing.TournamentSystem;
 
 namespace LobotJR.Test.TournamentSystems.Fishing
 {

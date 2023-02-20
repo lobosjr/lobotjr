@@ -1,4 +1,4 @@
-﻿using LobotJR.Modules.AccessControl;
+﻿using LobotJR.Command.Module.AccessControl;
 using LobotJR.Test.Command;
 
 namespace LobotJR.Test.Modules.AccessControl

@@ -1,6 +1,6 @@
 ﻿using LobotJR.Data;
 
-namespace LobotJR.Modules.Fishing.Model
+namespace LobotJR.Command.Model.Fishing
 {
     /// <summary>
     /// Holds the data used to describe a fish.

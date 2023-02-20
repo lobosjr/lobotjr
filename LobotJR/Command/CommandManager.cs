@@ -1,9 +1,12 @@
-﻿using LobotJR.Data;
+﻿using LobotJR.Command.Module;
+using LobotJR.Command.Module.AccessControl;
+using LobotJR.Command.Module.Fishing;
+using LobotJR.Command.Module.Gloat;
+using LobotJR.Command.System;
+using LobotJR.Command.System.Fishing;
+using LobotJR.Command.System.Gloat;
+using LobotJR.Data;
 using LobotJR.Data.User;
-using LobotJR.Modules;
-using LobotJR.Modules.AccessControl;
-using LobotJR.Modules.Fishing;
-using LobotJR.Modules.Gloat;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,12 +19,15 @@ namespace LobotJR.Command
     /// </summary>
     public class CommandManager : ICommandManager
     {
+        public static readonly char Prefix = '!';
+
         private const int MessageLimit = 450;
 
         private readonly Dictionary<string, string> commandStringToIdMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, CommandExecutor> commandIdToExecutorMap = new Dictionary<string, CommandExecutor>();
         private readonly Dictionary<string, AnonymousExecutor> anonymousIdToExecutorMap = new Dictionary<string, AnonymousExecutor>();
         private readonly Dictionary<string, CompactExecutor> compactIdToExecutorMap = new Dictionary<string, CompactExecutor>();
+        private readonly List<string> whisperOnlyCommands = new List<string>();
         private readonly Dictionary<string, Regex> commandStringRegexMap = new Dictionary<string, Regex>();
 
         /// <summary>
@@ -65,6 +71,10 @@ namespace LobotJR.Command
             if (command.CompactExecutor != null)
             {
                 compactIdToExecutorMap.Add(commandId, command.CompactExecutor);
+            }
+            if (command.WhisperOnly)
+            {
+                whisperOnlyCommands.Add(commandId);
             }
             var exceptions = new List<Exception>();
             foreach (var commandString in command.CommandStrings)
@@ -122,6 +132,11 @@ namespace LobotJR.Command
         {
             var roles = RepositoryManager.UserRoles.Read().Where(x => x.CoversCommand(commandId));
             return !roles.Any() && anonymousIdToExecutorMap.ContainsKey(commandId);
+        }
+
+        private bool CanExecuteInChat(string commandId)
+        {
+            return !whisperOnlyCommands.Contains(commandId);
         }
 
         public CommandManager(IRepositoryManager repositoryManager, UserLookup userLookup)
@@ -253,12 +268,26 @@ namespace LobotJR.Command
         /// </summary>
         /// <param name="message">The message the user sent.</param>
         /// <param name="user">The user's name.</param>
+        /// <param name="isWhisper">Whether or not the message was sent as a whisper.</param>
         /// <returns>Whether a command was found and executed.</returns>
-        public CommandResult ProcessMessage(string message, string user)
+        public CommandResult ProcessMessage(string message, string user, bool isWhisper)
         {
             var request = CommandRequest.Parse(message);
             if (commandStringToIdMap.TryGetValue(request.CommandString, out var commandId))
             {
+                if (!isWhisper && !CanExecuteInChat(commandId))
+                {
+                    return new CommandResult()
+                    {
+                        Processed = true,
+                        Messages = new string[] { $"/timeout {user} 1" },
+                        Responses = new string[]
+                        {
+                            "You just tried to use a command in chat that is only available by whispering me. Reply in this window on twitch or type '/w lobotjr' in chat to use that command.",
+                            "Sorry for purging you. Just trying to do my job to keep chat clear! <3"
+                        }
+                    };
+                }
                 request.CommandId = commandId;
                 request.UserId = UserLookup.GetId(user);
                 if (request.UserId == null && !CanExecuteAnonymously(request.CommandId))

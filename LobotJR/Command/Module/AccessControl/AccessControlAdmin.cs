@@ -1,10 +1,9 @@
-﻿using LobotJR.Command;
-using LobotJR.Data;
+﻿using LobotJR.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LobotJR.Modules.AccessControl
+namespace LobotJR.Command.Module.AccessControl
 {
     /// <summary>
     /// Module of access control admin commands.
@@ -17,7 +16,7 @@ namespace LobotJR.Modules.AccessControl
         /// <summary>
         /// Prefix applied to names of commands within this module.
         /// </summary>
-        public string Name => "Admin";
+        public string Name => "AccessControl.Admin";
 
         /// <summary>
         /// This module does not issue any push notifications.

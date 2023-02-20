@@ -1,4 +1,4 @@
-﻿using LobotJR.Modules.AccessControl;
+﻿using LobotJR.Command.Module.AccessControl;
 using LobotJR.Test.Command;
 using LobotJR.Utils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;

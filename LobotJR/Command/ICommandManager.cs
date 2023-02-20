@@ -1,6 +1,7 @@
-﻿using LobotJR.Data;
+﻿using LobotJR.Command.Module;
+using LobotJR.Command.System;
+using LobotJR.Data;
 using LobotJR.Data.User;
-using LobotJR.Modules;
 using System.Collections.Generic;
 
 namespace LobotJR.Command
@@ -49,7 +50,8 @@ namespace LobotJR.Command
         /// </summary>
         /// <param name="message">The message the user sent.</param>
         /// <param name="user">The user's name.</param>
+        /// <param name="isWhisper">Whether or not the message was sent as a whisper.</param>
         /// <returns>An object containing the results of the attempt to process the message.</returns>
-        CommandResult ProcessMessage(string message, string user);
+        CommandResult ProcessMessage(string message, string user, bool isWhisper);
     }
 }

@@ -1,6 +1,6 @@
 ﻿using LobotJR.Command;
+using LobotJR.Command.Model.Fishing;
 using LobotJR.Data.User;
-using LobotJR.Modules.Fishing.Model;
 using System;
 using System.Data.Entity;
 

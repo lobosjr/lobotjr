@@ -1,4 +1,4 @@
-﻿using LobotJR.Modules.Fishing.Model;
+﻿using LobotJR.Command.Model.Fishing;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;

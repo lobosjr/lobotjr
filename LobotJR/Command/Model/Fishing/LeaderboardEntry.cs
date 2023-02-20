@@ -1,12 +1,12 @@
 ﻿using LobotJR.Data;
 using System.ComponentModel.DataAnnotations;
 
-namespace LobotJR.Modules.Fishing.Model
+namespace LobotJR.Command.Model.Fishing
 {
     /// <summary>
-    /// Data that describes an instance of a fish being caught.
+    /// Data that describes an entry on the global leaderboard.
     /// </summary>
-    public class Catch : TableObject
+    public class LeaderboardEntry : TableObject
     {
         /// <summary>
         /// The user that caught the fish.
@@ -22,7 +22,6 @@ namespace LobotJR.Modules.Fishing.Model
         /// The fish that was caught.
         /// </summary>
         public virtual Fish Fish { get; set; }
-
         /// <summary>
         /// The length of the fish.
         /// </summary>
@@ -31,20 +30,16 @@ namespace LobotJR.Modules.Fishing.Model
         /// The weight of the fish.
         /// </summary>
         public float Weight { get; set; }
-        /// <summary>
-        /// The amount of points the fish is worth in a tournament.
-        /// </summary>
-        public int Points { get; set; }
 
         /// <summary>
-        /// Copies the record values from another catch object into this one.
+        /// Copies the record values from another leaderboard entry into this one.
         /// </summary>
-        /// <param name="other">Another catch object.</param>
-        public void CopyFrom(Catch other)
+        /// <param name="other">Another leaderboard entry.</param>
+        public void CopyFrom(LeaderboardEntry other)
         {
+            UserId = other.UserId;
             Length = other.Length;
             Weight = other.Weight;
-            Points = other.Points;
         }
     }
 }

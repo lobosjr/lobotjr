@@ -1,4 +1,4 @@
-﻿namespace LobotJR.Modules
+﻿namespace LobotJR.Command.System
 {
     public interface ISystemManager
     {

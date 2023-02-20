@@ -1,12 +1,12 @@
-﻿using LobotJR.Command;
+﻿using LobotJR.Command.Model.Fishing;
+using LobotJR.Command.System.Fishing;
 using LobotJR.Data.User;
-using LobotJR.Modules.Fishing.Model;
 using LobotJR.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LobotJR.Modules.Fishing
+namespace LobotJR.Command.Module.Fishing
 {
     /// <summary>
     /// Module of access control commands.

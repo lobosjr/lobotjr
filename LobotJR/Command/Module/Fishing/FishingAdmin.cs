@@ -1,8 +1,8 @@
-﻿using LobotJR.Command;
-using LobotJR.Modules.Fishing.Model;
+﻿using LobotJR.Command.Model.Fishing;
+using LobotJR.Command.System.Fishing;
 using System.Collections.Generic;
 
-namespace LobotJR.Modules.Fishing
+namespace LobotJR.Command.Module.Fishing
 {
     public class FishingAdmin : ICommandModule
     {

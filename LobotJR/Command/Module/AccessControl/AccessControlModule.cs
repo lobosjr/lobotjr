@@ -1,10 +1,9 @@
-﻿using LobotJR.Command;
-using LobotJR.Data;
+﻿using LobotJR.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LobotJR.Modules.AccessControl
+namespace LobotJR.Command.Module.AccessControl
 {
     /// <summary>
     /// Module of access control commands.
@@ -51,7 +50,7 @@ namespace LobotJR.Modules.AccessControl
                 if (roles.Any())
                 {
                     var count = roles.Count();
-                    return new CommandResult($"You are a member of the following role{(count == 1 ? "" : "s")}: { string.Join(", ", roles.Select(x => x.Name)) }.");
+                    return new CommandResult($"You are a member of the following role{(count == 1 ? "" : "s")}: {string.Join(", ", roles.Select(x => x.Name))}.");
                 }
                 else
                 {

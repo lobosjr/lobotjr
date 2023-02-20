@@ -4,14 +4,15 @@ using Companions;
 using Equipment;
 using GroupFinder;
 using LobotJR.Command;
+using LobotJR.Command.System;
+using LobotJR.Command.System.Fishing;
 using LobotJR.Data;
 using LobotJR.Data.Import;
 using LobotJR.Data.Migration;
 using LobotJR.Data.User;
-using LobotJR.Modules;
-using LobotJR.Modules.Fishing;
 using LobotJR.Shared.Authentication;
 using LobotJR.Shared.Utility;
+using LobotJR.Trigger;
 using LobotJR.Utils;
 using System;
 using System.Collections.Generic;
@@ -452,6 +453,11 @@ namespace TwitchBot
                     };
                 #endregion
 
+                #region Trigger Manager Setup
+                var triggerManager = new TriggerManager();
+                triggerManager.LoadAllResponders(wolfcoins);
+                #endregion
+
                 #region Import Legacy Data Into Sql
                 if (File.Exists(FishDataImport.FishDataPath))
                 {
@@ -816,9 +822,9 @@ namespace TwitchBot
                                 }
                             }
                             #region Command Module Processing
-                            if (whisperMessage.StartsWith("!"))
+                            if (whisperMessage[0] == CommandManager.Prefix)
                             {
-                                var result = commandManager.ProcessMessage(whisperMessage.Substring(1), whisperSender);
+                                var result = commandManager.ProcessMessage(whisperMessage.Substring(1), whisperSender, true);
                                 if (result != null && result.Processed)
                                 {
                                     HandleCommandResult(whisperSender, whisperMessage, result, irc, group);
@@ -3552,6 +3558,7 @@ namespace TwitchBot
                         if (message[0] != null && message[1] != null)
                         {
                             string[] first = message[1].Split(' ');
+                            string chatMessage = message[1];
                             string sender = message[0];
 
                             if (sender == "twitchnotify" && first.Last() == "subscribed!")
@@ -3568,6 +3575,30 @@ namespace TwitchBot
                                     Console.WriteLine("Added " + first[0] + " to the subs list.");
                                 }
                             }
+
+                            #region Command Module Processing
+                            if (chatMessage[0] == CommandManager.Prefix)
+                            {
+                                var result = commandManager.ProcessMessage(chatMessage.Substring(1), sender, false);
+                                if (result != null && result.Processed)
+                                {
+                                    HandleCommandResult(sender, chatMessage, result, irc, group);
+                                    continue;
+                                }
+                            }
+                            #endregion
+
+                            #region Trigger Processing
+                            var responses = triggerManager.ProcessTrigger(chatMessage, sender);
+                            if (responses != null && responses.Any())
+                            {
+                                foreach (var response in responses)
+                                {
+                                    irc.sendChatMessage(response);
+                                }
+                                continue;
+                            }
+                            #endregion
                             if (first[0] == "!stats" || first[0] == "!xp" || first[0] == "!lvl"
                                 || first[0] == "!level" || first[0] == "!exp")
                             {

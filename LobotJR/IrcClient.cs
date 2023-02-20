@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
-using System.Text.RegularExpressions;
 using Wolfcoins;
 
 namespace TwitchBot
@@ -15,7 +14,7 @@ namespace TwitchBot
         public DateTime lastReconnect;
         public bool connected;
         public Queue<string> messageQueue = new Queue<string>();
-        public Queue<Dictionary<Party,string>> dungeonQueue = new Queue<Dictionary<Party,string>>();
+        public Queue<Dictionary<Party, string>> dungeonQueue = new Queue<Dictionary<Party, string>>();
         //private int dungeonCooldown = 7500;
         private readonly int cooldown = 65;
         private readonly string username;
@@ -105,20 +104,20 @@ namespace TwitchBot
             {
                 string temp = messageQueue.Dequeue();
                 string msg = ":" + username + "!" + username + "@" + username + ".tmi.twitch.tv PRIVMSG #" + channel + " :" + temp;
-                
+
                 try
-                    {
-                        sendIrcMessage(msg);
-                    }
-                    catch(Exception e)
-                    {
-                        messageQueue.Enqueue(temp);
-                        //Console.WriteLine("Error occured: " + e);
-                        Reconnect();
-                    }
+                {
+                    sendIrcMessage(msg);
+                }
+                catch (Exception e)
+                {
+                    messageQueue.Enqueue(temp);
+                    //Console.WriteLine("Error occured: " + e);
+                    Reconnect();
+                }
                 timeLast = DateTime.Now;
             }
-            
+
         }
 
         public bool IsConnected()
@@ -212,51 +211,6 @@ namespace TwitchBot
                 {
                     string message = inputStream.ReadLine();
                     string[] temp = parseMessage(message);
-                    if (temp[0] != null)
-                    {
-                        Match match = Regex.Match(temp[1], @"([A-Za-z0-9])\.([A-Za-z])([A-Za-z0-9])", RegexOptions.IgnoreCase);
-                        string check = temp[1].ToLower();
-                        if (match.Success)
-                        {
-                            if (check.Contains("d.va") || userList.subSet.Contains(temp[0]))
-                            {
-                                
-                            }
-                            else if( check.Contains("OCEAN MAN 🌊  😍"))
-                            {
-                                string timeout = "/timeout " + temp[0] + " 1";
-                                sendChatMessage(timeout);
-                                sendChatMessage("NOCEAN MAN");
-                                string[] noMsg = { "" };
-                                return noMsg;
-                            }
-                            else
-                            { 
-                                userList.UpdateViewers(channel);
-                                if (userList.xpList != null)
-                                {
-                                    if (userList.xpList.ContainsKey(temp[0]) && (userList.determineLevel(temp[0]) < 2))
-                                    {
-                                        string timeout = "/timeout " + temp[0] + " 1";
-                                        sendChatMessage(timeout);
-                                        sendChatMessage("Links may only be posted by viewers of Level 2 or above. (Message me '?' for more details)");
-                                        string[] noMsg = { "" };
-                                        return noMsg;
-                                    }
-                                    else if (!userList.xpList.ContainsKey(temp[0]))
-                                    {
-                                        string timeout = "/timeout " + temp[0] + " 1";
-                                        sendChatMessage(timeout);
-                                        sendChatMessage("Links may only be posted by viewers of Level 2 or above. (Message me '?' for more details)");
-                                        string[] noMsg = { "" };
-                                        return noMsg;
-                                    }
-                                }
-                            }
-                        }
-                        message = temp[0] + " says: " + temp[1];
-                    }
-
                     return temp;
                 }
                 else
@@ -289,12 +243,6 @@ namespace TwitchBot
             {
                 string message = inputStream.ReadLine();
                 string[] temp = parseMessage(message);
-                if (temp[0] != null)
-                {
-                    message = temp[0] + " says: " + temp[1];
-                }
-
-                //Console.WriteLine(message);
 
                 return temp;
             }
@@ -319,7 +267,7 @@ namespace TwitchBot
                 //PONG
                 sendIrcMessage("PONG tmi.twitch.tv\r\n");
             }
-            if(message.Contains("•"))
+            if (message.Contains("•"))
             {
                 string[] temp = { "Someone", "I sent a beep noise :(" };
                 return temp;
@@ -336,13 +284,13 @@ namespace TwitchBot
                     buf += message[i];
                     charPos++;
                 }
-                else if(message[i] == ':')
+                else if (message[i] == ':')
                 {
                     count++;
                 }
                 else if (!serverParsed)
                 {
-                    if(message[i] == ' ')
+                    if (message[i] == ' ')
                     {
                         serverParsed = true;
                     }
@@ -357,18 +305,18 @@ namespace TwitchBot
                 if (message.Contains("PRIVMSG"))
                 {
                     string name = message.Substring(1, message.IndexOf("!") - 1);
-                    string[] output = {name, buf};
+                    string[] output = { name, buf };
                     return output;
                 }
                 else if (message.Contains("WHISPER"))
                 {
-                    string[] temp = message.Split(new char[]{' '},5);
+                    string[] temp = message.Split(new char[] { ' ' }, 5);
                     int size = temp.Length;
                     int myColon = temp[size - 1].IndexOf(':');
                     int length = temp[1].IndexOf("!") - 1;
                     string name = temp[1].Substring(1, length);
                     string msg = temp[size - 1].Substring(1);
-                    
+
                     string[] output = { name, msg };
                     return output;
                 }

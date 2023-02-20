@@ -1,4 +1,4 @@
-﻿using LobotJR.Modules.Fishing.Model;
+﻿using LobotJR.Command.Model.Fishing;
 
 namespace LobotJR.Data
 {

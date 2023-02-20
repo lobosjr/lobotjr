@@ -1,10 +1,10 @@
-﻿using LobotJR.Data;
-using LobotJR.Modules.Fishing.Model;
+﻿using LobotJR.Command.Model.Fishing;
+using LobotJR.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LobotJR.Modules.Fishing
+namespace LobotJR.Command.System.Fishing
 {
     /// <summary>
     /// Runs the tournament logic for the fishing system.

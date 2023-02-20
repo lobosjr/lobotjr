@@ -1,8 +1,8 @@
-﻿using LobotJR.Command;
+﻿using LobotJR.Command.System.Gloat;
 using LobotJR.Data.User;
 using System.Collections.Generic;
 
-namespace LobotJR.Modules.Gloat
+namespace LobotJR.Command.Module.Gloat
 {
     /// <summary>
     /// Module of access control commands.
@@ -15,7 +15,7 @@ namespace LobotJR.Modules.Gloat
         /// <summary>
         /// Prefix applied to names of commands within this module.
         /// </summary>
-        public string Name => "Fishing.Leaderboard";
+        public string Name => "Gloat";
 
         /// <summary>
         /// Notifications when a tournament starts or ends.

@@ -1,11 +1,11 @@
 ﻿using Autofac;
+using LobotJR.Command.System.Fishing;
+using LobotJR.Command.System.Gloat;
 using LobotJR.Data;
-using LobotJR.Modules.Fishing;
-using LobotJR.Modules.Gloat;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LobotJR.Modules
+namespace LobotJR.Command.System
 {
     /// <summary>
     /// Loads and manages the various systems.
