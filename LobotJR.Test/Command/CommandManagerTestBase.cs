@@ -45,7 +45,7 @@ namespace LobotJR.Test.Command
         public void InitializeCommandManager()
         {
             ExecutorMocks = new Dictionary<string, Mock<CommandExecutor>>();
-            var commands = new string[] { "Foobar", "Foo", "Bar" };
+            var commands = new string[] { "Foobar", "Foo", "Bar", "Public" };
             foreach (var command in commands)
             {
                 var executorMock = new Mock<CommandExecutor>();
@@ -74,7 +74,8 @@ namespace LobotJR.Test.Command
                     return new CompactCollection<string>(items, x => $"Foo|{x};");
                 }, "Foo"),
                 new CommandHandler("Bar", ExecutorMocks["Bar"].Object, "Bar"),
-                new CommandHandler("Unrestricted", AnonymousExecutorMock.Object, "Unrestricted")
+                new CommandHandler("Unrestricted", AnonymousExecutorMock.Object, "Unrestricted"),
+                new CommandHandler("Public", ExecutorMocks["Public"].Object, "Public") { WhisperOnly = false }
             };
             CommandModuleMock = new Mock<ICommandModule>();
             CommandModuleMock.Setup(x => x.Name).Returns("CommandMock");

@@ -186,5 +186,24 @@ namespace LobotJR.Test.Command
             Assert.IsTrue(result.Responses.Any());
             AnonymousExecutorMock.Verify(x => x(It.IsAny<string>()), Times.Never());
         }
+
+        [TestMethod]
+        public void ProcessMessageDoesNotAllowWhisperOnlyMessageInPublicChat()
+        {
+            var result = CommandManager.ProcessMessage("Foo", "Auth", false);
+            Assert.IsTrue(result.Messages.Any(x => x.Contains("timeout")));
+            Assert.IsTrue(result.Processed);
+            Assert.IsNull(result.Errors);
+            ExecutorMocks["Foo"].Verify(x => x(It.IsAny<string>(), It.IsAny<string>()), Times.Never());
+        }
+
+        [TestMethod]
+        public void ProcessMessageDoesAllowNonWhisperOnlyMessageInPublicChat()
+        {
+            var result = CommandManager.ProcessMessage("Public", "Auth", false);
+            Assert.IsTrue(result.Processed);
+            Assert.IsNull(result.Errors);
+            ExecutorMocks["Public"].Verify(x => x(It.IsAny<string>(), It.IsAny<string>()), Times.Once());
+        }
     }
 }

@@ -111,12 +111,17 @@
     <Compile Include="Systems\Fishing\FishingSystemTests.cs" />
     <Compile Include="Systems\Fishing\TournamentSystemTests.cs" />
     <Compile Include="Systems\Gloat\GloatSystemTests.cs" />
+    <Compile Include="Trigger\TriggerManagerTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\LobotJR.Shared\LobotJR.Shared.csproj">
+      <Project>{95076be7-c2d3-456d-b91f-fd830183c5a6}</Project>
+      <Name>LobotJR.Shared</Name>
+    </ProjectReference>
     <ProjectReference Include="..\LobotJR\LobotJR.csproj">
       <Project>{F4168867-9FAA-467E-8C2C-DA4516ED7F27}</Project>
       <Name>LobotJR</Name>
