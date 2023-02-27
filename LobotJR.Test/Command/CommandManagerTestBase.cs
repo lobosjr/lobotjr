@@ -1,8 +1,7 @@
 ﻿using LobotJR.Command;
+using LobotJR.Command.Module;
 using LobotJR.Data;
 using LobotJR.Data.User;
-using LobotJR.Modules;
-using LobotJR.Test.Mocks;
 using Moq;
 using System;
 using System.Collections.Generic;
@@ -26,6 +25,7 @@ namespace LobotJR.Test.Command
         protected IEnumerable<CommandHandler> CommandHandlers;
         protected IEnumerable<CommandHandler> SubCommandHandlers;
         protected CommandManager CommandManager;
+        protected IRepositoryManager Manager;
 
         protected Dictionary<string, Mock<CommandExecutor>> ExecutorMocks;
         protected Mock<AnonymousExecutor> AnonymousExecutorMock;
@@ -44,7 +44,7 @@ namespace LobotJR.Test.Command
         public void InitializeCommandManager()
         {
             ExecutorMocks = new Dictionary<string, Mock<CommandExecutor>>();
-            var commands = new string[] { "Foobar", "Foo", "Bar" };
+            var commands = new string[] { "Foobar", "Foo", "Bar", "Public" };
             foreach (var command in commands)
             {
                 var executorMock = new Mock<CommandExecutor>();
@@ -59,7 +59,7 @@ namespace LobotJR.Test.Command
                 new CommandHandler("Foobar", ExecutorMocks["Foobar"].Object, "Foobar"),
             };
             SubCommandModuleMock = new Mock<ICommandModule>();
-            SubCommandModuleMock.Setup(x => x.Name).Returns("SubMock");
+            SubCommandModuleMock.Setup(x => x.Name).Returns("CommandMock.SubMock");
             SubCommandModuleMock.Setup(x => x.Commands).Returns(SubCommandHandlers);
 
 
@@ -73,12 +73,12 @@ namespace LobotJR.Test.Command
                     return new CompactCollection<string>(items, x => $"Foo|{x};");
                 }, "Foo"),
                 new CommandHandler("Bar", ExecutorMocks["Bar"].Object, "Bar"),
-                new CommandHandler("Unrestricted", AnonymousExecutorMock.Object, "Unrestricted")
+                new CommandHandler("Unrestricted", AnonymousExecutorMock.Object, "Unrestricted"),
+                new CommandHandler("Public", ExecutorMocks["Public"].Object, "Public") { WhisperOnly = false }
             };
             CommandModuleMock = new Mock<ICommandModule>();
             CommandModuleMock.Setup(x => x.Name).Returns("CommandMock");
             CommandModuleMock.Setup(x => x.Commands).Returns(CommandHandlers);
-            CommandModuleMock.Setup(x => x.SubModules).Returns(new ICommandModule[] { SubCommandModuleMock.Object });
             UserRoles = new List<UserRole>(new UserRole[]
             {
                 new UserRole("TestRole",
@@ -113,11 +113,12 @@ namespace LobotJR.Test.Command
             RepositoryManagerMock = new Mock<IRepositoryManager>();
             RepositoryManagerMock.Setup(x => x.Users).Returns(UserMapMock.Object);
             RepositoryManagerMock.Setup(x => x.UserRoles).Returns(UserRoleMock.Object);
-            var appSettings = new ListRepository<AppSettings>();
-            appSettings.Data.Add(new AppSettings());
-            RepositoryManagerMock.Setup(x => x.AppSettings).Returns(appSettings);
-            CommandManager = new CommandManager(RepositoryManagerMock.Object, new UserLookup(UserMapMock.Object, new AppSettings()));
-            CommandManager.LoadModules(CommandModuleMock.Object);
+            Manager = RepositoryManagerMock.Object;
+
+            RepositoryManagerMock.Setup(x => x.AppSettings).Returns(Manager.AppSettings);
+            var userLookup = new UserLookup(RepositoryManagerMock.Object);
+            CommandManager = new CommandManager(new ICommandModule[] { CommandModuleMock.Object, SubCommandModuleMock.Object }, RepositoryManagerMock.Object, userLookup);
+            CommandManager.InitializeModules();
         }
     }
 }

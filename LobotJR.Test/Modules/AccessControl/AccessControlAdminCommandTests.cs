@@ -102,22 +102,25 @@ namespace LobotJR.Test.Modules.AccessControl
         public void ListsCommands()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("ListCommands")).FirstOrDefault();
-            
+
             var result = command.AnonymousExecutor("");
 
             var commandModule = CommandModuleMock.Object;
             var subCommandModule = SubCommandModuleMock.Object;
-            var commandCount = commandModule.Commands.Count() + subCommandModule.Commands.Count();
+            var commandCount = commandModule.Commands.Count() + subCommandModule.Commands.Count() + Module.Commands.Count();
             Assert.IsTrue(result.Processed);
-            Assert.AreEqual(3, result.Responses.Count());
+            Assert.AreEqual(4, result.Responses.Count());
             Assert.IsTrue(result.Responses.Any(x => x.Contains($"{commandCount} commands", StringComparison.OrdinalIgnoreCase)));
-            Assert.IsTrue(result.Responses.Any(x => x.Contains("2 modules", StringComparison.OrdinalIgnoreCase)));
+            Assert.IsTrue(result.Responses.Any(x => x.Contains("3 modules", StringComparison.OrdinalIgnoreCase)));
             Assert.IsTrue(result.Responses.Any(
                 x => x.Contains(commandModule.Name) &&
                 commandModule.Commands.All(y => x.Contains(y.Name))));
             Assert.IsTrue(result.Responses.Any(
                 x => x.Contains(subCommandModule.Name) &&
                 subCommandModule.Commands.All(y => x.Contains(y.Name))));
+            Assert.IsTrue(result.Responses.Any(
+                x => x.Contains(Module.Name) &&
+                Module.Commands.All(y => x.Contains(y.Name))));
         }
 
         [TestMethod]

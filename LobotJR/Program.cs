@@ -1,25 +1,25 @@
 ﻿using Adventures;
+using Autofac;
 using Classes;
 using Companions;
 using Equipment;
 using GroupFinder;
 using LobotJR.Command;
+using LobotJR.Command.System;
+using LobotJR.Command.System.Fishing;
 using LobotJR.Data;
 using LobotJR.Data.Import;
 using LobotJR.Data.Migration;
 using LobotJR.Data.User;
-using LobotJR.Modules;
-using LobotJR.Modules.Fishing;
 using LobotJR.Shared.Authentication;
 using LobotJR.Shared.Utility;
+using LobotJR.Trigger;
+using LobotJR.Utils;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading;
 using Wolfcoins;
 
 namespace TwitchBot
@@ -313,79 +313,6 @@ namespace TwitchBot
             }
 
         }
-        #region TwitchPlaysData
-
-        const int INPUT_MOUSE = 0;
-        const int INPUT_KEYBOARD = 1;
-        const int INPUT_HARDWARE = 2;
-
-        const int KEYEVENTF_EXTENDEDKEY = 0x0001;
-        const int KEYEVENTF_KEYUP = 0x0002;
-
-        const ushort KEYEVENTF_KEYDOWN = 0x0000;
-        const ushort KEYEVENTF_SCANCODE = 0x0008;
-        const ushort KEYEVENTF_UNICODE = 0x0004;
-
-        [DllImport("User32.dll")]
-        static extern int SetForegroundWindow(IntPtr point);
-
-        [DllImport("user32.dll")]
-        public static extern int SendMessage(IntPtr hWnd, uint wMsg, IntPtr wParam, IntPtr lParam);
-
-        [DllImport("user32.dll")]
-        static extern IntPtr GetMessageExtraInfo();
-
-        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
-
-        [DllImport("user32.dll")]
-        static extern byte VkKeyScan(char ch);
-
-        [DllImport("user32.dll")]
-        static extern uint MapVirtualKey(uint uCode, uint uMapType);
-
-        [StructLayout(LayoutKind.Explicit)]
-        struct INPUT
-        {
-            [FieldOffset(0)]
-            public int type;
-            [FieldOffset(4)]
-            public MOUSEINPUT mi;
-            [FieldOffset(4)]
-            public KEYBDINPUT ki;
-            [FieldOffset(4)]
-            public HARDWAREINPUT hi;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        struct HARDWAREINPUT
-        {
-            public int uMsg;
-            public short wParamL;
-            public short wParamH;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        struct KEYBDINPUT
-        {
-            public short wVk;
-            public short wScan;
-            public int dwFlags;
-            public int time;
-            public IntPtr dwExtraInfo;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        struct MOUSEINPUT
-        {
-            public int dx;
-            public int dy;
-            public int mouseData;
-            public int dwFlags;
-            public int time;
-            public IntPtr dwExtraInfo;
-        }
-        #endregion
 
         [STAThread]
         static void Main(string[] args)
@@ -461,12 +388,18 @@ namespace TwitchBot
             // 199.9.253.119
             connected = irc.connected;
 
-            #region Sql Data Setup
-            var context = new SqliteContext();
-            context.Database.Initialize(false);
+            #region Autofac Setup
+            Currency wolfcoins = new Currency(clientData);
+            var container = new AutofacSetup().Setup(wolfcoins);
+            var scope = container.BeginLifetimeScope();
+            #endregion
 
-            var repoManager = new SqliteRepositoryManager(context);
-            var userLookup = new UserLookup(repoManager.Users, new AppSettings());
+            #region Sql Data Setup
+            var context = scope.Resolve<SqliteContext>();
+
+            var repoManager = scope.Resolve<IRepositoryManager>();
+            var contentManager = scope.Resolve<IContentManager>();
+            var userLookup = scope.Resolve<UserLookup>();
             var updater = new SqliteDatabaseUpdater(repoManager, context, userLookup, tokenData.BroadcastToken.AccessToken, clientData.ClientId);
 
             if (updater.GetDatabaseVersion(repoManager) < SqliteDatabaseUpdater.LatestVersion)
@@ -486,14 +419,8 @@ namespace TwitchBot
                 repoManager.AppSettings.Create(appSettings);
                 repoManager.AppSettings.Commit();
             }
-            userLookup = new UserLookup(repoManager.Users, appSettings);
+            userLookup.UpdateTime = appSettings.GeneralCacheUpdateTime;
             #endregion
-
-            #region System Setup
-            var systemManager = new SystemManager(repoManager, repoManager);
-            systemManager.LoadAllSystems();
-            #endregion
-
 
             if (connected)
             {
@@ -512,13 +439,16 @@ namespace TwitchBot
                 irc.joinRoom(channel);
                 group.joinRoom("jtv");
                 DateTime awardLast = DateTime.Now;
-                Currency wolfcoins = new Currency(clientData);
                 wolfcoins.UpdateViewers(channel);
                 wolfcoins.UpdateSubs(tokenData.BroadcastToken.AccessToken, clientData.ClientId);
 
+                #region System Setup
+                var systemManager = scope.Resolve<ISystemManager>();
+                #endregion
+
                 #region Command Manager Setup
-                var commandManager = new CommandManager(repoManager, userLookup);
-                commandManager.LoadAllModules(systemManager, wolfcoins);
+                var commandManager = scope.Resolve<ICommandManager>();
+                commandManager.InitializeModules();
                 commandManager.PushNotifications +=
                     (string userId, CommandResult commandResult) =>
                     {
@@ -528,11 +458,16 @@ namespace TwitchBot
                     };
                 #endregion
 
+                #region Trigger Manager Setup
+                var triggerManager = new TriggerManager();
+                triggerManager.LoadAllResponders(wolfcoins);
+                #endregion
+
                 #region Import Legacy Data Into Sql
                 if (File.Exists(FishDataImport.FishDataPath))
                 {
                     Console.WriteLine("Detected legacy fish data file, migrating to SQLite.");
-                    FishDataImport.ImportFishDataIntoSql(FishDataImport.FishDataPath, repoManager.FishData);
+                    FishDataImport.ImportFishDataIntoSql(FishDataImport.FishDataPath, contentManager.FishData);
                     File.Move(FishDataImport.FishDataPath, $"{FishDataImport.FishDataPath}.{DateTime.Now.ToFileTimeUtc()}.backup");
                     Console.WriteLine("Fish data migration complete!");
                 }
@@ -550,13 +485,13 @@ namespace TwitchBot
                     if (hasFisherData)
                     {
                         Console.WriteLine("Importing user records...");
-                        FisherDataImport.ImportFisherDataIntoSql(legacyFisherData, repoManager.Fishers, repoManager.FishData, userLookup);
+                        FisherDataImport.ImportFisherDataIntoSql(legacyFisherData, contentManager.FishData, repoManager.Catches, userLookup);
                         File.Move(FisherDataImport.FisherDataPath, $"{FisherDataImport.FisherDataPath}.{DateTime.Now.ToFileTimeUtc()}.backup");
                     }
                     if (hasLeaderboardData)
                     {
                         Console.WriteLine("Importing leaderboard...");
-                        FisherDataImport.ImportLeaderboardDataIntoSql(legacyLeaderboardData, repoManager.FishingLeaderboard, repoManager.FishData, userLookup);
+                        FisherDataImport.ImportLeaderboardDataIntoSql(legacyLeaderboardData, repoManager.FishingLeaderboard, contentManager.FishData, userLookup);
                         File.Move(FisherDataImport.FishingLeaderboardPath, $"{FisherDataImport.FishingLeaderboardPath}.{DateTime.Now.ToFileTimeUtc()}.backup");
                     }
                     Console.WriteLine("Fisher data migration complete!");
@@ -892,9 +827,9 @@ namespace TwitchBot
                                 }
                             }
                             #region Command Module Processing
-                            if (whisperMessage.StartsWith("!"))
+                            if (whisperMessage[0] == CommandManager.Prefix)
                             {
-                                var result = commandManager.ProcessMessage(whisperMessage.Substring(1), whisperSender);
+                                var result = commandManager.ProcessMessage(whisperMessage.Substring(1), whisperSender, true);
                                 if (result != null && result.Processed)
                                 {
                                     HandleCommandResult(whisperSender, whisperMessage, result, irc, group);
@@ -3628,6 +3563,7 @@ namespace TwitchBot
                         if (message[0] != null && message[1] != null)
                         {
                             string[] first = message[1].Split(' ');
+                            string chatMessage = message[1];
                             string sender = message[0];
 
                             if (sender == "twitchnotify" && first.Last() == "subscribed!")
@@ -3644,6 +3580,30 @@ namespace TwitchBot
                                     Console.WriteLine("Added " + first[0] + " to the subs list.");
                                 }
                             }
+
+                            #region Command Module Processing
+                            if (chatMessage[0] == CommandManager.Prefix)
+                            {
+                                var result = commandManager.ProcessMessage(chatMessage.Substring(1), sender, false);
+                                if (result != null && result.Processed)
+                                {
+                                    HandleCommandResult(sender, chatMessage, result, irc, group);
+                                    continue;
+                                }
+                            }
+                            #endregion
+
+                            #region Trigger Processing
+                            var responses = triggerManager.ProcessTrigger(chatMessage, sender);
+                            if (responses != null && responses.Any())
+                            {
+                                foreach (var response in responses)
+                                {
+                                    irc.sendChatMessage(response);
+                                }
+                                continue;
+                            }
+                            #endregion
                             if (first[0] == "!stats" || first[0] == "!xp" || first[0] == "!lvl"
                                 || first[0] == "!level" || first[0] == "!exp")
                             {
@@ -3769,8 +3729,8 @@ namespace TwitchBot
                                         {
                                             broadcasting = true;
                                             awardLast = DateTime.Now;
-                                            var fishingSystem = systemManager.Get<FishingSystem>();
-                                            fishingSystem.Tournament.NextTournament = DateTime.Now.AddMinutes(15);
+                                            var tournamentSystem = systemManager.Get<TournamentSystem>();
+                                            tournamentSystem.NextTournament = DateTime.Now.AddMinutes(15);
 
                                             irc.sendChatMessage("Wolfcoins & XP will be awarded.");
                                         }
@@ -4001,211 +3961,7 @@ namespace TwitchBot
             }
             else
             {
-                #region TwitchPlaysDS
-
-                irc.joinRoom("lobosjr");
-
-                Process[] p = Process.GetProcessesByName("DARKSOULS");
-                IntPtr h = (IntPtr)0;
-                if (p.Length > 0)
-                {
-                    h = p[0].MainWindowHandle;
-                    SetForegroundWindow(h);
-                }
-
-                while (connected)
-                {
-                    // message[0] has username, message[1] has message
-                    string[] message = irc.readMessage();
-
-                    if (message.Length > 1)
-                    {
-                        if (message[0] != null && message[1] != null)
-                        {
-                            string[] first = message[1].Split(' ');
-                            string sender = message[0];
-                            char[] keys = { };
-
-                            const int MOVE_AMOUNT = 1000;
-                            switch (first[0].ToLower())
-                            {
-                                // M preceds movement. MF = Move Forward, MB = Move Backwards, etc.
-                                case "mf":
-                                    {
-                                        sendFor('W', MOVE_AMOUNT);
-                                        Console.WriteLine("MF - Move Forward");
-                                    }
-                                    break;
-
-                                case "mb":
-                                    {
-                                        sendFor('S', MOVE_AMOUNT);
-                                        Console.WriteLine("MB - Move Back");
-                                    }
-                                    break;
-
-                                case "ml":
-                                    {
-                                        sendFor('A', MOVE_AMOUNT);
-                                        Console.WriteLine("ML - Move Left");
-                                    }
-                                    break;
-
-                                case "mr":
-                                    {
-                                        sendFor('D', MOVE_AMOUNT);
-                                        Console.WriteLine("MR - Move Right");
-                                    }
-                                    break;
-
-                                // Camera Up, Down, Left, Right
-                                case "cu":
-                                    {
-                                        sendFor('I', MOVE_AMOUNT);
-                                        Console.WriteLine("CU - Camera Up");
-                                    }
-                                    break;
-
-                                case "cd":
-                                    {
-                                        sendFor('K', MOVE_AMOUNT);
-                                        Console.WriteLine("CD - Camera Down");
-                                    }
-                                    break;
-
-                                case "cl":
-                                    {
-                                        sendFor('J', MOVE_AMOUNT);
-                                    }
-                                    break;
-
-                                case "cr":
-                                    {
-                                        sendFor('L', MOVE_AMOUNT);
-                                    }
-                                    break;
-
-                                // Lock on/off
-                                case "l":
-                                    {
-                                        sendFor('O', 100);
-                                    }
-                                    break;
-
-                                // Use item
-                                case "u":
-                                    {
-                                        sendFor('E', 100);
-                                    }
-                                    break;
-                                // 2h toggle
-                                case "y":
-                                    {
-                                        sendFor(56, 100);
-                                    }
-                                    break;
-                                // Attacks
-                                case "r1":
-                                    {
-                                        sendFor('H', 100);
-                                    }
-                                    break;
-
-                                case "r2":
-                                    {
-                                        sendFor('U', 100);
-                                    }
-                                    break;
-
-                                case "l1":
-                                    {
-                                        sendFor(42, 100);
-                                    }
-                                    break;
-
-                                case "l2":
-                                    {
-                                        sendFor(15, 100);
-                                    }
-                                    break;
-                                // Rolling directions
-                                case "rl":
-                                    {
-                                        keys = new char[] { 'A', ' ' };
-                                        sendFor(keys, 100);
-                                    }
-                                    break;
-
-                                case "rr":
-                                    {
-                                        keys = new char[] { 'D', ' ' };
-                                        sendFor(keys, 100);
-                                    }
-                                    break;
-
-                                case "rf":
-                                    {
-                                        keys = new char[] { 'W', ' ' };
-                                        sendFor(keys, 100);
-                                    }
-                                    break;
-
-                                case "rb":
-                                    {
-                                        keys = new char[] { 'S', ' ' };
-                                        sendFor(keys, 100);
-                                    }
-                                    break;
-
-                                case "x":
-                                    {
-                                        sendFor('Q', 100);
-                                        sendFor(28, 100);
-                                    }
-                                    break;
-                                // switch LH weap
-                                case "dl":
-                                    {
-                                        sendFor('C', 100);
-                                    }
-                                    break;
-
-                                case "dr":
-                                    {
-                                        sendFor('V', 100);
-                                    }
-                                    break;
-
-                                case "du":
-                                    {
-                                        sendFor('R', 100);
-                                    }
-                                    break;
-
-                                case "dd":
-                                    {
-                                        sendFor('F', 100);
-                                    }
-                                    break;
-
-                                //case "just subscribed":
-                                //    {
-                                //        sendFor('G', 500);
-
-                                //        sendFor(13, 100);
-                                //    } break;
-
-                                default: break;
-
-
-
-                            }
-                        }
-                    }
-                }
-
-                Console.WriteLine("Connection terminated.");
-                #endregion
+                new ChatController().Play(irc);
             }
         }
         static Pet GrantPet(string playerName, Currency wolfcoins, Dictionary<int, Pet> petDatabase, IrcClient irc, IrcClient group)
@@ -4628,84 +4384,5 @@ namespace TwitchBot
 
             return newItem.itemID;
         }
-
-        static void sendFor(char key, int ms)
-        {
-            // Send a keydown, leaving the key down indefinitely. It seems you have to do this for even
-            // single inputs with shorter times because putting the keyup right after the keydown in the
-            // buffer is too fast for Dark Souls
-            var inputData = new INPUT[1];
-            short scanCode = (short)MapVirtualKey(VkKeyScan(key), 0);
-            inputData[0].type = INPUT_KEYBOARD;
-            inputData[0].ki.wScan = scanCode;
-            inputData[0].ki.dwFlags = KEYEVENTF_SCANCODE;
-            SendInput((uint)inputData.Length, inputData, Marshal.SizeOf(typeof(INPUT)));
-
-            // A timer is probably more suitable
-            Thread.Sleep(ms);
-
-            // After waiting, send the keyup
-            inputData[0].ki.dwFlags = KEYEVENTF_KEYUP | KEYEVENTF_SCANCODE;
-            inputData[0].ki.time = 0;
-            inputData[0].ki.dwExtraInfo = IntPtr.Zero;
-            SendInput((uint)inputData.Length, inputData, Marshal.SizeOf(typeof(INPUT)));
-        }
-
-        static void sendFor(short key, int ms)
-        {
-            // Send a keydown, leaving the key down indefinitely. It seems you have to do this for even
-            // single inputs with shorter times because putting the keyup right after the keydown in the
-            // buffer is too fast for Dark Souls
-            var inputData = new INPUT[1];
-            short scanCode = key;
-            inputData[0].type = INPUT_KEYBOARD;
-            inputData[0].ki.wScan = scanCode;
-            inputData[0].ki.dwFlags = KEYEVENTF_SCANCODE;
-            SendInput((uint)inputData.Length, inputData, Marshal.SizeOf(typeof(INPUT)));
-
-            // A timer is probably more suitable
-            Thread.Sleep(ms);
-
-            // After waiting, send the keyup
-            inputData[0].ki.dwFlags = KEYEVENTF_KEYUP | KEYEVENTF_SCANCODE;
-            inputData[0].ki.time = 0;
-            inputData[0].ki.dwExtraInfo = IntPtr.Zero;
-            SendInput((uint)inputData.Length, inputData, Marshal.SizeOf(typeof(INPUT)));
-        }
-
-        // overloaded to handle more than one character send at a time
-        static void sendFor(char[] key, int ms)
-        {
-            // Send a keydown, leaving the key down indefinitely. It seems you have to do this for even
-            // single inputs with shorter times because putting the keyup right after the keydown in the
-            // buffer is too fast for Dark Souls
-            var inputData = new INPUT[1];
-            short scanCode = (short)MapVirtualKey(VkKeyScan(key[0]), 0);
-            inputData[0].type = INPUT_KEYBOARD;
-            inputData[0].ki.wScan = scanCode;
-            inputData[0].ki.dwFlags = KEYEVENTF_SCANCODE;
-            SendInput((uint)inputData.Length, inputData, Marshal.SizeOf(typeof(INPUT)));
-            if (key.Length > 1)
-            {
-                inputData[0].ki.wScan = (short)MapVirtualKey(VkKeyScan(key[1]), 0);
-                SendInput((uint)inputData.Length, inputData, Marshal.SizeOf(typeof(INPUT)));
-            }
-
-            // A timer is probably more suitable
-            Thread.Sleep(ms);
-
-            // After waiting, send the keyup
-            inputData[0].ki.dwFlags = KEYEVENTF_KEYUP | KEYEVENTF_SCANCODE;
-            inputData[0].ki.time = 0;
-            inputData[0].ki.dwExtraInfo = IntPtr.Zero;
-            SendInput((uint)inputData.Length, inputData, Marshal.SizeOf(typeof(INPUT)));
-            if (key.Length > 1)
-            {
-                inputData[0].ki.wScan = scanCode;
-                SendInput((uint)inputData.Length, inputData, Marshal.SizeOf(typeof(INPUT)));
-            }
-
-        }
     }
-
 }

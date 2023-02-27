@@ -1,8 +1,7 @@
-﻿using LobotJR.Data;
+﻿using LobotJR.Command.Module;
+using LobotJR.Data;
 using LobotJR.Data.User;
-using LobotJR.Modules;
 using System.Collections.Generic;
-using Wolfcoins;
 
 namespace LobotJR.Command
 {
@@ -30,16 +29,9 @@ namespace LobotJR.Command
         IEnumerable<string> Commands { get; }
 
         /// <summary>
-        /// Loads all registered command modules.
+        /// Initializes all registered command modules.
         /// </summary>
-        /// <param name="systemManager">System manager containing all loaded systems.</param>
-        /// <param name="wolfcoins">Holds data about wolfcoins in legacy format.</param>
-        void LoadAllModules(ISystemManager systemManager, Currency wolfcoins);
-        /// <summary>
-        /// Loads all registered command modules.
-        /// <param name="modules">An array of modules to load.</param>
-        /// </summary>
-        void LoadModules(params ICommandModule[] modules);
+        void InitializeModules();
         /// <summary>
         /// Checks if a command id exists or is a valid wildcard pattern.
         /// </summary>
@@ -51,7 +43,8 @@ namespace LobotJR.Command
         /// </summary>
         /// <param name="message">The message the user sent.</param>
         /// <param name="user">The user's name.</param>
+        /// <param name="isWhisper">Whether or not the message was sent as a whisper.</param>
         /// <returns>An object containing the results of the attempt to process the message.</returns>
-        CommandResult ProcessMessage(string message, string user);
+        CommandResult ProcessMessage(string message, string user, bool isWhisper);
     }
 }

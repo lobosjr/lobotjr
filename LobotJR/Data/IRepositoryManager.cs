@@ -1,6 +1,6 @@
 ﻿using LobotJR.Command;
+using LobotJR.Command.Model.Fishing;
 using LobotJR.Data.User;
-using LobotJR.Modules.Fishing.Model;
 
 namespace LobotJR.Data
 {
@@ -12,7 +12,7 @@ namespace LobotJR.Data
         IRepository<AppSettings> AppSettings { get; }
         IRepository<UserMap> Users { get; }
         IRepository<UserRole> UserRoles { get; }
-        IRepository<Fisher> Fishers { get; }
+        IRepository<Catch> Catches { get; }
         IRepository<LeaderboardEntry> FishingLeaderboard { get; }
         IRepository<TournamentResult> TournamentResults { get; }
         IRepository<TournamentEntry> TournamentEntries { get; }

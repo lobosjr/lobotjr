@@ -21,16 +21,14 @@ namespace LobotJR.Data.User
     public class UserLookup
     {
         private DateTime lastUpdate = DateTime.Now;
-        private readonly AppSettings appSettings;
         private readonly List<string> cacheMisses = new List<string>();
 
-        public int UpdateTime { get { return appSettings.GeneralCacheUpdateTime; } }
+        public int UpdateTime { get; set; }
         public IRepository<UserMap> UserMap { get; private set; }
 
-        public UserLookup(IRepository<UserMap> userMap, AppSettings appSettings)
+        public UserLookup(IRepositoryManager repositoryManager)
         {
-            UserMap = userMap;
-            this.appSettings = appSettings;
+            UserMap = repositoryManager.Users;
         }
 
         /// <summary>
@@ -111,7 +109,7 @@ namespace LobotJR.Data.User
         /// <returns>Whether or not the user id cache should be updated.</returns>
         public bool IsUpdateTime(DateTime current)
         {
-            return (current - lastUpdate).TotalMinutes >= appSettings.GeneralCacheUpdateTime;
+            return (current - lastUpdate).TotalMinutes >= this.UpdateTime;
         }
     }
 }

@@ -23,6 +23,6 @@ namespace LobotJR.Data.Migration
         /// <param name="context">The database context to update.</param>
         /// <param name="repositoryManager">The manager containing the repositories for the database.</param>
         /// <returns>The database migration results object.</returns>
-        DatabaseMigrationResult Update(SqliteContext context, SqliteRepositoryManager repositoryManager);
+        DatabaseMigrationResult Update(SqliteContext context, IRepositoryManager repositoryManager);
     }
 }

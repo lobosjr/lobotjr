@@ -18,6 +18,12 @@ namespace LobotJR.Command
         public string Name { get; set; }
 
         /// <summary>
+        /// Determines whether or not the command can be sent through public
+        /// chat, or only via whispers directly to the bot.
+        /// </summary>
+        public bool WhisperOnly { get; set; } = true;
+
+        /// <summary>
         /// The strings that can be used to issue the command.
         /// </summary>
         public IEnumerable<string> CommandStrings { get; }

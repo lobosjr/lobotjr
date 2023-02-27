@@ -1,5 +1,5 @@
-﻿using LobotJR.Data.User;
-using LobotJR.Modules.Fishing.Model;
+﻿using LobotJR.Command.Model.Fishing;
+using LobotJR.Data.User;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -83,13 +83,13 @@ namespace LobotJR.Data.Import
         /// repository, and commit the new data.
         /// </summary>
         /// <param name="fisherList">A dictionary mapping legacy personal leaderboards to twitch usernames.</param>
-        /// <param name="fisherRepository">The repository to import the fisher data to.</param>
         /// <param name="fishRepository">The repository containing the fish data.</param>
+        /// <param name="leaderboardRepository">The repository containing the personal leaderboard data.</param>
         /// <param name="userLookup">The user lookup system to convert the stored usernames into user ids.</param>
         /// <exception cref="DirectoryNotFoundException">If the path to fisherDataPath does not exist.</exception>
         /// <exception cref="IOException">If the attempt to access the file at fisherDataPath throws an IOException.</exception>
         /// <exception cref="FileNotFoundException">If the file at fisherDataPath does not exist.</exception>
-        public static void ImportFisherDataIntoSql(Dictionary<string, LegacyFisher> fisherList, IRepository<Fisher> fisherRepository, IRepository<Fish> fishRepository, UserLookup userLookup)
+        public static void ImportFisherDataIntoSql(Dictionary<string, LegacyFisher> fisherList, IRepository<Fish> fishRepository, IRepository<Catch> leaderboardRepository, UserLookup userLookup)
         {
             foreach (var fisher in fisherList)
             {
@@ -97,13 +97,14 @@ namespace LobotJR.Data.Import
                 var fisherUserId = userLookup.GetId(fisher.Key);
                 if (fisherUserId != null)
                 {
-                    var existing = fisherRepository.Read(x => x.UserId.Equals(fisherUserId)).FirstOrDefault();
-                    var existingFish = existing?.Records ?? new List<Catch>();
+                    var existingRecords = leaderboardRepository.Read(x => x.UserId.Equals(fisherUserId)).ToList();
+
                     foreach (var fish in fisher.Value.biggestFish)
                     {
-                        if (!existingFish.Any(x => x.Fish.Id == fish.ID))
+                        var existingRecord = existingRecords.FirstOrDefault(x => x.FishId == fish.ID && x.UserId.Equals(fisherUserId));
+                        if (existingRecord == null)
                         {
-                            records.Add(new Catch()
+                            leaderboardRepository.Create(new Catch()
                             {
                                 Fish = fishRepository.ReadById(fish.ID),
                                 UserId = fisherUserId,
@@ -111,24 +112,16 @@ namespace LobotJR.Data.Import
                                 Weight = fish.weight
                             });
                         }
-                    }
-
-                    if (existing != null)
-                    {
-                        existing.Records = records;
-                        fisherRepository.Update(existing);
-                    }
-                    else
-                    {
-                        fisherRepository.Create(new Fisher()
+                        else if (existingRecord.Weight < fish.weight)
                         {
-                            UserId = fisherUserId,
-                            Records = records
-                        });
+                            existingRecord.Length = fish.length;
+                            existingRecord.Weight = fish.weight;
+                            leaderboardRepository.Update(existingRecord);
+                        }
                     }
                 }
             }
-            fisherRepository.Commit();
+            leaderboardRepository.Commit();
         }
 
         /// <summary>
