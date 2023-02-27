@@ -2,6 +2,7 @@
 using LobotJR.Data;
 using System.Collections.Generic;
 using System.Linq;
+using Wolfcoins;
 
 namespace LobotJR.Command.System.Gloat
 {
@@ -15,13 +16,12 @@ namespace LobotJR.Command.System.Gloat
         public int FishingGloatCost { get; private set; }
 
         public GloatSystem(
-            IRepository<Catch> personalLeaderboard,
-            IRepository<AppSettings> appSettings,
-            Dictionary<string, int> wolfcoins)
+            IRepositoryManager repositoryManager,
+            Currency wolfcoins)
         {
-            PersonalLeaderboard = personalLeaderboard;
-            Wolfcoins = wolfcoins;
-            FishingGloatCost = appSettings.Read().First().FishingGloatCost;
+            PersonalLeaderboard = repositoryManager.Catches;
+            Wolfcoins = wolfcoins.coinList;
+            FishingGloatCost = repositoryManager.AppSettings.Read().First().FishingGloatCost;
         }
 
         /// <summary>

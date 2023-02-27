@@ -1,4 +1,5 @@
 ﻿using Adventures;
+using Autofac;
 using Classes;
 using Companions;
 using Equipment;
@@ -387,12 +388,18 @@ namespace TwitchBot
             // 199.9.253.119
             connected = irc.connected;
 
-            #region Sql Data Setup
-            var context = new SqliteContext();
-            context.Database.Initialize(false);
+            #region Autofac Setup
+            Currency wolfcoins = new Currency(clientData);
+            var container = new AutofacSetup().Setup(wolfcoins);
+            var scope = container.BeginLifetimeScope();
+            #endregion
 
-            var repoManager = new SqliteRepositoryManager(context);
-            var userLookup = new UserLookup(repoManager.Users, new AppSettings());
+            #region Sql Data Setup
+            var context = scope.Resolve<SqliteContext>();
+
+            var repoManager = scope.Resolve<IRepositoryManager>();
+            var contentManager = scope.Resolve<IContentManager>();
+            var userLookup = scope.Resolve<UserLookup>();
             var updater = new SqliteDatabaseUpdater(repoManager, context, userLookup, tokenData.BroadcastToken.AccessToken, clientData.ClientId);
 
             if (updater.GetDatabaseVersion(repoManager) < SqliteDatabaseUpdater.LatestVersion)
@@ -412,7 +419,7 @@ namespace TwitchBot
                 repoManager.AppSettings.Create(appSettings);
                 repoManager.AppSettings.Commit();
             }
-            userLookup = new UserLookup(repoManager.Users, appSettings);
+            userLookup.UpdateTime = appSettings.GeneralCacheUpdateTime;
             #endregion
 
             if (connected)
@@ -432,18 +439,16 @@ namespace TwitchBot
                 irc.joinRoom(channel);
                 group.joinRoom("jtv");
                 DateTime awardLast = DateTime.Now;
-                Currency wolfcoins = new Currency(clientData);
                 wolfcoins.UpdateViewers(channel);
                 wolfcoins.UpdateSubs(tokenData.BroadcastToken.AccessToken, clientData.ClientId);
 
                 #region System Setup
-                var systemManager = new SystemManager(repoManager, repoManager);
-                systemManager.LoadAllSystems(wolfcoins.coinList);
+                var systemManager = scope.Resolve<ISystemManager>();
                 #endregion
 
                 #region Command Manager Setup
-                var commandManager = new CommandManager(repoManager, userLookup);
-                commandManager.LoadAllModules(systemManager);
+                var commandManager = scope.Resolve<ICommandManager>();
+                commandManager.InitializeModules();
                 commandManager.PushNotifications +=
                     (string userId, CommandResult commandResult) =>
                     {
@@ -462,7 +467,7 @@ namespace TwitchBot
                 if (File.Exists(FishDataImport.FishDataPath))
                 {
                     Console.WriteLine("Detected legacy fish data file, migrating to SQLite.");
-                    FishDataImport.ImportFishDataIntoSql(FishDataImport.FishDataPath, repoManager.FishData);
+                    FishDataImport.ImportFishDataIntoSql(FishDataImport.FishDataPath, contentManager.FishData);
                     File.Move(FishDataImport.FishDataPath, $"{FishDataImport.FishDataPath}.{DateTime.Now.ToFileTimeUtc()}.backup");
                     Console.WriteLine("Fish data migration complete!");
                 }
@@ -480,13 +485,13 @@ namespace TwitchBot
                     if (hasFisherData)
                     {
                         Console.WriteLine("Importing user records...");
-                        FisherDataImport.ImportFisherDataIntoSql(legacyFisherData, repoManager.FishData, repoManager.Catches, userLookup);
+                        FisherDataImport.ImportFisherDataIntoSql(legacyFisherData, contentManager.FishData, repoManager.Catches, userLookup);
                         File.Move(FisherDataImport.FisherDataPath, $"{FisherDataImport.FisherDataPath}.{DateTime.Now.ToFileTimeUtc()}.backup");
                     }
                     if (hasLeaderboardData)
                     {
                         Console.WriteLine("Importing leaderboard...");
-                        FisherDataImport.ImportLeaderboardDataIntoSql(legacyLeaderboardData, repoManager.FishingLeaderboard, repoManager.FishData, userLookup);
+                        FisherDataImport.ImportLeaderboardDataIntoSql(legacyLeaderboardData, repoManager.FishingLeaderboard, contentManager.FishData, userLookup);
                         File.Move(FisherDataImport.FishingLeaderboardPath, $"{FisherDataImport.FishingLeaderboardPath}.{DateTime.Now.ToFileTimeUtc()}.backup");
                     }
                     Console.WriteLine("Fisher data migration complete!");

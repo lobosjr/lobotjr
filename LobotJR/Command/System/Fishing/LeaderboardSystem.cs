@@ -24,12 +24,10 @@ namespace LobotJR.Command.System.Fishing
         /// </summary>
         public event LeaderboardEventHandler NewGlobalRecord;
 
-        public LeaderboardSystem(
-            IRepository<Catch> personalLeaderboard,
-            IRepository<LeaderboardEntry> leaderboard)
+        public LeaderboardSystem(IRepositoryManager repositoryManager)
         {
-            PersonalLeaderboard = personalLeaderboard;
-            Leaderboard = leaderboard;
+            PersonalLeaderboard = repositoryManager.Catches;
+            Leaderboard = repositoryManager.FishingLeaderboard;
         }
 
         /// <summary>

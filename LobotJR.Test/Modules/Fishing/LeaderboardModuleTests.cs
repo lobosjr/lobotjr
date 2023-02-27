@@ -33,18 +33,16 @@ namespace LobotJR.Test.Modules.Fishing
         {
             Manager = new SqliteRepositoryManager(MockContext.Create());
 
-            FishingSystem = new FishingSystem(
-                Manager.Users,
-                Manager.FishData,
-                Manager.AppSettings);
-            LeaderboardSystem = new LeaderboardSystem(Manager.Catches, Manager.FishingLeaderboard);
-            TournamentSystem = new TournamentSystem(FishingSystem, LeaderboardSystem, Manager.TournamentResults, Manager.AppSettings);
+            FishingSystem = new FishingSystem(Manager, Manager);
+            LeaderboardSystem = new LeaderboardSystem(Manager);
+            TournamentSystem = new TournamentSystem(FishingSystem, LeaderboardSystem, Manager);
 
             FishingModule = new FishingModule(
                 FishingSystem,
                 TournamentSystem,
                 LeaderboardSystem);
-            var userLookup = new UserLookup(Manager.Users, Manager.AppSettings.Read().First());
+            var userLookup = new UserLookup(Manager);
+            userLookup.UpdateTime = Manager.AppSettings.Read().First().GeneralCacheUpdateTime;
             LeaderboardModule = new LeaderboardModule(LeaderboardSystem, userLookup);
         }
 

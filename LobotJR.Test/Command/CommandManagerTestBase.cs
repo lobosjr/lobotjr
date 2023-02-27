@@ -2,7 +2,6 @@
 using LobotJR.Command.Module;
 using LobotJR.Data;
 using LobotJR.Data.User;
-using LobotJR.Test.Mocks;
 using Moq;
 using System;
 using System.Collections.Generic;
@@ -26,7 +25,7 @@ namespace LobotJR.Test.Command
         protected IEnumerable<CommandHandler> CommandHandlers;
         protected IEnumerable<CommandHandler> SubCommandHandlers;
         protected CommandManager CommandManager;
-        protected SqliteRepositoryManager Manager;
+        protected IRepositoryManager Manager;
 
         protected Dictionary<string, Mock<CommandExecutor>> ExecutorMocks;
         protected Mock<AnonymousExecutor> AnonymousExecutorMock;
@@ -114,10 +113,12 @@ namespace LobotJR.Test.Command
             RepositoryManagerMock = new Mock<IRepositoryManager>();
             RepositoryManagerMock.Setup(x => x.Users).Returns(UserMapMock.Object);
             RepositoryManagerMock.Setup(x => x.UserRoles).Returns(UserRoleMock.Object);
-            Manager = new SqliteRepositoryManager(MockContext.Create());
+            Manager = RepositoryManagerMock.Object;
+
             RepositoryManagerMock.Setup(x => x.AppSettings).Returns(Manager.AppSettings);
-            CommandManager = new CommandManager(RepositoryManagerMock.Object, new UserLookup(UserMapMock.Object, new AppSettings()));
-            CommandManager.LoadModules(CommandModuleMock.Object, SubCommandModuleMock.Object);
+            var userLookup = new UserLookup(RepositoryManagerMock.Object);
+            CommandManager = new CommandManager(new ICommandModule[] { CommandModuleMock.Object, SubCommandModuleMock.Object }, RepositoryManagerMock.Object, userLookup);
+            CommandManager.InitializeModules();
         }
     }
 }

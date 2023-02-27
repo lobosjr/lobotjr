@@ -15,13 +15,13 @@ namespace LobotJR.Data.Migration
     public class SqliteDatabaseUpdater
     {
         public static readonly SemanticVersion LatestVersion = new SemanticVersion(1, 0, 1);
-        
+
         private readonly IEnumerable<IDatabaseUpdate> DatabaseUpdates;
 
-        public SqliteRepositoryManager RepositoryManager { get; set; }
+        public IRepositoryManager RepositoryManager { get; set; }
         public SqliteContext Context { get; set; }
 
-        public SqliteDatabaseUpdater(SqliteRepositoryManager manager, SqliteContext context, UserLookup userLookup, string broadcastToken, string clientId)
+        public SqliteDatabaseUpdater(IRepositoryManager manager, SqliteContext context, UserLookup userLookup, string broadcastToken, string clientId)
         {
             RepositoryManager = manager;
             Context = context;
@@ -32,7 +32,7 @@ namespace LobotJR.Data.Migration
             };
         }
 
-        public SemanticVersion GetDatabaseVersion(SqliteRepositoryManager manager)
+        public SemanticVersion GetDatabaseVersion(IRepositoryManager manager)
         {
             var updates = new List<IDatabaseUpdate>();
             try
@@ -79,7 +79,7 @@ namespace LobotJR.Data.Migration
             return true;
         }
 
-        public DatabaseMigrationResult ProcessDatabaseUpdates(SqliteContext context, SqliteRepositoryManager repositoryManager, SemanticVersion currentVersion)
+        public DatabaseMigrationResult ProcessDatabaseUpdates(SqliteContext context, IRepositoryManager repositoryManager, SemanticVersion currentVersion)
         {
             var result = new DatabaseMigrationResult { PreviousVersion = currentVersion };
             var updates = DatabaseUpdates.Where(x => currentVersion == null && x.FromVersion == null || x.FromVersion >= currentVersion).OrderBy(x => x.FromVersion);

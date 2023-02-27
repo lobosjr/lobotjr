@@ -22,10 +22,10 @@ namespace LobotJR.Test.Modules.Fishing
         {
             Manager = new SqliteRepositoryManager(MockContext.Create());
 
-            var FishingSystem = new FishingSystem(Manager.Users, Manager.FishData, Manager.AppSettings);
-            var LeaderboardSystem = new LeaderboardSystem(Manager.Catches, Manager.FishingLeaderboard);
+            var FishingSystem = new FishingSystem(Manager, Manager);
+            var LeaderboardSystem = new LeaderboardSystem(Manager);
 
-            TournamentSystem = new TournamentSystem(FishingSystem, LeaderboardSystem, Manager.TournamentResults, Manager.AppSettings);
+            TournamentSystem = new TournamentSystem(FishingSystem, LeaderboardSystem, Manager);
             AdminModule = new FishingAdmin(FishingSystem, TournamentSystem);
         }
 

@@ -26,19 +26,13 @@ namespace LobotJR.Command.Module.AccessControl
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        /// <summary>
-        /// Null response to indicate this module has no sub modules.
-        /// </summary>
-        public IEnumerable<ICommandModule> SubModules { get; private set; }
-
-        public AccessControlModule(ICommandManager commandManager)
+        public AccessControlModule(IRepositoryManager repositoryManager)
         {
-            repository = commandManager.RepositoryManager.UserRoles;
+            repository = repositoryManager.UserRoles;
             Commands = new CommandHandler[]
             {
                 new CommandHandler("CheckAccess", CheckAccess, "CheckAccess", "check-access"),
             };
-            SubModules = new ICommandModule[] { new AccessControlAdmin(commandManager) };
         }
 
         private CommandResult CheckAccess(string data, string userId)

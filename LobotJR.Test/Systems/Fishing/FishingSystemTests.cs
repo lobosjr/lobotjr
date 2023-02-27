@@ -22,10 +22,7 @@ namespace LobotJR.Test.Systems.Fishing
         {
             Manager = new SqliteRepositoryManager(MockContext.Create());
 
-            FishingSystem = new FishingSystem(
-                Manager.Users,
-                Manager.FishData,
-                Manager.AppSettings);
+            FishingSystem = new FishingSystem(Manager, Manager);
         }
 
         [TestMethod]

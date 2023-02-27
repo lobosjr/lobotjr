@@ -2,12 +2,14 @@
 using LobotJR.Command.System.Gloat;
 using LobotJR.Data;
 using LobotJR.Data.User;
+using LobotJR.Shared.Client;
 using LobotJR.Test.Mocks;
 using LobotJR.Utils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Wolfcoins;
 
 namespace LobotJR.Test.Modules.Gloat
 {
@@ -27,9 +29,11 @@ namespace LobotJR.Test.Modules.Gloat
         {
             Manager = new SqliteRepositoryManager(MockContext.Create());
 
-            var userLookup = new UserLookup(Manager.Users, Manager.AppSettings.Read().First());
-            Wolfcoins = new Dictionary<string, int>();
-            GloatSystem = new GloatSystem(Manager.Catches, Manager.AppSettings, Wolfcoins);
+            var userLookup = new UserLookup(Manager);
+            userLookup.UpdateTime = Manager.AppSettings.Read().First().GeneralCacheUpdateTime;
+            var currency = new Currency(new ClientData());
+            Wolfcoins = currency.coinList;
+            GloatSystem = new GloatSystem(Manager, currency);
             GloatModule = new GloatModule(GloatSystem, userLookup);
         }
 

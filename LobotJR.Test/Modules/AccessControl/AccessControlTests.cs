@@ -16,13 +16,7 @@ namespace LobotJR.Test.Modules.AccessControl
         public void Setup()
         {
             InitializeCommandManager();
-            Module = new AccessControlModule(CommandManager);
-        }
-
-        [TestMethod]
-        public void AccessControlModuleLoadsAdminSubModule()
-        {
-            Assert.IsTrue(Module.SubModules.Any(x => x is AccessControlAdmin));
+            Module = new AccessControlModule(Manager);
         }
 
         [TestMethod]

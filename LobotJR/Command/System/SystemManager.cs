@@ -1,6 +1,4 @@
 ﻿using Autofac;
-using LobotJR.Command.System.Fishing;
-using LobotJR.Command.System.Gloat;
 using LobotJR.Data;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +13,7 @@ namespace LobotJR.Command.System
         /// <summary>
         /// Collection of all loaded systems.
         /// </summary>
-        public List<ISystem> Systems { get; private set; }
+        public IEnumerable<ISystem> Systems { get; private set; }
         /// <summary>
         /// Repository manager with references to all repositories for run-time data.
         /// </summary>
@@ -26,9 +24,9 @@ namespace LobotJR.Command.System
         public IContentManager ContentManager { get; private set; }
 
 
-        public SystemManager(IRepositoryManager repositoryManager, IContentManager contentManager)
+        public SystemManager(IEnumerable<ISystem> systems, IRepositoryManager repositoryManager, IContentManager contentManager)
         {
-            Systems = new List<ISystem>();
+            Systems = systems;
             RepositoryManager = repositoryManager;
             ContentManager = contentManager;
         }
@@ -44,27 +42,9 @@ namespace LobotJR.Command.System
         }
 
         /// <summary>
-        /// Loads and initializes all systems.
-        /// </summary>
-        public void LoadAllSystems(Dictionary<string, int> wolfcoins)
-        {
-            /*
-            var builder = new ContainerBuilder();
-            builder.RegisterType<SqliteRepositoryManager>().As<IRepositoryManager>().As<IContentManager>().SingleInstance();
-            builder.RegisterType<FishingSystem>().AsSelf();
-            */
-            var fishingSystem = new FishingSystem(RepositoryManager.Users, ContentManager.FishData, RepositoryManager.AppSettings);
-            var leaderboardSystem = new LeaderboardSystem(RepositoryManager.Catches, RepositoryManager.FishingLeaderboard);
-            Systems.Add(fishingSystem);
-            Systems.Add(leaderboardSystem);
-            Systems.Add(new TournamentSystem(fishingSystem, leaderboardSystem, RepositoryManager.TournamentResults, RepositoryManager.AppSettings));
-            Systems.Add(new GloatSystem(RepositoryManager.Catches, RepositoryManager.AppSettings, wolfcoins));
-        }
-
-        /// <summary>
         /// Processes all loaded systems.
         /// </summary>
-        /// <param name="broadcasting"></param>
+        /// <param name="broadcasting">Whether or not the streamer is currently live.</param>
         public void Process(bool broadcasting)
         {
             foreach (var system in Systems)

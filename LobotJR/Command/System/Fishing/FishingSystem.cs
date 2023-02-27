@@ -1,6 +1,5 @@
 ﻿using LobotJR.Command.Model.Fishing;
 using LobotJR.Data;
-using LobotJR.Data.User;
 using LobotJR.Utils;
 using System;
 using System.Collections.Generic;
@@ -53,14 +52,12 @@ namespace LobotJR.Command.System.Fishing
         /// </summary>
         public int GloatCost { get { return Settings != null ? Settings.FishingGloatCost : -1; } }
 
-        public FishingSystem(
-            IRepository<UserMap> userMap,
-            IRepository<Fish> fishData,
-            IRepository<AppSettings> appSettings)
+        public FishingSystem(IRepositoryManager repositoryManager,
+            IContentManager contentManager)
         {
-            Fishers = userMap.Read().Select(x => new Fisher() { UserId = x.TwitchId }).ToList();
-            FishData = fishData;
-            Settings = appSettings.Read().First();
+            Fishers = repositoryManager.Users.Read().Select(x => new Fisher() { UserId = x.TwitchId }).ToList();
+            FishData = contentManager.FishData;
+            Settings = repositoryManager.AppSettings.Read().First();
             CastTimeMinimum = Settings.FishingCastMinimum;
             CastTimeMaximum = Settings.FishingCastMaximum;
         }

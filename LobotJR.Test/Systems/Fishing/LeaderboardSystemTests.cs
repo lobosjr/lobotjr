@@ -22,12 +22,9 @@ namespace LobotJR.Test.Systems.Fishing
         {
             Manager = new SqliteRepositoryManager(MockContext.Create());
 
-            FishingSystem = new FishingSystem(
-                Manager.Users,
-                Manager.FishData,
-                Manager.AppSettings);
-            LeaderboardSystem = new LeaderboardSystem(Manager.Catches, Manager.FishingLeaderboard);
-            TournamentSystem = new TournamentSystem(FishingSystem, LeaderboardSystem, Manager.TournamentResults, Manager.AppSettings);
+            FishingSystem = new FishingSystem(Manager, Manager);
+            LeaderboardSystem = new LeaderboardSystem(Manager);
+            TournamentSystem = new TournamentSystem(FishingSystem, LeaderboardSystem, Manager);
         }
 
         [TestMethod]

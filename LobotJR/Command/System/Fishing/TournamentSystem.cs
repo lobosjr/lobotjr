@@ -53,14 +53,13 @@ namespace LobotJR.Command.System.Fishing
         public TournamentSystem(
             FishingSystem fishingSystem,
             LeaderboardSystem leaderboardSystem,
-            IRepository<TournamentResult> tournamentResults,
-            IRepository<AppSettings> appSettings)
+            IRepositoryManager repositoryManager)
         {
             FishingSystem = fishingSystem;
             LeaderboardSystem = leaderboardSystem;
-            TournamentResults = tournamentResults;
+            TournamentResults = repositoryManager.TournamentResults;
 
-            Settings = appSettings.Read().First();
+            Settings = repositoryManager.AppSettings.Read().First();
             NextTournament = DateTime.Now.AddMinutes(Settings.FishingTournamentInterval);
             fishingSystem.FishCaught += FishingSystem_FishCaught;
         }

@@ -1,10 +1,6 @@
-﻿using LobotJR.Command.Module;
+﻿using Autofac;
+using LobotJR.Command.Module;
 using LobotJR.Command.Module.AccessControl;
-using LobotJR.Command.Module.Fishing;
-using LobotJR.Command.Module.Gloat;
-using LobotJR.Command.System;
-using LobotJR.Command.System.Fishing;
-using LobotJR.Command.System.Gloat;
 using LobotJR.Data;
 using LobotJR.Data.User;
 using System;
@@ -35,6 +31,10 @@ namespace LobotJR.Command
         /// </summary>
         public event PushNotificationHandler PushNotifications;
 
+        /// <summary>
+        /// Command modules to be loaded.
+        /// </summary>
+        public IEnumerable<ICommandModule> CommandModules { get; private set; }
         /// <summary>
         /// Repository manager for access to stored data types.
         /// </summary>
@@ -96,6 +96,13 @@ namespace LobotJR.Command
 
         private void AddModule(ICommandModule module)
         {
+            //This is a bad hack to get it working quickly, need a better way to provide back access
+            //Create an access control system that can take the command manager as a parameter to get proper access
+            if (module is AccessControlAdmin)
+            {
+                (module as AccessControlAdmin).CommandManager = this;
+            }
+
             module.PushNotification += Module_PushNotification;
 
             var exceptions = new List<Exception>();
@@ -139,35 +146,20 @@ namespace LobotJR.Command
             return !whisperOnlyCommands.Contains(commandId);
         }
 
-        public CommandManager(IRepositoryManager repositoryManager, UserLookup userLookup)
+        public CommandManager(IEnumerable<ICommandModule> modules, IRepositoryManager repositoryManager, UserLookup userLookup)
         {
+            CommandModules = modules;
             RepositoryManager = repositoryManager;
             UserLookup = userLookup;
         }
 
         /// <summary>
-        /// Loads all registered command modules.
+        /// Initializes all registered command modules.
         /// </summary>
-        /// <param name="systemManager">System manager containing all loaded systems.</param>
-        public void LoadAllModules(ISystemManager systemManager)
-        {
-
-            LoadModules(new AccessControlModule(this),
-                new FishingModule(systemManager.Get<FishingSystem>(), systemManager.Get<TournamentSystem>(), systemManager.Get<LeaderboardSystem>()),
-                new FishingAdmin(systemManager.Get<FishingSystem>(), systemManager.Get<TournamentSystem>()),
-                new TournamentModule(systemManager.Get<TournamentSystem>(), UserLookup),
-                new LeaderboardModule(systemManager.Get<LeaderboardSystem>(), UserLookup),
-                new GloatModule(systemManager.Get<GloatSystem>(), UserLookup));
-        }
-
-        /// <summary>
-        /// Loads all registered command modules.
-        /// <param name="modules">An array of modules to load.</param>
-        /// </summary>
-        public void LoadModules(params ICommandModule[] modules)
+        public void InitializeModules()
         {
             var exceptions = new List<Exception>();
-            foreach (var module in modules)
+            foreach (var module in CommandModules)
             {
                 try
                 {
@@ -183,6 +175,7 @@ namespace LobotJR.Command
                 throw new AggregateException(exceptions);
             }
         }
+
 
         /// <summary>
         /// Checks if a command id exists or is a valid wildcard pattern.

@@ -20,7 +20,7 @@ namespace LobotJR.Data.Migration
             ClientId = clientId;
         }
 
-        public DatabaseMigrationResult Update(SqliteContext context, SqliteRepositoryManager repositoryManager)
+        public DatabaseMigrationResult Update(SqliteContext context, IRepositoryManager repositoryManager)
         {
             var result = new DatabaseMigrationResult { Success = true };
             var commands = new string[]

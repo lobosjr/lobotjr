@@ -1,5 +1,4 @@
 ﻿using LobotJR.Command.Module;
-using LobotJR.Command.System;
 using LobotJR.Data;
 using LobotJR.Data.User;
 using System.Collections.Generic;
@@ -30,15 +29,9 @@ namespace LobotJR.Command
         IEnumerable<string> Commands { get; }
 
         /// <summary>
-        /// Loads all registered command modules.
+        /// Initializes all registered command modules.
         /// </summary>
-        /// <param name="systemManager">System manager containing all loaded systems.</param>
-        void LoadAllModules(ISystemManager systemManager);
-        /// <summary>
-        /// Loads all registered command modules.
-        /// <param name="modules">An array of modules to load.</param>
-        /// </summary>
-        void LoadModules(params ICommandModule[] modules);
+        void InitializeModules();
         /// <summary>
         /// Checks if a command id exists or is a valid wildcard pattern.
         /// </summary>

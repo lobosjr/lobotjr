@@ -189,6 +189,7 @@
     <Compile Include="Trigger\Responder\BlockLinks.cs" />
     <Compile Include="Trigger\Responder\NoceanMan.cs" />
     <Compile Include="Trigger\TriggerManager.cs" />
+    <Compile Include="Utils\AutofacSetup.cs" />
     <Compile Include="Utils\ChatController.cs" />
     <Compile Include="Utils\Extensions.cs" />
     <Compile Include="Wolfcoins.cs" />

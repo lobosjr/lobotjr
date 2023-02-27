@@ -1,4 +1,5 @@
 ﻿using LobotJR.Data;
+using LobotJR.Data.User;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,8 +11,11 @@ namespace LobotJR.Command.Module.AccessControl
     /// </summary>
     public class AccessControlAdmin : ICommandModule
     {
-        private readonly ICommandManager commandManager;
-        private readonly IRepository<UserRole> repository;
+        //private readonly ICommandManager CommandManager;
+        private readonly IRepository<UserRole> UserRoles;
+        private readonly UserLookup UserLookup;
+
+        public ICommandManager CommandManager;
 
         /// <summary>
         /// Prefix applied to names of commands within this module.
@@ -28,15 +32,10 @@ namespace LobotJR.Command.Module.AccessControl
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        /// <summary>
-        /// Null response to indicate this module has no sub modules.
-        /// </summary>
-        public IEnumerable<ICommandModule> SubModules => null;
-
-        public AccessControlAdmin(ICommandManager commandManager)
+        public AccessControlAdmin(IRepositoryManager repositoryManager, UserLookup userLookup)
         {
-            this.commandManager = commandManager;
-            repository = commandManager.RepositoryManager.UserRoles;
+            UserRoles = repositoryManager.UserRoles;
+            UserLookup = userLookup;
             Commands = new CommandHandler[]
             {
                 new CommandHandler("ListRoles", ListRoles, "ListRoles", "list-roles"),
@@ -55,25 +54,25 @@ namespace LobotJR.Command.Module.AccessControl
 
         private CommandResult ListRoles(string data)
         {
-            return new CommandResult($"There are {repository.Read().Count()} roles: {string.Join(", ", repository.Read().Select(x => x.Name))}");
+            return new CommandResult($"There are {UserRoles.Read().Count()} roles: {string.Join(", ", UserRoles.Read().Select(x => x.Name))}");
         }
 
         private CommandResult CreateRole(string data)
         {
-            var existingRole = repository.Read(x => x.Name.Equals(data)).FirstOrDefault();
+            var existingRole = UserRoles.Read(x => x.Name.Equals(data)).FirstOrDefault();
             if (existingRole != null)
             {
                 return new CommandResult($"Error: Unable to create role, \"{data}\" already exists.");
             }
 
-            repository.Create(new UserRole(data));
-            repository.Commit();
+            UserRoles.Create(new UserRole(data));
+            UserRoles.Commit();
             return new CommandResult($"Role \"{data}\" created successfully!");
         }
 
         private CommandResult DescribeRole(string data)
         {
-            var existingRole = repository.Read(x => x.Name.Equals(data)).FirstOrDefault();
+            var existingRole = UserRoles.Read(x => x.Name.Equals(data)).FirstOrDefault();
             if (existingRole == null)
             {
                 return new CommandResult($"Error: Role \"{data}\" not found.");
@@ -87,7 +86,7 @@ namespace LobotJR.Command.Module.AccessControl
 
         private CommandResult DeleteRole(string data)
         {
-            var existingRole = repository.Read(x => x.Name.Equals(data)).FirstOrDefault();
+            var existingRole = UserRoles.Read(x => x.Name.Equals(data)).FirstOrDefault();
             if (existingRole == null)
             {
                 return new CommandResult($"Error: Unable to delete role, \"{data}\" does not exist.");
@@ -98,8 +97,8 @@ namespace LobotJR.Command.Module.AccessControl
                 return new CommandResult($"Error: Unable to delete role, please remove all commands first.");
             }
 
-            repository.Delete(existingRole);
-            repository.Commit();
+            UserRoles.Delete(existingRole);
+            UserRoles.Commit();
             return new CommandResult($"Role \"{data}\" deleted successfully!");
         }
 
@@ -116,7 +115,7 @@ namespace LobotJR.Command.Module.AccessControl
             {
                 return new CommandResult("Error: Username cannot be empty.");
             }
-            var userId = commandManager.UserLookup.GetId(userToAdd);
+            var userId = UserLookup.GetId(userToAdd);
             if (userId == null)
             {
                 return new CommandResult("Error: User id not present in id cache, please try again in a few minutes.");
@@ -127,7 +126,7 @@ namespace LobotJR.Command.Module.AccessControl
                 return new CommandResult("Error: Role name cannot be empty.");
             }
 
-            var role = repository.Read(x => x.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            var role = UserRoles.Read(x => x.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             if (role == null)
             {
                 return new CommandResult($"Error: No role with name \"{roleName}\" was found.");
@@ -137,8 +136,8 @@ namespace LobotJR.Command.Module.AccessControl
                 return new CommandResult($"Error: User \"{userToAdd}\" is already a member of \"{roleName}\".");
             }
             role.AddUser(userId);
-            repository.Update(role);
-            repository.Commit();
+            UserRoles.Update(role);
+            UserRoles.Commit();
 
             return new CommandResult($"User \"{userToAdd}\" was added to role \"{role.Name}\" successfully!");
         }
@@ -156,14 +155,14 @@ namespace LobotJR.Command.Module.AccessControl
             {
                 return new CommandResult("Error: Username cannot be empty.");
             }
-            var userId = commandManager.UserLookup.GetId(userToRemove);
+            var userId = UserLookup.GetId(userToRemove);
             var roleName = data.Substring(space + 1);
             if (roleName.Length == 0)
             {
                 return new CommandResult("Error: Role name cannot be empty.");
             }
 
-            var role = repository.Read(x => x.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            var role = UserRoles.Read(x => x.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             if (role == null)
             {
                 return new CommandResult($"Error: No role with name \"{roleName}\" was found.");
@@ -174,8 +173,8 @@ namespace LobotJR.Command.Module.AccessControl
                 return new CommandResult($"Error: User \"{userToRemove}\" is not a member of \"{roleName}\".");
             }
             role.RemoveUser(userId);
-            repository.Update(role);
-            repository.Commit();
+            UserRoles.Update(role);
+            UserRoles.Commit();
 
             return new CommandResult($"User \"{userToRemove}\" was removed from role \"{role.Name}\" successfully!");
         }
@@ -193,7 +192,7 @@ namespace LobotJR.Command.Module.AccessControl
             {
                 return new CommandResult("Error: Command name cannot be empty.");
             }
-            if (!commandManager.IsValidCommand(commandName))
+            if (!CommandManager.IsValidCommand(commandName))
             {
                 return new CommandResult($"Error: Command {commandName} does not match any commands.");
             }
@@ -204,7 +203,7 @@ namespace LobotJR.Command.Module.AccessControl
             {
                 return new CommandResult("Error: Role name cannot be empty.");
             }
-            var role = repository.Read(x => x.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            var role = UserRoles.Read(x => x.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             if (role == null)
             {
                 return new CommandResult($"Error: Role \"{roleName}\" does not exist.");
@@ -216,15 +215,15 @@ namespace LobotJR.Command.Module.AccessControl
             }
 
             role.AddCommand(commandName);
-            repository.Update(role);
-            repository.Commit();
+            UserRoles.Update(role);
+            UserRoles.Commit();
 
             return new CommandResult($"Command \"{commandName}\" was added to the role \"{role.Name}\" successfully!");
         }
 
         private CommandResult ListCommands(string data)
         {
-            var commands = commandManager.Commands;
+            var commands = CommandManager.Commands;
             var modules = commands.Where(x => x.LastIndexOf('.') != -1).Select(x => x.Substring(0, x.LastIndexOf('.'))).Distinct().ToList();
             var response = new string[modules.Count + 1];
             response[0] = $"There are {commands.Count()} commands across {modules.Count} modules.";
@@ -248,7 +247,7 @@ namespace LobotJR.Command.Module.AccessControl
             {
                 return new CommandResult("Error: Command name cannot be empty.");
             }
-            if (!commandManager.IsValidCommand(commandName))
+            if (!CommandManager.IsValidCommand(commandName))
             {
                 return new CommandResult($"Error: Command {commandName} does not match any commands.");
             }
@@ -258,7 +257,7 @@ namespace LobotJR.Command.Module.AccessControl
             {
                 return new CommandResult("Error: Role name cannot be empty.");
             }
-            var role = repository.Read(x => x.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            var role = UserRoles.Read(x => x.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             if (role == null)
             {
                 return new CommandResult($"Error: Role \"{roleName}\" does not exist.");
@@ -270,8 +269,8 @@ namespace LobotJR.Command.Module.AccessControl
             }
 
             role.RemoveCommand(commandName);
-            repository.Update(role);
-            repository.Commit();
+            UserRoles.Update(role);
+            UserRoles.Commit();
 
             return new CommandResult($"Command \"{commandName}\" was removed from role \"{role.Name}\" successfully!");
         }
