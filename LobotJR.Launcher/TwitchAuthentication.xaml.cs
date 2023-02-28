@@ -1,11 +1,9 @@
 ﻿using LobotJR.Shared.Authentication;
 using LobotJR.Shared.Client;
 using LobotJR.Shared.Utility;
-using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -20,7 +18,7 @@ namespace LobotJR.Launcher
     {
         private const string _cancelError = "error=access_denied";
 
-        private static readonly IEnumerable<string> _chatScopes = new List<string>(new string[] { "chat:read", "chat:edit", "whispers:read", "whispers:edit", "channel:moderate" });
+        private static readonly IEnumerable<string> _chatScopes = new List<string>(new string[] { "chat:read", "chat:edit", "whispers:read", "whispers:edit", "channel:moderate", "user:manage:whispers", "moderator:manage:banned_users" });
         private static readonly IEnumerable<string> _broadcastScopes = new List<string>(new string[] { "channel:read:subscriptions" });
 
         private DispatcherTimer _timer;
@@ -188,7 +186,7 @@ namespace LobotJR.Launcher
                     }
                     if (tokenData.BroadcastToken != null)
                     {
-                        var validationResponse = await AuthToken .Validate(tokenData.BroadcastToken.AccessToken);
+                        var validationResponse = await AuthToken.Validate(tokenData.BroadcastToken.AccessToken);
                         if (validationResponse == null)
                         {
                             tokenData.BroadcastToken = await AuthToken.Refresh(_clientData.ClientId, _clientData.ClientSecret, tokenData.BroadcastToken.RefreshToken);
