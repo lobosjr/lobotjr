@@ -33,8 +33,8 @@ namespace LobotJR.Trigger
         /// </summary>
         /// <param name="message">A message sent by a user.</param>
         /// <param name="user">The name of the user who sent the message.</param>
-        /// <returns>A collection of strings the bot should respond with.</returns>
-        public IEnumerable<string> ProcessTrigger(string message, string user)
+        /// <returns>An object containing all actions resulting from the trigger.</returns>
+        public TriggerResult ProcessTrigger(string message, string user)
         {
             foreach (var responder in Responders)
             {
@@ -44,7 +44,7 @@ namespace LobotJR.Trigger
                     return responder.Process(match, user);
                 }
             }
-            return new List<string>();
+            return new TriggerResult() { Processed = false };
         }
     }
 }

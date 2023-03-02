@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using Wolfcoins;
 
 namespace LobotJR.Trigger.Responder
@@ -14,16 +13,21 @@ namespace LobotJR.Trigger.Responder
             UserList = currency;
         }
 
-        public IEnumerable<string> Process(Match match, string user)
+        public TriggerResult Process(Match match, string user)
         {
             var userHasXp = UserList.xpList.ContainsKey(user);
             if (!match.Groups[0].Value.Equals("d.va")
                 && !UserList.subSet.Contains(user)
                 && (userHasXp && (UserList.determineLevel(user) < 2) || !userHasXp))
             {
-                return new List<string> { $"/timeout {user} 1", "Links may only be posted by viewers of Level 2 or above. (Message me '?' for more details)" };
+                return new TriggerResult()
+                {
+                    Messages = new string[] { "Links may only be posted by viewers of Level 2 or above. (Message me '?' for more details)" },
+                    TimeoutSender = true,
+                    TimeoutMessage = "Links may only be posted by viewers of Level 2 or above. (Message me '?' for more details)"
+                };
             }
-            return new List<string>();
+            return null;
         }
     }
 }

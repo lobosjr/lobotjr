@@ -1,11 +1,11 @@
 ﻿using Classes;
 using Equipment;
+using LobotJR.Twitch;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using TwitchBot;
 using Wolfcoins;
 
 namespace Adventures
@@ -19,17 +19,17 @@ namespace Adventures
 
         DateTime lastMessage;
         readonly HashSet<string> receivers;
-        readonly IrcClient ircMessenger;
+        readonly TwitchClient twitchClient;
         public Queue<List<string>> messageQueue;
         static readonly int cooldown = 9000;
         readonly string myChannel = "";
 
-        public void sendIrcMessage(string message)
+        public void sendIrcMessage(string user, string message)
         {
-            ircMessenger.sendIrcMessage(message);
+            twitchClient.Whisper(user, message);
         }
 
-        public DungeonMessager(ref IrcClient whisperClient, string channel, Party myParty)
+        public DungeonMessager(ref TwitchClient twitchClient, string channel, Party myParty)
         {
             HashSet<string> temp = new HashSet<string>();
             foreach (var member in myParty.members)
@@ -37,7 +37,7 @@ namespace Adventures
                 temp.Add(member.name);
             }
             receivers = temp;
-            ircMessenger = whisperClient;
+            this.twitchClient = twitchClient;
             lastMessage = DateTime.Now;
             messageQueue = new Queue<List<string>>();
             myChannel = channel;
@@ -47,7 +47,7 @@ namespace Adventures
         {
             foreach (var member in receivers)
             {
-                if(member == player)
+                if (member == player)
                 {
                     receivers.Remove(player);
                     continue;
@@ -78,7 +78,7 @@ namespace Adventures
             List<string> temp = new List<string>();
             temp.Add(MSG_QUEUED.ToString());
             temp.Add(message);
-            foreach(var member in myParty.members)
+            foreach (var member in myParty.members)
             {
                 temp.Add(member.name);
             }
@@ -106,7 +106,7 @@ namespace Adventures
 
                 if (toSend == DUNGEON_COMPLETE)
                     return 1;
-                if(!(temp.Count > 1))
+                if (!(temp.Count > 1))
                     return 0;
 
                 temp.RemoveRange(0, 2);
@@ -114,12 +114,9 @@ namespace Adventures
                 int numReceivers = temp.Count();
                 foreach (var receiver in temp)
                 {
-                    string tempMsg = ".w " + receiver + " " + toSend;
-                    string msg = ":" + "lobotjr" + "!" + "lobotjr" + "@" + "lobotjr" + "tmi.twitch.tv PRIVMSG #" + myChannel + " :" + tempMsg;
-
                     try
                     {
-                        sendIrcMessage(msg);
+                        sendIrcMessage(receiver, toSend);
                     }
                     catch (Exception e)
                     {
@@ -166,7 +163,7 @@ namespace Adventures
         readonly Random RNG = new Random();
         public int maxPlayers = 3;
         public List<string> dungeonText = new List<string>();
-        public Dictionary<string,int> encounters = new Dictionary<string,int>();
+        public Dictionary<string, int> encounters = new Dictionary<string, int>();
         public int numEncounters = -1;
         public string dungeonName = "";
         public string description = "";
@@ -240,7 +237,7 @@ namespace Adventures
             }
         }
 
-        public Dungeon(string path, string channel, Dictionary<int,Item> itemDatabase)
+        public Dungeon(string path, string channel, Dictionary<int, Item> itemDatabase)
         {
             itemDB = itemDatabase;
             IEnumerable<string> fileText = System.IO.File.ReadLines(path, UTF8Encoding.Default);
@@ -257,7 +254,7 @@ namespace Adventures
             if ((enemies.Count() / 2) != numEncounters)
                 Console.WriteLine(DateTime.Now.ToString() + ": Dungeon at " + path + " has a mismatch for # of encounters & encounter data.");
 
-            for(int i = 0; i < enemies.Count(); i+= 2)
+            for (int i = 0; i < enemies.Count(); i += 2)
             {
                 int.TryParse(enemies[i + 1], out int difficulty);
                 encounters.Add(enemies[i], difficulty);
@@ -269,7 +266,7 @@ namespace Adventures
             textIter++;
             defeatText = fileText.ElementAt(textIter);
             textIter++;
-            if(fileText.ElementAt(textIter).StartsWith("Loot="))
+            if (fileText.ElementAt(textIter).StartsWith("Loot="))
             {
                 string[] temp = fileText.ElementAt(textIter).Split('=');
                 string[] ids = temp[1].Split(',');
@@ -279,10 +276,10 @@ namespace Adventures
                     int.TryParse(ids[i], out toAdd);
                     loot.Add(toAdd);
                 }
-                    textIter++;
+                textIter++;
             }
             int iter = 0;
-            foreach(var line in fileText.Skip(textIter))
+            foreach (var line in fileText.Skip(textIter))
             {
                 dungeonText.Add(line);
                 iter++;
@@ -290,7 +287,7 @@ namespace Adventures
             myChannel = channel;
         }
 
-        public Party RunDungeon(Party myParty, ref IrcClient whisper)
+        public Party RunDungeon(Party myParty, ref TwitchClient whisper)
         {
             messenger = new DungeonMessager(ref whisper, myChannel, myParty);
             List<Rewards> partyRewards = new List<Rewards>();
@@ -328,27 +325,32 @@ namespace Adventures
                     case CharClass.WARRIOR:
                         {
                             numWarriors++;
-                        } break;
+                        }
+                        break;
 
                     case CharClass.MAGE:
                         {
                             numMages++;
-                        } break;
+                        }
+                        break;
 
                     case CharClass.ROGUE:
                         {
                             numRogues++;
-                        } break;
+                        }
+                        break;
 
                     case CharClass.RANGER:
                         {
                             numRangers++;
-                        } break;
+                        }
+                        break;
 
                     case CharClass.CLERIC:
                         {
                             numClerics++;
-                        } break;
+                        }
+                        break;
 
                     default: break;
                 }
@@ -373,27 +375,32 @@ namespace Adventures
                     case CharClass.WARRIOR:
                         {
                             UpdateDungeonStats(numWarriors, player);
-                        } break;
+                        }
+                        break;
 
                     case CharClass.MAGE:
                         {
                             UpdateDungeonStats(numMages, player);
-                        } break;
+                        }
+                        break;
 
                     case CharClass.ROGUE:
                         {
                             UpdateDungeonStats(numRogues, player);
-                        } break;
+                        }
+                        break;
 
                     case CharClass.RANGER:
                         {
                             UpdateDungeonStats(numRangers, player);
-                        } break;
+                        }
+                        break;
 
                     case CharClass.CLERIC:
                         {
                             UpdateDungeonStats(numClerics, player);
-                        } break;
+                        }
+                        break;
 
                     default: break;
                 }
@@ -420,7 +427,7 @@ namespace Adventures
                 float encounterSuccess = partySuccessRate - (float)encounters.ElementAt(i).Value;
                 doubleI++;
                 //if encounter fails, people can die and the dungeon ends
-                if(!CalculateEncounterOutcome(encounterSuccess))
+                if (!CalculateEncounterOutcome(encounterSuccess))
                 {
                     string defeatLogText = dungeonName + " failed by ";
                     messenger.sendChatMessage(defeatText, myParty);
@@ -470,7 +477,7 @@ namespace Adventures
                     System.IO.File.AppendAllText(logPath, defeatLogText + Environment.NewLine);
                     messenger.sendChatMessage("It's a sad thing your adventure has ended here. No XP or Coins have been awarded.", myParty);
                     messenger.sendChatMessage(DungeonMessager.MSG_DUNGEON_COMPLETE, DungeonMessager.DUNGEON_COMPLETE, "");
-                    foreach(var member in partyMembers)
+                    foreach (var member in partyMembers)
                     {
                         if (member.myItems.Count > 0)
                         {
@@ -500,7 +507,7 @@ namespace Adventures
                 if (xp < 5)
                     xp = 5;
 
-                
+
                 randomAmount = RNG.Next((randomRewardMod * -1), randomRewardMod);
                 coins += randomAmount;
                 if (coins < 5)
@@ -509,12 +516,12 @@ namespace Adventures
                 member.coinsEarned = coins;
                 member.xpEarned = xp;
 
-                
+
                 members += member.name + ", " + member.className + " (" + xp + " xp, " + coins + " coins.) ";
-                
+
                 int myLoot = awardLoot(member);
                 int petLoot = awardPet(member);
-                if(myLoot == -1 && petLoot == -1)
+                if (myLoot == -1 && petLoot == -1)
                 {
                     Console.WriteLine(DateTime.Now.ToString() + ": " + member.name + " completed a dungeon and earned " + xp + " xp and " + coins + " Wolfcoins.", whisper);
                     continue;
@@ -525,7 +532,7 @@ namespace Adventures
                     member.itemEarned = myLoot;
                     member.petEarned = petLoot;
                 }
-                
+
             }
 
             messenger.sendChatMessage("Dungeon complete. Your party remains intact.", myParty);
@@ -548,7 +555,7 @@ namespace Adventures
 
         public void ApplyItemBuffs(CharClass player)
         {
-            foreach(var itm in player.myItems)
+            foreach (var itm in player.myItems)
             {
                 if (!itm.isActive)
                     continue;
@@ -565,7 +572,7 @@ namespace Adventures
         {
             foreach (var member in partyMembers)
             {
-                switch(member.classType)
+                switch (member.classType)
                 {
                     case CharClass.WARRIOR:
                         {
@@ -575,7 +582,8 @@ namespace Adventures
                             member.coinBonus = freshClass.coinBonus;
                             member.preventDeathBonus = freshClass.preventDeathBonus;
                             member.successChance = freshClass.successChance;
-                        } break;
+                        }
+                        break;
 
                     case CharClass.MAGE:
                         {
@@ -585,7 +593,8 @@ namespace Adventures
                             member.coinBonus = freshClass.coinBonus;
                             member.preventDeathBonus = freshClass.preventDeathBonus;
                             member.successChance = freshClass.successChance;
-                        } break;
+                        }
+                        break;
 
                     case CharClass.ROGUE:
                         {
@@ -595,7 +604,8 @@ namespace Adventures
                             member.coinBonus = freshClass.coinBonus;
                             member.preventDeathBonus = freshClass.preventDeathBonus;
                             member.successChance = freshClass.successChance;
-                        } break;
+                        }
+                        break;
 
                     case CharClass.RANGER:
                         {
@@ -605,7 +615,8 @@ namespace Adventures
                             member.coinBonus = freshClass.coinBonus;
                             member.preventDeathBonus = freshClass.preventDeathBonus;
                             member.successChance = freshClass.successChance;
-                        } break;
+                        }
+                        break;
 
                     case CharClass.CLERIC:
                         {
@@ -615,7 +626,8 @@ namespace Adventures
                             member.coinBonus = freshClass.coinBonus;
                             member.preventDeathBonus = freshClass.preventDeathBonus;
                             member.successChance = freshClass.successChance;
-                        } break;
+                        }
+                        break;
 
                     default: break;
                 }
@@ -657,7 +669,7 @@ namespace Adventures
             if (chanceForLoot > roll)
             {
 
-                foreach(var myLoot in loot)
+                foreach (var myLoot in loot)
                 {
                     if (itemDB[myLoot - 1].forClass != player.classType)
                     {
@@ -665,7 +677,7 @@ namespace Adventures
                     }
 
                     bool hasItem = false;
-                    foreach(var item in player.myItems)
+                    foreach (var item in player.myItems)
                     {
                         if (item.itemID == itemDB[myLoot - 1].itemID)
                         {
@@ -675,7 +687,7 @@ namespace Adventures
 
                     if (!hasItem)
                     {
-                        if(chanceForLoot > (roll + (itemDB[myLoot - 1].itemRarity * Item.QUALITY_MOD)))
+                        if (chanceForLoot > (roll + (itemDB[myLoot - 1].itemRarity * Item.QUALITY_MOD)))
                             return myLoot;
                     }
                     continue;
@@ -737,8 +749,8 @@ namespace Adventures
             else
                 return false;
         }
-        
-            //returns true if player dies
+
+        //returns true if player dies
         public bool CalculateDeath(CharClass player, float partyPreventBonus)
         {
             deathChance -= (player.preventDeathBonus + partyPreventBonus);

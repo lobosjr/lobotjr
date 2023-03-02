@@ -273,7 +273,7 @@ namespace LobotJR.Command
                     return new CommandResult()
                     {
                         Processed = true,
-                        Messages = new string[] { $"/timeout {user} 1" },
+                        TimeoutSender = true,
                         Responses = new string[]
                         {
                             "You just tried to use a command in chat that is only available by whispering me. Reply in this window on twitch or type '/w lobotjr' in chat to use that command.",

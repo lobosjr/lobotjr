@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net.Sockets;
 using Wolfcoins;
 
@@ -56,21 +55,6 @@ namespace TwitchBot
 
             }
 
-        }
-
-        static void Whisper(string user, string message, IrcClient whisperClient)
-        {
-            string toSend = ".w " + user + " " + message;
-            whisperClient.sendChatMessage(toSend);
-        }
-
-        static void Whisper(Party party, string message, IrcClient whisperClient)
-        {
-            for (int i = 0; i < party.NumMembers(); i++)
-            {
-                string toSend = ".w " + party.members.ElementAt(i).name + " " + message;
-                whisperClient.sendChatMessage(toSend);
-            }
         }
 
         public void joinRoom(string channel)

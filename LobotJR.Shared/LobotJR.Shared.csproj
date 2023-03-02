@@ -85,10 +85,13 @@
     <Compile Include="Authentication\TokenData.cs" />
     <Compile Include="Authentication\TokenResponse.cs" />
     <Compile Include="Authentication\ValidationResponse.cs" />
+    <Compile Include="Chat\SendWhisper.cs" />
     <Compile Include="Client\ClientData.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="User\BanRequest.cs" />
     <Compile Include="User\UserData.cs" />
     <Compile Include="User\UserResponse.cs" />
+    <Compile Include="User\BanUser.cs" />
     <Compile Include="User\Users.cs" />
     <Compile Include="Utility\FileUtils.cs" />
     <Compile Include="Utility\NewtonsoftDeserializer.cs" />
@@ -97,5 +100,6 @@
     <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

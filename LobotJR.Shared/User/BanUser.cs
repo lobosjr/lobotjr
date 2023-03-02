@@ -2,7 +2,9 @@
 using Newtonsoft.Json.Serialization;
 using RestSharp;
 using RestSharp.Serializers.NewtonsoftJson;
+using System.Collections.Generic;
 using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace LobotJR.Shared.User
@@ -42,7 +44,18 @@ namespace LobotJR.Shared.User
             request.AddHeader("Client-ID", clientId);
             request.AddParameter("broadcaster_id", broadcasterId, ParameterType.QueryString);
             request.AddParameter("moderator_id", moderatorId, ParameterType.QueryString);
-            request.AddBody(new BanRequest(userId, duration, reason));
+            request.AddJsonBody(new BanRequest(userId, duration, reason));
+            request.OnBeforeRequest = (HttpRequestMessage msg) =>
+            {
+                var log = new List<string>();
+                log.Add(msg.RequestUri.ToString());
+                foreach (var header in msg.Headers)
+                {
+                    log.Add($"{header.Key}: {string.Join(", ", header.Value)}");
+                }
+                log.Add(msg.Content.ReadAsStringAsync().GetAwaiter().GetResult());
+                return new ValueTask();
+            };
             var response = await client.ExecuteAsync(request);
             return response.StatusCode;
         }

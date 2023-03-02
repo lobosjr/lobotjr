@@ -2,7 +2,6 @@
 using LobotJR.Trigger;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
-using System.Linq;
 using Wolfcoins;
 
 namespace LobotJR.Test.Trigger
@@ -34,28 +33,32 @@ namespace LobotJR.Test.Trigger
         public void TriggerManagerBlocksLinksForNewUsers()
         {
             var response = Manager.ProcessTrigger("butt.ass", "NewUser");
-            Assert.IsTrue(response.Any(x => x.Contains("timeout")));
+            Assert.IsTrue(response.Processed);
+            Assert.IsTrue(response.TimeoutSender);
         }
 
         [TestMethod]
         public void TriggerManagerBlocksLinksForUsersUnderLevel2()
         {
             var response = Manager.ProcessTrigger("butt.ass", "Level1");
-            Assert.IsTrue(response.Any(x => x.Contains("timeout")));
+            Assert.IsTrue(response.Processed);
+            Assert.IsTrue(response.TimeoutSender);
         }
 
         [TestMethod]
         public void TriggerManagerAllowsLinksForSubs()
         {
             var response = Manager.ProcessTrigger("butt.ass", "Sub");
-            Assert.IsFalse(response.Any());
+            Assert.IsFalse(response.Processed);
+            Assert.IsFalse(response.TimeoutSender);
         }
 
         [TestMethod]
         public void TriggerManagerAllowsLinksForLevel2()
         {
             var response = Manager.ProcessTrigger("butt.ass", "Level2");
-            Assert.IsFalse(response.Any());
+            Assert.IsFalse(response.Processed);
+            Assert.IsFalse(response.TimeoutSender);
         }
     }
 }
