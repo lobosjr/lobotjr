@@ -1,4 +1,5 @@
 ﻿using LobotJR.Data.Migration;
+using System;
 
 namespace LobotJR.Data
 {
@@ -70,5 +71,11 @@ namespace LobotJR.Data
         /// tournament. Default is 30 seconds.
         /// </summary>        
         public int FishingTournamentCastMaximum { get; set; } = 30;
+
+        /// <summary>
+        /// The start time of the rolling 24-hour window for unique whisper
+        /// recipients.
+        /// </summary>
+        public DateTime WhisperTimerStart { get; set; } = DateTime.Now;
     }
 }

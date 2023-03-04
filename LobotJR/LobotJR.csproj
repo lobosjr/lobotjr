@@ -191,9 +191,12 @@
     <Compile Include="Trigger\TriggerManager.cs" />
     <Compile Include="Trigger\TriggerResult.cs" />
     <Compile Include="Twitch\TwitchClient.cs" />
+    <Compile Include="Twitch\WhisperQueue.cs" />
     <Compile Include="Utils\AutofacSetup.cs" />
     <Compile Include="Utils\ChatController.cs" />
     <Compile Include="Utils\Extensions.cs" />
+    <Compile Include="Utils\RollingUniqueTimer.cs" />
+    <Compile Include="Utils\RollingTimer.cs" />
     <Compile Include="Wolfcoins.cs" />
   </ItemGroup>
   <ItemGroup>

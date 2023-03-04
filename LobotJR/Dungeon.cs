@@ -26,7 +26,7 @@ namespace Adventures
 
         public void sendIrcMessage(string user, string message)
         {
-            twitchClient.Whisper(user, message);
+            twitchClient.QueueWhisper(user, message);
         }
 
         public DungeonMessager(ref TwitchClient twitchClient, string channel, Party myParty)

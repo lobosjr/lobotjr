@@ -1,4 +1,5 @@
-﻿using LobotJR.Data.User;
+﻿using LobotJR.Data;
+using LobotJR.Data.User;
 using LobotJR.Shared.Authentication;
 using LobotJR.Shared.Chat;
 using LobotJR.Shared.Client;
@@ -16,16 +17,20 @@ namespace LobotJR.Twitch
     /// </summary>
     public class TwitchClient
     {
-        private Dictionary<string, IList<string>> PendingWhispers;
+        private List<string> Blacklist = new List<string>();
+        private List<WhisperRecord> History = new List<WhisperRecord>();
+        private bool CanWhisper = true;
+
+        private WhisperQueue Queue;
         private UserLookup UserLookup;
         private string ClientId;
         private string AccessToken;
         private string BroadcasterId;
         private string ChatId;
 
-        public TwitchClient(UserLookup userLookup, ClientData clientData, TokenData tokenData)
+        public TwitchClient(IRepositoryManager repositoryManager, UserLookup userLookup, ClientData clientData, TokenData tokenData)
         {
-            PendingWhispers = new Dictionary<string, IList<string>>();
+            Queue = new WhisperQueue(repositoryManager);
             UserLookup = userLookup;
             ClientId = clientData.ClientId;
             AccessToken = tokenData.ChatToken.AccessToken;
@@ -36,26 +41,13 @@ namespace LobotJR.Twitch
         /// <summary>
         /// Sends a whisper to a user asynchronously.
         /// </summary>
-        /// <param name="user">The name of the user to send the message to.</param>
+        /// <param name="userId">The Twitch id of the user to send the message to.</param>
         /// <param name="message">The message to send.</param>
         /// <returns>True if the whisper was sent successfully.</returns>
-        public async Task<bool> WhisperAsync(string user, string message)
+        private async Task<HttpStatusCode> WhisperAsync(string userId, string message)
         {
-            var userId = UserLookup.GetId(user);
-            if (userId == null)
-            {
-                if (PendingWhispers.TryGetValue(user, out var messages))
-                {
-                    messages.Add(message);
-                }
-                else
-                {
-                    PendingWhispers.Add(user, new List<string>() { message });
-                }
-                return false;
-            }
-            var result = await SendWhisper.Post(AccessToken, ClientId, ChatId, UserLookup.GetId(user), message);
-            return result == HttpStatusCode.NoContent;
+            var result = await SendWhisper.Post(AccessToken, ClientId, ChatId, userId, message);
+            return result;
         }
 
         /// <summary>
@@ -64,9 +56,12 @@ namespace LobotJR.Twitch
         /// <param name="user">The name of the user to send the message to.</param>
         /// <param name="message">The message to send.</param>
         /// <returns>True if the whisper was sent successfully.</returns>
-        public bool Whisper(string user, string message)
+        public void QueueWhisper(string user, string message)
         {
-            return WhisperAsync(user, message).GetAwaiter().GetResult();
+            if (!Blacklist.Contains(user))
+            {
+                Queue.Enqueue(user, UserLookup.GetId(user), message, DateTime.Now);
+            }
         }
 
         /// <summary>
@@ -75,18 +70,47 @@ namespace LobotJR.Twitch
         /// <param name="users">A collection of users to message.</param>
         /// <param name="message">The message to send.</param>
         /// <returns>True if all whispers were sent successfully.</returns>
-        public bool Whisper(IEnumerable<string> users, string message)
+        public void QueueWhisper(IEnumerable<string> users, string message)
         {
-            var results = Task.WhenAll(users.Select(x => WhisperAsync(x, message))).GetAwaiter().GetResult();
-            return results.All(x => x);
+            foreach (var user in users)
+            {
+                QueueWhisper(user, message);
+            }
         }
 
         /// <summary>
         /// Attempts to re-send all whispers that failed due to the id not being in the cache.
         /// </summary>
-        public async void ProcessQueue()
+        public async void ProcessQueue(bool cacheUpdated)
         {
-            await Task.WhenAll(PendingWhispers.SelectMany(x => x.Value.Select(y => WhisperAsync(x.Key, y))));
+            var toSend = Queue.GetMessagesToSend(cacheUpdated, UserLookup).ToList();
+            var results = await Task.WhenAll(toSend.Select(x => WhisperAsync(x.UserId, x.Message)));
+            for (var i = 0; i < results.Length; i++)
+            {
+                var sent = toSend[i];
+                var result = results[i];
+                if (result == HttpStatusCode.NoContent)
+                {
+                    Queue.ReportSuccess(sent);
+                }
+                else if (result == HttpStatusCode.NotFound)
+                {
+                    Console.WriteLine($"User name {sent.Username} returned id {sent.UserId} from Twitch. Twitch says this user id doesn't exist. User {sent.Username} has been blacklisted from whispers.");
+                    Blacklist.Add(sent.Username);
+                }
+                else if (result == (HttpStatusCode)429)
+                {
+                    Console.WriteLine($"ERROR: We sent too many whispers. Whispers have been turned off for one minute, and no more unique recipients will be allowed.");
+                    Console.WriteLine("See below for details on the current state of the whisper queue.");
+                    Console.WriteLine(Queue.Debug());
+                    Queue.FreezeQueue();
+                    Queue.NewRecipientsAllowed = false;
+                }
+                else
+                {
+                    Console.WriteLine($"ERROR: Something went wrong trying to send a whisper. Twitch response: {result}");
+                }
+            }
         }
 
         /// <summary>
