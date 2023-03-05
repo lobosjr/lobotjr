@@ -1,9 +1,8 @@
-﻿using LobotJR.Data.User;
-using NuGet.Versioning;
+﻿using NuGet.Versioning;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
-using System.Data.Entity.Core;
+using System.Data.Entity;
 using System.IO;
 using System.Linq;
 
@@ -18,58 +17,60 @@ namespace LobotJR.Data.Migration
 
         private readonly IEnumerable<IDatabaseUpdate> DatabaseUpdates;
 
-        public IRepositoryManager RepositoryManager { get; set; }
-        public SqliteContext Context { get; set; }
+        public DbContext Context { get; set; }
+        public SemanticVersion CurrentVersion { get; set; }
 
-        public SqliteDatabaseUpdater(IRepositoryManager manager, SqliteContext context, UserLookup userLookup, string broadcastToken, string clientId)
+        public SqliteDatabaseUpdater(IEnumerable<IDatabaseUpdate> databaseUpdates)
         {
-            RepositoryManager = manager;
-            Context = context;
-            DatabaseUpdates = new IDatabaseUpdate[]
-            {
-                new DatabaseUpdate_Null_1_0_0(userLookup, broadcastToken, clientId),
-                new DatabaseUpdate_1_0_0_1_0_1(userLookup, broadcastToken, clientId),
-                new DatabaseUpdate_1_0_1_1_0_2(userLookup, broadcastToken, clientId)
-            };
+            DatabaseUpdates = databaseUpdates.OrderBy(x => x.ToVersion);
         }
 
-        public SemanticVersion GetDatabaseVersion(IRepositoryManager manager)
+        /// <summary>
+        /// Retrieves the minimal DbContext and database version which can be
+        /// safely used to run the updater.
+        /// </summary>
+        public void Initialize()
         {
-            var updates = new List<IDatabaseUpdate>();
             try
             {
-                var appSettings = manager.AppSettings.Read().FirstOrDefault();
-                if (appSettings != null)
-                {
-                    if (SemanticVersion.TryParse(appSettings.DatabaseVersion, out var version))
-                    {
-                        return version;
-                    }
-                }
+                var tempContext = new SqliteUpdateContext();
+                var appSettings = tempContext.Metadata.First();
+                CurrentVersion = SemanticVersion.Parse(appSettings.DatabaseVersion);
+                Context = tempContext;
             }
-            catch (EntityCommandExecutionException)
+            catch { }
+            if (Context == null)
             {
+
+                try
+                {
+                    var tempContext = new SqliteDeprecatedContext();
+                    var appSettings = tempContext.AppSettings.First();
+                    CurrentVersion = SemanticVersion.Parse(appSettings.DatabaseVersion);
+                    Context = tempContext;
+                }
+                catch { }
             }
-            return null;
         }
 
-        public string GetDatabaseFile()
+        private string GetDatabaseFile()
         {
             var connectionString = ConfigurationManager.ConnectionStrings["SqliteContext"].ConnectionString;
             return connectionString.Split('=')[1];
         }
 
-        public string BackupDatabase(string databaseFile, SemanticVersion currentVersion)
+        private string BackupDatabase(string databaseFile, SemanticVersion currentVersion)
         {
             var backupFile = $"{databaseFile}-{currentVersion}-{DateTime.Now.ToFileTimeUtc()}.backup";
             File.Copy(databaseFile, backupFile);
             return backupFile;
         }
 
-        public bool RestoreBackup(string backupFile, string databaseFile)
+        private bool RestoreBackup(string backupFile, string databaseFile)
         {
             try
             {
+                Context.Dispose();
                 File.Delete(databaseFile);
                 File.Move(backupFile, databaseFile);
             }
@@ -80,13 +81,13 @@ namespace LobotJR.Data.Migration
             return true;
         }
 
-        public DatabaseMigrationResult ProcessDatabaseUpdates(SqliteContext context, IRepositoryManager repositoryManager, SemanticVersion currentVersion)
+        private DatabaseMigrationResult ProcessDatabaseUpdates(DbContext context, SemanticVersion currentVersion)
         {
             var result = new DatabaseMigrationResult { PreviousVersion = currentVersion };
             var updates = DatabaseUpdates.Where(x => currentVersion == null && x.FromVersion == null || x.FromVersion >= currentVersion).OrderBy(x => x.FromVersion);
             foreach (var update in updates)
             {
-                var updateResult = update.Update(context, repositoryManager);
+                var updateResult = update.Update(context);
                 result.DebugOutput.Add($"Updating database version from {update.FromVersion} to {update.ToVersion}...");
                 if (updateResult.Success)
                 {
@@ -103,35 +104,51 @@ namespace LobotJR.Data.Migration
             return result;
         }
 
+        /// <summary>
+        /// Updates the database schema to the latest version. If the update
+        /// fails, the context will be disposed and the database backup will be
+        /// restored.
+        /// </summary>
+        /// <returns>The result of the migration attempt.</returns>
         public DatabaseMigrationResult UpdateDatabase()
         {
-            var currentVersion = GetDatabaseVersion(RepositoryManager);
-            if (currentVersion < LatestVersion)
+            if (CurrentVersion < LatestVersion)
             {
                 var databaseFile = GetDatabaseFile();
-                var backup = BackupDatabase(databaseFile, currentVersion);
-                var results = ProcessDatabaseUpdates(Context, RepositoryManager, currentVersion);
-                if (results.Success)
-                {
-                    var appSettings = RepositoryManager.AppSettings.Read().FirstOrDefault();
-                    if (appSettings == null)
-                    {
-                        RepositoryManager.AppSettings.Create(new AppSettings());
-                    }
-                    else
-                    {
-                        appSettings.DatabaseVersion = LatestVersion.ToString();
-                        RepositoryManager.AppSettings.Update(appSettings);
-                    }
-                    RepositoryManager.AppSettings.Commit();
-                }
-                else
+                var backup = BackupDatabase(databaseFile, CurrentVersion);
+                var results = ProcessDatabaseUpdates(Context, CurrentVersion);
+                if (!results.Success)
                 {
                     RestoreBackup(backup, databaseFile);
                 }
                 return results;
             }
             return null;
+        }
+
+        /// <summary>
+        /// To be called after UpdateDatabase returns a success. This has to be
+        /// separated so a new context to the database can be created with the
+        /// new schema post update.
+        /// </summary>
+        public void WriteUpdatedVersion()
+        {
+            Context.Dispose();
+            var updateContext = new SqliteUpdateContext();
+            var metadataRepo = new SqliteRepository<Metadata>(updateContext);
+            var metadata = metadataRepo.Read().FirstOrDefault();
+            if (metadata == null)
+            {
+                metadataRepo.Create(new Metadata());
+            }
+            else
+            {
+                metadata.DatabaseVersion = LatestVersion.ToString();
+                metadata.LastSchemaUpdate = DateTime.Now;
+                metadataRepo.Update(metadata);
+            }
+            metadataRepo.Commit();
+            updateContext.Dispose();
         }
     }
 }

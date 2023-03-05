@@ -11,6 +11,10 @@ namespace LobotJR.Data
         {
             context.UserRoles.Add(new UserRole("Streamer", new string[] { "28640725", "lobotjr" }, new string[] { "*.Admin.*" }));
             context.UserRoles.Add(new UserRole("UIDev", new string[] { "28640725", "lobotjr", "26374083" }, new string[] { }));
+            if (context.Metadata != null)
+            {
+                context.Metadata.Add(new Metadata());
+            }
             context.AppSettings.Add(new AppSettings());
         }
     }

@@ -377,21 +377,12 @@ namespace TwitchBot
             // 199.9.253.119
             connected = irc.connected;
 
-            #region Autofac Setup
-            var wolfcoins = new Currency(clientData);
-            var container = new AutofacSetup().Setup(wolfcoins);
-            var scope = container.BeginLifetimeScope();
-            #endregion
-
-            #region Sql Data Setup
-            var context = scope.Resolve<SqliteContext>();
-
-            var repoManager = scope.Resolve<IRepositoryManager>();
-            var contentManager = scope.Resolve<IContentManager>();
-            var userLookup = scope.Resolve<UserLookup>();
-            var updater = new SqliteDatabaseUpdater(repoManager, context, userLookup, tokenData.BroadcastToken.AccessToken, clientData.ClientId);
-
-            if (updater.GetDatabaseVersion(repoManager) < SqliteDatabaseUpdater.LatestVersion)
+            #region Database Update
+            var updaterContainer = AutofacSetup.SetupUpdater(clientData, tokenData);
+            var updaterScope = updaterContainer.BeginLifetimeScope();
+            var updater = updaterScope.Resolve<SqliteDatabaseUpdater>();
+            updater.Initialize();
+            if (updater.CurrentVersion < SqliteDatabaseUpdater.LatestVersion)
             {
                 Console.WriteLine($"Database is out of date, updating to {SqliteDatabaseUpdater.LatestVersion}. This could take a few minutes.");
                 var updateResult = updater.UpdateDatabase();
@@ -399,7 +390,25 @@ namespace TwitchBot
                 {
                     throw new Exception($"Error occurred updating database from {updateResult.PreviousVersion} to {updateResult.NewVersion}. {updateResult.DebugOutput}");
                 }
+                updater.WriteUpdatedVersion();
                 Console.WriteLine("Update complete!");
+            }
+            updaterScope.Dispose();
+            #endregion
+
+
+
+            #region Sql Data Setup
+            var container = AutofacSetup.Setup(clientData, tokenData);
+            var scope = container.BeginLifetimeScope();
+            var context = scope.Resolve<SqliteContext>();
+            var repoManager = scope.Resolve<IRepositoryManager>();
+            var metadata = repoManager.Metadata.Read().FirstOrDefault();
+            if (metadata == null)
+            {
+                metadata = new Metadata();
+                repoManager.Metadata.Create(metadata);
+                repoManager.Metadata.Commit();
             }
             var appSettings = repoManager.AppSettings.Read().FirstOrDefault();
             if (appSettings == null)
@@ -408,11 +417,14 @@ namespace TwitchBot
                 repoManager.AppSettings.Create(appSettings);
                 repoManager.AppSettings.Commit();
             }
+            var wolfcoins = scope.Resolve<Currency>();
+            var contentManager = scope.Resolve<IContentManager>();
+            var userLookup = scope.Resolve<UserLookup>();
             userLookup.UpdateTime = appSettings.GeneralCacheUpdateTime;
             #endregion
 
             #region Twitch API Setup
-            var twitchClient = new TwitchClient(repoManager, userLookup, clientData, tokenData);
+            var twitchClient = scope.Resolve<TwitchClient>();
             #endregion
 
             if (connected)
@@ -452,8 +464,7 @@ namespace TwitchBot
                 #endregion
 
                 #region Trigger Manager Setup
-                var triggerManager = new TriggerManager();
-                triggerManager.LoadAllResponders(wolfcoins);
+                var triggerManager = scope.Resolve<TriggerManager>();
                 #endregion
 
                 #region Import Legacy Data Into Sql

@@ -1,6 +1,4 @@
-﻿using LobotJR.Trigger.Responder;
-using System.Collections.Generic;
-using Wolfcoins;
+﻿using System.Collections.Generic;
 
 namespace LobotJR.Trigger
 {
@@ -11,16 +9,8 @@ namespace LobotJR.Trigger
     {
         private IEnumerable<ITriggerResponder> Responders;
 
-        /// <summary>
-        /// Loads all of the responders.
-        /// </summary>
-        /// <param name="currency">The currency object that contains user XP
-        /// data.</param>
-        public void LoadAllResponders(Currency currency)
+        public TriggerManager(IEnumerable<ITriggerResponder> responders)
         {
-            var responders = new List<ITriggerResponder>();
-            responders.Add(new BlockLinks(currency));
-            responders.Add(new NoceanMan());
             Responders = responders;
         }
 

@@ -1,28 +1,31 @@
-﻿using LobotJR.Data.User;
+﻿using LobotJR.Shared.Authentication;
+using LobotJR.Shared.Client;
+using LobotJR.Shared.User;
 using NuGet.Versioning;
 using System;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.Linq;
 
 namespace LobotJR.Data.Migration
 {
     public class DatabaseUpdate_Null_1_0_0 : IDatabaseUpdate
     {
-        private readonly UserLookup UserLookup;
         private readonly string Token;
         private readonly string ClientId;
 
         public SemanticVersion FromVersion => null;
         public SemanticVersion ToVersion => new SemanticVersion(1, 0, 0);
+        public bool UsesMetadata => false;
 
-        public DatabaseUpdate_Null_1_0_0(UserLookup userLookup, string token, string clientId)
+
+        public DatabaseUpdate_Null_1_0_0(TokenData token, ClientData client)
         {
-            UserLookup = userLookup;
-            Token = token;
-            ClientId = clientId;
+            Token = token.BroadcastToken.AccessToken;
+            ClientId = client.ClientId;
         }
 
-        public DatabaseMigrationResult Update(SqliteContext context, IRepositoryManager repositoryManager)
+        public DatabaseMigrationResult Update(DbContext context)
         {
             var result = new DatabaseMigrationResult { Success = true };
             var commands = new string[]
@@ -55,57 +58,40 @@ namespace LobotJR.Data.Migration
                 }
             }
 
-            foreach (var tournament in repositoryManager.TournamentResults.Read())
+            var tournamentNames = context.Database.SqlQuery<string>("SELECT [UserId] from \"TournamentEntries\"");
+            var roleNameLists = context.Database.SqlQuery<string>("SELECT [UserList] from \"UserRoles\"");
+            var roleNames = roleNameLists.SelectMany(x => x.Split(','));
+            var allNames = new List<string>(tournamentNames);
+            allNames.AddRange(roleNames);
+            var ids = Users.Get(Token, ClientId, allNames.Distinct()).GetAwaiter().GetResult();
+            var idMap = new Dictionary<string, string>();
+            foreach (var id in ids.Data)
             {
-                foreach (var entry in tournament.Entries)
+                if (id != null && !string.IsNullOrWhiteSpace(id.Id))
                 {
-                    UserLookup.GetId(entry.UserId);
+                    idMap.Add(id.DisplayName, id.Id);
                 }
             }
-            foreach (var userRole in repositoryManager.UserRoles.Read())
-            {
-                var userList = userRole.UserIds;
-                foreach (var user in userList)
-                {
-                    UserLookup.GetId(user);
-                }
-            }
-            UserLookup.UpdateCache(Token, ClientId);
 
-            foreach (var tournament in repositoryManager.TournamentResults.Read())
+            foreach (var tournamentName in tournamentNames)
             {
-                var names = tournament.Entries.Select(x => x.UserId).ToList();
-                foreach (var entry in tournament.Entries)
+                if (idMap.ContainsKey(tournamentName))
                 {
-                    entry.UserId = UserLookup.GetId(entry.UserId, false);
-                }
-                foreach (var entry in tournament.Entries.Where(x => x.UserId == null).ToList())
-                {
-                    repositoryManager.TournamentEntries.DeleteById(entry.Id);
-                }
-                tournament.Entries = tournament.Entries.Where(x => x.UserId != null).ToList();
-                if (tournament.Entries.Count > 0)
-                {
-                    repositoryManager.TournamentResults.Update(tournament);
+                    context.Database.ExecuteSqlCommand($"UPDATE \"TournamentEntries\" SET [UserId] = '{idMap[tournamentName]}' WHERE [UserId] = '{tournamentName}'");
                 }
                 else
                 {
-                    repositoryManager.TournamentResults.DeleteById(tournament.Id);
+                    context.Database.ExecuteSqlCommand($"DELETE FROM \"TournamentEntries\" WHERE [UserId] = '{tournamentName}'");
                 }
             }
-            repositoryManager.TournamentResults.Commit();
-            foreach (var userRole in repositoryManager.UserRoles.Read())
+            context.Database.ExecuteSqlCommand($"DELETE R FROM \"TournamentResults\" R LEFT JOIN \"TournamentEntries\" E ON R.[Id] = E.[ResultId] WHERE E.[Id] IS NULL");
+
+            foreach (var roleNameList in roleNameLists)
             {
-                var userList = userRole.UserIds;
-                var idList = new List<string>();
-                foreach (var user in userList)
-                {
-                    idList.Add(UserLookup.GetId(user));
-                }
-                userRole.UserIds = idList;
-                repositoryManager.UserRoles.Update(userRole);
+                var list = roleNameList.Split(',');
+                list.Select(x => idMap.ContainsKey(x) ? idMap[x] : null).Where(x => x != null);
+                context.Database.ExecuteSqlCommand($"UPDATE \"UserRoles\" SET [UserList] = '{string.Join(",", list)}' where [UserList] = '{roleNameList}'");
             }
-            repositoryManager.UserRoles.Commit();
 
             return result;
         }

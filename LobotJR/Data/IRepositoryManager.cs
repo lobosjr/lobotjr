@@ -1,6 +1,7 @@
 ﻿using LobotJR.Command;
 using LobotJR.Command.Model.Fishing;
 using LobotJR.Data.User;
+using LobotJR.Twitch;
 
 namespace LobotJR.Data
 {
@@ -9,7 +10,9 @@ namespace LobotJR.Data
     /// </summary>
     public interface IRepositoryManager
     {
+        IRepository<Metadata> Metadata { get; }
         IRepository<AppSettings> AppSettings { get; }
+        IRepository<DataTimer> DataTimers { get; }
         IRepository<UserMap> Users { get; }
         IRepository<UserRole> UserRoles { get; }
         IRepository<Catch> Catches { get; }

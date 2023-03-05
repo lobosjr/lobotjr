@@ -141,11 +141,15 @@
     <Compile Include="Data\AppSettings.cs" />
     <Compile Include="Data\Import\FileSystem.cs" />
     <Compile Include="Data\Import\IFileSystem.cs" />
+    <Compile Include="Data\Metadata.cs" />
+    <Compile Include="Data\Migration\DatabaseUpdate-1.0.1-1.0.2.cs" />
     <Compile Include="Data\Migration\DatabaseUpdate-Null-1.0.0.cs" />
     <Compile Include="Data\Migration\DatabaseUpdate-1.0.0-1.0.1.cs" />
     <Compile Include="Data\Migration\DatabaseMigrationResult.cs" />
     <Compile Include="Data\Migration\IDatabaseUpdate.cs" />
     <Compile Include="Data\Migration\SqliteDatabaseUpdater.cs" />
+    <Compile Include="Data\Migration\SqliteDeprecatedContext.cs" />
+    <Compile Include="Data\Migration\SqliteUpdateContext.cs" />
     <Compile Include="Data\TableObject.cs" />
     <Compile Include="Data\IContentManager.cs" />
     <Compile Include="Data\IRepositoryManager.cs" />
@@ -190,12 +194,12 @@
     <Compile Include="Trigger\Responder\NoceanMan.cs" />
     <Compile Include="Trigger\TriggerManager.cs" />
     <Compile Include="Trigger\TriggerResult.cs" />
+    <Compile Include="Twitch\DataTimer.cs" />
     <Compile Include="Twitch\TwitchClient.cs" />
     <Compile Include="Twitch\WhisperQueue.cs" />
     <Compile Include="Utils\AutofacSetup.cs" />
     <Compile Include="Utils\ChatController.cs" />
     <Compile Include="Utils\Extensions.cs" />
-    <Compile Include="Utils\RollingUniqueTimer.cs" />
     <Compile Include="Utils\RollingTimer.cs" />
     <Compile Include="Wolfcoins.cs" />
   </ItemGroup>

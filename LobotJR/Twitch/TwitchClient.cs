@@ -18,8 +18,6 @@ namespace LobotJR.Twitch
     public class TwitchClient
     {
         private List<string> Blacklist = new List<string>();
-        private List<WhisperRecord> History = new List<WhisperRecord>();
-        private bool CanWhisper = true;
 
         private WhisperQueue Queue;
         private UserLookup UserLookup;

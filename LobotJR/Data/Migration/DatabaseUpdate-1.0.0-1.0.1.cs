@@ -1,26 +1,17 @@
-﻿using LobotJR.Data.User;
-using NuGet.Versioning;
+﻿using NuGet.Versioning;
 using System;
+using System.Data.Entity;
 
 namespace LobotJR.Data.Migration
 {
     public class DatabaseUpdate_1_0_0_1_0_1 : IDatabaseUpdate
     {
-        private readonly UserLookup UserLookup;
-        private readonly string Token;
-        private readonly string ClientId;
-
         public SemanticVersion FromVersion => new SemanticVersion(1, 0, 0);
         public SemanticVersion ToVersion => new SemanticVersion(1, 0, 1);
+        public bool UsesMetadata => false;
 
-        public DatabaseUpdate_1_0_0_1_0_1(UserLookup userLookup, string token, string clientId)
-        {
-            UserLookup = userLookup;
-            Token = token;
-            ClientId = clientId;
-        }
 
-        public DatabaseMigrationResult Update(SqliteContext context, IRepositoryManager repositoryManager)
+        public DatabaseMigrationResult Update(DbContext context)
         {
             var result = new DatabaseMigrationResult { Success = true };
             var commands = new string[]

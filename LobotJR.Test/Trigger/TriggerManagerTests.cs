@@ -1,5 +1,6 @@
 ﻿using LobotJR.Shared.Client;
 using LobotJR.Trigger;
+using LobotJR.Trigger.Responder;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
 using Wolfcoins;
@@ -25,8 +26,11 @@ namespace LobotJR.Test.Trigger
             {
                 "Sub"
             };
-            Manager = new TriggerManager();
-            Manager.LoadAllResponders(Currency);
+            Manager = new TriggerManager(new ITriggerResponder[]
+            {
+                new BlockLinks(Currency),
+                new NoceanMan()
+            });
         }
 
         [TestMethod]

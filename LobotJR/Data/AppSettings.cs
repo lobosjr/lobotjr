@@ -1,5 +1,4 @@
 ﻿using LobotJR.Data.Migration;
-using System;
 
 namespace LobotJR.Data
 {
@@ -9,10 +8,11 @@ namespace LobotJR.Data
     public class AppSettings : TableObject
     {
         /// <summary>
-        /// The version of the database that was last opened by this user.
+        /// DEPRECATED: This honestly never should have been in this table, and
+        /// has been moved to metadata. It's only still here to facilitate
+        /// database migrations.
         /// </summary>
         public string DatabaseVersion { get; set; } = SqliteDatabaseUpdater.LatestVersion.ToString();
-
         /// <summary>
         /// The amount of time, in minutes, to wait between calls to fetch the
         /// ids for users not found in the id cache.
@@ -71,11 +71,5 @@ namespace LobotJR.Data
         /// tournament. Default is 30 seconds.
         /// </summary>        
         public int FishingTournamentCastMaximum { get; set; } = 30;
-
-        /// <summary>
-        /// The start time of the rolling 24-hour window for unique whisper
-        /// recipients.
-        /// </summary>
-        public DateTime WhisperTimerStart { get; set; } = DateTime.Now;
     }
 }

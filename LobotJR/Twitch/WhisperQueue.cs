@@ -44,7 +44,8 @@ namespace LobotJR.Twitch
     /// </summary>
     public class WhisperQueue
     {
-        private IRepository<AppSettings> AppSettings;
+        private static readonly string TimerKey = "WhisperQueue";
+        private IRepository<DataTimer> DataTimers;
         private TimeSpan UniqueWhisperTimer = TimeSpan.FromDays(1);
         private int MaxRecipients = 40;
 
@@ -74,7 +75,7 @@ namespace LobotJR.Twitch
 
         public WhisperQueue(IRepositoryManager repositoryManager)
         {
-            AppSettings = repositoryManager.AppSettings;
+            DataTimers = repositoryManager.DataTimers;
         }
 
         /// <summary>
@@ -129,12 +130,23 @@ namespace LobotJR.Twitch
         /// <param name="record">The record that was sent.</param>
         public void ReportSuccess(WhisperRecord record)
         {
-            var appSettings = AppSettings.Read().First();
-            if (appSettings.WhisperTimerStart == null || DateTime.Now > appSettings.WhisperTimerStart + UniqueWhisperTimer)
+            var dataTimer = DataTimers.Read(x => x.Name.Equals(TimerKey)).FirstOrDefault();
+            var timerUpdated = false;
+            if (dataTimer == null)
             {
-                appSettings.WhisperTimerStart = DateTime.Now;
-                AppSettings.Update(appSettings);
-                AppSettings.Commit();
+                dataTimer = new DataTimer() { Name = TimerKey, Timestamp = DateTime.Now };
+                DataTimers.Create(dataTimer);
+                timerUpdated = true;
+            }
+            else if (DateTime.Now > dataTimer.Timestamp + UniqueWhisperTimer)
+            {
+                dataTimer.Timestamp = DateTime.Now;
+                DataTimers.Update(dataTimer);
+                timerUpdated = true;
+            }
+            if (timerUpdated)
+            {
+                DataTimers.Commit();
                 WhisperRecipients.Clear();
                 NewRecipientsAllowed = true;
             }
