@@ -56,7 +56,7 @@ namespace LobotJR.Utils
             var now = DateTime.Now;
             var threshold = now - TimerPeriod;
             var toRemove = Hits.Where(x => x < threshold);
-            Hits = Hits.Except(toRemove).ToList();
+            Hits = Hits.Where(x => x >= threshold).ToList();
             return MaxHits - Hits.Count;
         }
     }

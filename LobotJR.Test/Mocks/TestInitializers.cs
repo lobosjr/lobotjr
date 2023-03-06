@@ -2,6 +2,7 @@
 using LobotJR.Command.Model.Fishing;
 using LobotJR.Data;
 using LobotJR.Data.User;
+using LobotJR.Twitch;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Linq;
@@ -137,6 +138,11 @@ namespace LobotJR.Test.Mocks
             context.AppSettings.Add(appSettings);
         }
 
+        public static void InitializeTimers(MockContext context)
+        {
+            context.DataTimers.Add(new DataTimer() { Name = "WhisperQueue", Timestamp = DateTime.Now });
+        }
+
         [AssemblyInitialize]
         public static void SetupDatabase(TestContext context)
         {
@@ -147,7 +153,8 @@ namespace LobotJR.Test.Mocks
                 InitializeFish,
                 InitializePersonalLeaderboards,
                 InitializeGlobalLeaderboard,
-                InitializeTournaments);
+                InitializeTournaments,
+                InitializeTimers);
             dbContext.Database.Initialize(true);
             var manager = new SqliteRepositoryManager(dbContext);
             manager.Dispose();

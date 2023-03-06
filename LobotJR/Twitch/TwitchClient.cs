@@ -32,7 +32,7 @@ namespace LobotJR.Twitch
 
         public TwitchClient(IRepositoryManager repositoryManager, UserLookup userLookup, ClientData clientData, TokenData tokenData)
         {
-            Queue = new WhisperQueue(repositoryManager);
+            Queue = new WhisperQueue(repositoryManager, 3, 100, 40);
             UserLookup = userLookup;
             ClientData = clientData;
             TokenData = tokenData;
@@ -147,7 +147,11 @@ namespace LobotJR.Twitch
         public async Task ProcessQueue(bool cacheUpdated)
         {
             await RefreshTokens();
-            var toSend = Queue.GetMessagesToSend(cacheUpdated, UserLookup).ToList();
+            if (cacheUpdated)
+            {
+                Queue.UpdateUserIds(UserLookup);
+            }
+            var toSend = Queue.GetMessagesToSend().ToList();
             if (toSend.Count == 0)
             {
                 return;
@@ -219,15 +223,14 @@ namespace LobotJR.Twitch
             return TimeoutAsync(user, duration, message).GetAwaiter().GetResult();
         }
 
+        /// <summary>
+        /// Gets the details of all subscribers to the broadcast user.
+        /// </summary>
+        /// <returns>A collection of subscription responses from Twitch.</returns>
         public async Task<IEnumerable<SubscriptionResponseData>> GetSubscriberListAsync()
         {
             await RefreshTokens();
             return await Subscriptions.GetAll(TokenData.ChatToken.AccessToken, ClientData.ClientId, BroadcasterId);
-        }
-
-        public IEnumerable<SubscriptionResponseData> GetSubscriberList()
-        {
-            return GetSubscriberListAsync().GetAwaiter().GetResult();
         }
     }
 }

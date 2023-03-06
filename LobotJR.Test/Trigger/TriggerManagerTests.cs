@@ -53,16 +53,14 @@ namespace LobotJR.Test.Trigger
         public void TriggerManagerAllowsLinksForSubs()
         {
             var response = Manager.ProcessTrigger("butt.ass", "Sub");
-            Assert.IsFalse(response.Processed);
-            Assert.IsFalse(response.TimeoutSender);
+            Assert.IsNull(response);
         }
 
         [TestMethod]
         public void TriggerManagerAllowsLinksForLevel2()
         {
             var response = Manager.ProcessTrigger("butt.ass", "Level2");
-            Assert.IsFalse(response.Processed);
-            Assert.IsFalse(response.TimeoutSender);
+            Assert.IsNull(response);
         }
     }
 }

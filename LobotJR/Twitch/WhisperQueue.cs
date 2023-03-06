@@ -62,20 +62,23 @@ namespace LobotJR.Twitch
         /// The timer that ensures the queue doesn't send messages that exceed
         /// the twitch limit of 3 whispers per second.
         /// </summary>
-        public RollingTimer SecondTimer { get; set; } = new RollingTimer(TimeSpan.FromSeconds(1), 3);
+        public RollingTimer SecondTimer { get; set; }
         /// <summary>
         /// The timer that ensure the queue doesn't send messages that exceed
         /// the twitch limit of 100 whispers per minute.
         /// </summary>
-        public RollingTimer MinuteTimer { get; set; } = new RollingTimer(TimeSpan.FromMinutes(1), 100);
+        public RollingTimer MinuteTimer { get; set; }
         /// <summary>
         /// The names of every recipient of a whisper sent. This is used to ensure we do not exceed the limit on unique recipents of 40 per day.
         /// </summary>
         public List<string> WhisperRecipients { get; set; } = new List<string>();
 
-        public WhisperQueue(IRepositoryManager repositoryManager)
+        public WhisperQueue(IRepositoryManager repositoryManager, int maxPerSecond, int maxPerMinute, int uniquePerDay)
         {
             DataTimers = repositoryManager.DataTimers;
+            SecondTimer = new RollingTimer(TimeSpan.FromSeconds(1), maxPerSecond);
+            MinuteTimer = new RollingTimer(TimeSpan.FromMinutes(1), maxPerMinute);
+            MaxRecipients = uniquePerDay;
         }
 
         /// <summary>
@@ -87,12 +90,8 @@ namespace LobotJR.Twitch
         /// <param name="dateTime">The time the message was queued.</param>
         public void Enqueue(string user, string userId, string message, DateTime dateTime)
         {
-            var allowed = WhisperRecipients.Contains(user);
-            if (!allowed && WhisperRecipients.Count < MaxRecipients && NewRecipientsAllowed)
-            {
-                WhisperRecipients.Add(user);
-                allowed = true;
-            }
+            var allowed = WhisperRecipients.Contains(user) ||
+                WhisperRecipients.Count < MaxRecipients && NewRecipientsAllowed;
             if (allowed)
             {
                 Queue.Add(new WhisperRecord(user, userId, message, dateTime));
@@ -100,24 +99,32 @@ namespace LobotJR.Twitch
         }
 
         /// <summary>
+        /// Updates all queued messages with no user id. Any messages from
+        /// users that still have no id will be removed from the queue.
+        /// </summary>
+        /// <param name="userLookup">The UserLookup object to use to fetch new
+        /// user ids.</param>
+        public void UpdateUserIds(UserLookup userLookup)
+        {
+            var nullIds = Queue.Where(x => string.IsNullOrWhiteSpace(x.UserId)).ToList();
+            nullIds.ForEach(x => x.UserId = userLookup.GetId(x.Username));
+            nullIds = Queue.Where(x => string.IsNullOrWhiteSpace(x.UserId)).ToList();
+            Queue = Queue.Except(nullIds).ToList();
+        }
+
+        /// <summary>
         /// Gets the messages from the queue that need to be sent, and removes
         /// them from the queue.
         /// </summary>
-        /// <param name="cacheUpdated">Whether or not the userid cache has been
-        /// updated.</param>
-        /// <param name="userLookup">The UserLookup object to use to fetch new
-        /// user ids.</param>
         /// <returns>A collection of records that should be sent.</returns>
-        public IEnumerable<WhisperRecord> GetMessagesToSend(bool cacheUpdated, UserLookup userLookup)
+        public IEnumerable<WhisperRecord> GetMessagesToSend()
         {
-
-            var maxToSend = Math.Max(SecondTimer.AvailableOccurrences(), MinuteTimer.AvailableOccurrences());
-
-            if (cacheUpdated)
-            {
-                Queue.ForEach(x => x.UserId = userLookup.GetId(x.UserId));
-            }
-            var toSend = Queue.Where(x => !string.IsNullOrWhiteSpace(x.UserId)).OrderByDescending(x => x.QueueTime).Take(maxToSend).ToList();
+            var maxToSend = Math.Min(SecondTimer.AvailableOccurrences(), MinuteTimer.AvailableOccurrences());
+            var toSend = Queue.Where(x => !string.IsNullOrWhiteSpace(x.UserId)).OrderBy(x => x.QueueTime).Take(maxToSend).ToList();
+            var newRecipients = toSend.Select(x => x.Username).Distinct().Except(WhisperRecipients);
+            var allowedRecipients = newRecipients.Take(MaxRecipients - WhisperRecipients.Count);
+            var overflow = newRecipients.Except(allowedRecipients);
+            toSend.RemoveAll(x => overflow.Contains(x.Username));
             Queue = Queue.Except(toSend).ToList();
 
             return toSend;

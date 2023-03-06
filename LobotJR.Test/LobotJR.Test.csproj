@@ -112,6 +112,8 @@
     <Compile Include="Systems\Fishing\TournamentSystemTests.cs" />
     <Compile Include="Systems\Gloat\GloatSystemTests.cs" />
     <Compile Include="Trigger\TriggerManagerTests.cs" />
+    <Compile Include="Twitch\WhisperQueueTests.cs" />
+    <Compile Include="Utils\RollingTimerTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

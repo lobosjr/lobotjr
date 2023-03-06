@@ -191,7 +191,7 @@ namespace LobotJR.Test.Command
         public void ProcessMessageDoesNotAllowWhisperOnlyMessageInPublicChat()
         {
             var result = CommandManager.ProcessMessage("Foo", "Auth", false);
-            Assert.IsTrue(result.Messages.Any(x => x.Contains("timeout")));
+            Assert.IsTrue(result.TimeoutSender);
             Assert.IsTrue(result.Processed);
             Assert.IsNull(result.Errors);
             ExecutorMocks["Foo"].Verify(x => x(It.IsAny<string>(), It.IsAny<string>()), Times.Never());
