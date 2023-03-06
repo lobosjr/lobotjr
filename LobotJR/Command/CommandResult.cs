@@ -13,6 +13,14 @@ namespace LobotJR.Command
         /// </summary>
         public bool Processed { get; set; }
         /// <summary>
+        /// Whether or not to timeout the sender of the command.
+        /// </summary>
+        public bool TimeoutSender { get; set; }
+        /// <summary>
+        /// The message to send to the user as part of the timeout.
+        /// </summary>
+        public string TimeoutMessage { get; set; }
+        /// <summary>
         /// The responses to send back to the user who issued the command.
         /// </summary>
         public IList<string> Responses { get; set; }

@@ -1,4 +1,5 @@
 ﻿using NuGet.Versioning;
+using System.Data.Entity;
 
 namespace LobotJR.Data.Migration
 {
@@ -18,11 +19,15 @@ namespace LobotJR.Data.Migration
         /// </summary>
         SemanticVersion ToVersion { get; }
         /// <summary>
+        /// Whether or not this update should write the new version to the
+        /// metadata table.
+        /// </summary>
+        bool UsesMetadata { get; }
+        /// <summary>
         /// Updates the database schema.
         /// </summary>
         /// <param name="context">The database context to update.</param>
-        /// <param name="repositoryManager">The manager containing the repositories for the database.</param>
         /// <returns>The database migration results object.</returns>
-        DatabaseMigrationResult Update(SqliteContext context, IRepositoryManager repositoryManager);
+        DatabaseMigrationResult Update(DbContext context);
     }
 }

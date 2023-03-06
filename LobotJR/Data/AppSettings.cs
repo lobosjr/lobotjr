@@ -1,6 +1,4 @@
-﻿using LobotJR.Data.Migration;
-
-namespace LobotJR.Data
+﻿namespace LobotJR.Data
 {
     /// <summary>
     /// Settings that modify the behavior of the app.
@@ -8,12 +6,7 @@ namespace LobotJR.Data
     public class AppSettings : TableObject
     {
         /// <summary>
-        /// The version of the database that was last opened by this user.
-        /// </summary>
-        public string DatabaseVersion { get; set; } = SqliteDatabaseUpdater.LatestVersion.ToString();
-
-        /// <summary>
-        /// The amount of time, in minutes, to wait between calls to fetch the
+        /// The amount of time, in seconds, to wait between calls to fetch the
         /// ids for users not found in the id cache.
         /// </summary>
         public int GeneralCacheUpdateTime { get; set; } = 5;

@@ -2,7 +2,7 @@
 using Classes;
 using Equipment;
 using LobotJR.Shared.Client;
-using LobotJR.Shared.User;
+using LobotJR.Twitch;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -10,7 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
-using TwitchBot;
+using System.Threading.Tasks;
 
 namespace Wolfcoins
 {
@@ -261,7 +261,7 @@ namespace Wolfcoins
             }
         }
 
-        public void AwardXP(int xp, string user, IrcClient whisperClient)
+        public void AwardXP(int xp, string user, TwitchClient twitchClient)
         {
             //int value = 0;
             if (Exists(xpList, user))
@@ -299,7 +299,7 @@ namespace Wolfcoins
                         newLevel = 3;
                         classList[user].prestige++; //prestige code
                         xpList[user] = 200;
-                        whisperClient.sendChatMessage(".w " + user + " You have earned a Prestige level! You are now Prestige " + classList[user].prestige + " and your level has been set to 3. XP to next level: " + XpToNextLevel(user) + ".");
+                        twitchClient.QueueWhisper(user, " You have earned a Prestige level! You are now Prestige " + classList[user].prestige + " and your level has been set to 3. XP to next level: " + XpToNextLevel(user) + ".");
                         return;
                     }
 
@@ -310,11 +310,11 @@ namespace Wolfcoins
                         //prestige code
                         if (myPrestige > 0)
                         {
-                            whisperClient.sendChatMessage(".w " + user + " DING! You just reached Level " + newLevel + "! You are Prestige " + myPrestige + ". XP to next level: " + XpToNextLevel(user) + ".");
+                            twitchClient.QueueWhisper(user, " DING! You just reached Level " + newLevel + "! You are Prestige " + myPrestige + ". XP to next level: " + XpToNextLevel(user) + ".");
                         } //prestige code
                         else
                         {
-                            whisperClient.sendChatMessage(".w " + user + " DING! You just reached Level " + newLevel + "! XP to next level: " + XpToNextLevel(user) + ".");
+                            twitchClient.QueueWhisper(user, " DING! You just reached Level " + newLevel + "! XP to next level: " + XpToNextLevel(user) + ".");
                         }
 
                         if (newLevel > 5)
@@ -328,15 +328,15 @@ namespace Wolfcoins
                         CharClass newClass = new CharClass();
                         newClass.classType = -1;
                         classList.Add(user.ToLower(), newClass);
-                        whisperClient.sendChatMessage(".w " + user + " You've reached LEVEL 3! You get to choose a class for your character! Choose by whispering me one of the following: ");
-                        whisperClient.sendChatMessage(".w " + user + " 'C1' (Warrior), 'C2' (Mage), 'C3' (Rogue), 'C4' (Ranger), or 'C5' (Cleric)");
+                        twitchClient.QueueWhisper(user, " You've reached LEVEL 3! You get to choose a class for your character! Choose by whispering me one of the following: ");
+                        twitchClient.QueueWhisper(user, " 'C1' (Warrior), 'C2' (Mage), 'C3' (Rogue), 'C4' (Ranger), or 'C5' (Cleric)");
                     }
 
                 }
             }
         }
 
-        public void AwardXP(int xp, IrcClient whisperClient)
+        public void AwardXP(int xp, TwitchClient twitchClient)
         {
             for (int i = 0; i <= viewerList.Count - 1; i++)
             {
@@ -353,7 +353,7 @@ namespace Wolfcoins
                         newLevel = 3;
                         classList[user].prestige++; //prestige code
                         xpList[user] = 0;
-                        whisperClient.sendChatMessage(".w " + user + " You have earned a Prestige level! You are now Prestige " + classList[user].prestige + " and your level has been reset to 1. XP to next level: " + XpToNextLevel(user) + ".");
+                        twitchClient.QueueWhisper(user, " You have earned a Prestige level! You are now Prestige " + classList[user].prestige + " and your level has been reset to 1. XP to next level: " + XpToNextLevel(user) + ".");
                         return;
                     }
                     int myPrestige = 0;
@@ -365,11 +365,11 @@ namespace Wolfcoins
                         //prestige code
                         if (myPrestige > 0)
                         {
-                            whisperClient.sendChatMessage(".w " + user + " DING! You just reached Level " + newLevel + "! You are Prestige " + myPrestige + ". XP to next level: " + XpToNextLevel(user) + ".");
+                            twitchClient.QueueWhisper(user, " DING! You just reached Level " + newLevel + "! You are Prestige " + myPrestige + ". XP to next level: " + XpToNextLevel(user) + ".");
                         } //prestige code
                         else
                         {
-                            whisperClient.sendChatMessage(".w " + user + " DING! You just reached Level " + newLevel + "! XP to next level: " + XpToNextLevel(user) + ".");
+                            twitchClient.QueueWhisper(user, " DING! You just reached Level " + newLevel + "! XP to next level: " + XpToNextLevel(user) + ".");
                         }
                         if (newLevel > 5)
                         {
@@ -387,8 +387,8 @@ namespace Wolfcoins
                             continue;
 
                         classList.Add(user.ToLower(), newClass);
-                        whisperClient.sendChatMessage(".w " + user + " You've reached LEVEL 3! You get to choose a class for your character! Choose by whispering me one of the following: ");
-                        whisperClient.sendChatMessage(".w " + user + " 'C1' (Warrior), 'C2' (Mage), 'C3' (Rogue), 'C4' (Ranger), or 'C5' (Cleric)");
+                        twitchClient.QueueWhisper(user, " You've reached LEVEL 3! You get to choose a class for your character! Choose by whispering me one of the following: ");
+                        twitchClient.QueueWhisper(user, " 'C1' (Warrior), 'C2' (Mage), 'C3' (Rogue), 'C4' (Ranger), or 'C5' (Cleric)");
                     }
                 }
 
@@ -396,7 +396,7 @@ namespace Wolfcoins
             Console.WriteLine("Granted " + xp + " xp to current viewers.");
         }
 
-        public void SetClass(string user, string choice, IrcClient whisperClient)
+        public void SetClass(string user, string choice, TwitchClient twitchClient)
         {
             switch (choice.ToLower())
             {
@@ -407,7 +407,7 @@ namespace Wolfcoins
                         classList[user].level = determineLevel(user);
                         classList[user].itemEarned = -1;
                         SaveClassData();
-                        whisperClient.sendChatMessage(".w " + user + " You successfully selected the Warrior class!");
+                        twitchClient.QueueWhisper(user, " You successfully selected the Warrior class!");
                     }
                     break;
 
@@ -418,7 +418,7 @@ namespace Wolfcoins
                         classList[user].level = determineLevel(user);
                         classList[user].itemEarned = -1;
                         SaveClassData();
-                        whisperClient.sendChatMessage(".w " + user + " You successfully selected the Mage class!");
+                        twitchClient.QueueWhisper(user, " You successfully selected the Mage class!");
                     }
                     break;
 
@@ -429,7 +429,7 @@ namespace Wolfcoins
                         classList[user].level = determineLevel(user);
                         classList[user].itemEarned = -1;
                         SaveClassData();
-                        whisperClient.sendChatMessage(".w " + user + " You successfully selected the Rogue class!");
+                        twitchClient.QueueWhisper(user, " You successfully selected the Rogue class!");
                     }
                     break;
 
@@ -440,7 +440,7 @@ namespace Wolfcoins
                         classList[user].level = determineLevel(user);
                         classList[user].itemEarned = -1;
                         SaveClassData();
-                        whisperClient.sendChatMessage(".w " + user + " You successfully selected the Ranger class!");
+                        twitchClient.QueueWhisper(user, " You successfully selected the Ranger class!");
                     }
                     break;
 
@@ -451,14 +451,14 @@ namespace Wolfcoins
                         classList[user].level = determineLevel(user);
                         classList[user].itemEarned = -1;
                         SaveClassData();
-                        whisperClient.sendChatMessage(".w " + user + " You successfully selected the Cleric class!");
+                        twitchClient.QueueWhisper(user, " You successfully selected the Cleric class!");
                     }
                     break;
 
                 default: break;
             }
         }
-        public int SetXP(int xp, string user, IrcClient whisperClient)
+        public int SetXP(int xp, string user, TwitchClient twitchClient)
         {
             if (xpList != null)
             {
@@ -481,7 +481,7 @@ namespace Wolfcoins
 
                     if (newLevel > prevLevel && newLevel != 3 && Exists(classList, user))
                     {
-                        whisperClient.sendChatMessage(".w " + user + " DING! You just reached Level " + newLevel + "!  XP to next level: " + XpToNextLevel(user) + ".");
+                        twitchClient.QueueWhisper(user, " DING! You just reached Level " + newLevel + "!  XP to next level: " + XpToNextLevel(user) + ".");
                         if (newLevel > 3)
                         {
                             if (Exists(classList, user))
@@ -498,14 +498,14 @@ namespace Wolfcoins
                         newChar.classType = -1;
                         newChar.level = newLevel;
                         classList.Add(user.ToLower(), newChar);
-                        whisperClient.sendChatMessage(".w " + user + " You've reached LEVEL " + newLevel + "! You get to choose a class for your character! Choose by whispering me one of the following: ");
-                        whisperClient.sendChatMessage(".w " + user + " 'C1' (Warrior), 'C2' (Mage), 'C3' (Rogue), 'C4' (Ranger), or 'C5' (Cleric)");
+                        twitchClient.QueueWhisper(user, " You've reached LEVEL " + newLevel + "! You get to choose a class for your character! Choose by whispering me one of the following: ");
+                        twitchClient.QueueWhisper(user, " 'C1' (Warrior), 'C2' (Mage), 'C3' (Rogue), 'C4' (Ranger), or 'C5' (Cleric)");
                         SaveClassData();
                     }
 
                     if (newLevel < prevLevel)
                     {
-                        whisperClient.sendChatMessage(".w " + user + " You lost a level! :( You're now level: " + newLevel);
+                        twitchClient.QueueWhisper(user, " You lost a level! :( You're now level: " + newLevel);
                         if (Exists(classList, user))
                         {
                             classList[user].level = newLevel;
@@ -553,66 +553,20 @@ namespace Wolfcoins
             return -1;
         }
 
-        public async void UpdateSubs(string broadcastToken, string clientId)
+        public async Task UpdateSubs(TwitchClient twitchClient)
         {
-            var userData = await Users.Get(broadcastToken, clientId);
-            var channelId = userData.Data.First().Id;
-            var nextLink = $"https://api.twitch.tv/helix/subscriptions?broadcaster_id={channelId}&first=100";
-            do
+            var subs = await twitchClient.GetSubscriberListAsync();
+            if (subs == null)
             {
-                var request = (HttpWebRequest)WebRequest.Create(nextLink);
-                request.Accept = "application/vnd.twitchtv.v5+json";
-                request.Headers.Add("Client-ID", clientId);
-                request.Headers.Add("Authorization", string.Format("Bearer {0}", broadcastToken));
-                request.UserAgent = "LobosJrBot";
+                Console.WriteLine("Unable to retrieve subscriber list.");
+                return;
+            }
 
-                try
-                {
-                    using (var response = (HttpWebResponse)request.GetResponse())
-                    {
-                        if (response.StatusCode == HttpStatusCode.Unauthorized)
-                        {
-                            Console.WriteLine($"Unauthorized response retrieving subscribers using broadcast token {broadcastToken}");
-                            break;
-                        }
-                        using (var stream = response.GetResponseStream())
-                        {
-                            using (var reader = new StreamReader(stream))
-                            {
-                                var data = reader.ReadToEnd();
-                                var subList = JsonConvert.DeserializeObject<SubscriberData.RootObject>(data);
-                                if (subList.data.Count > 0)
-                                {
-                                    if (!string.IsNullOrWhiteSpace(subList.pagination.cursor))
-                                    {
-                                        nextLink = $"https://api.twitch.tv/helix/subscriptions?broadcaster_id={channelId}&after={subList.pagination.cursor}&first=100";
-                                    }
-                                    else
-                                    {
-                                        nextLink = "";
-                                    }
-                                    foreach (var datum in subList.data)
-                                    {
-                                        subSet.Add(datum.user_name);
-                                    }
-                                }
-                                else
-                                {
-                                    nextLink = "";
-                                }
-                            }
-                        }
-                    }
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine("Unable to retrieve full sub list.");
-                    Console.WriteLine(e);
-                    nextLink = "";
-                }
-            } while (!string.IsNullOrWhiteSpace(nextLink));
-
-            Console.WriteLine("Subscriber list may or may not have been updated!");
+            foreach (var sub in subs)
+            {
+                subSet.Add(sub.UserName);
+            }
+            Console.WriteLine("Subscriber list has been updated!");
         }
 
         public void UpdateViewers(string channel)
@@ -885,7 +839,7 @@ namespace Wolfcoins
 
         }
 
-        public void ChangeClass(string user, int newClass, IrcClient whisperClient)
+        public void ChangeClass(string user, int newClass, TwitchClient twitchClient)
         {
             if (classList != null && coinList != null)
             {
@@ -903,14 +857,14 @@ namespace Wolfcoins
 
                         string myClass = determineClass(user);
                         classList[user].className = myClass;
-                        whisperClient.sendChatMessage(".w " + user + " Class successfully updated to " + myClass + "! " + respecCost + " deducted from your Wolfcoin balance.");
+                        twitchClient.QueueWhisper(user, " Class successfully updated to " + myClass + "! " + respecCost + " deducted from your Wolfcoin balance.");
 
                         SaveClassData();
                         SaveCoins();
                     }
                     else if (coinList[user] < respecCost)
                     {
-                        whisperClient.sendChatMessage(".w " + user + " It costs " + respecCost + " Wolfcoins to respec at your level. You have " + coinList[user] + " coins.");
+                        twitchClient.QueueWhisper(user, " It costs " + respecCost + " Wolfcoins to respec at your level. You have " + coinList[user] + " coins.");
                     }
                 }
             }

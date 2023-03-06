@@ -18,7 +18,7 @@
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
     <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>1.0.2.0</ApplicationVersion>
+    <ApplicationVersion>1.0.3.0</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
@@ -79,6 +79,9 @@
     <Reference Include="NuGet.Versioning, Version=6.0.0.280, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\NuGet.Versioning.6.0.0\lib\net45\NuGet.Versioning.dll</HintPath>
     </Reference>
+    <Reference Include="RestSharp, Version=108.0.3.0, Culture=neutral, PublicKeyToken=598062e77f915f75, processorArchitecture=MSIL">
+      <HintPath>..\packages\RestSharp.108.0.3\lib\netstandard2.0\RestSharp.dll</HintPath>
+    </Reference>
     <Reference Include="SQLite.CodeFirst, Version=1.7.0.34, Culture=neutral, PublicKeyToken=eb96ba0a78d831a7, processorArchitecture=MSIL">
       <HintPath>..\packages\SQLite.CodeFirst.1.7.0.34\lib\net45\SQLite.CodeFirst.dll</HintPath>
     </Reference>
@@ -111,8 +114,17 @@
     <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.6.0.0\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
     </Reference>
+    <Reference Include="System.Text.Encodings.Web, Version=5.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Text.Encodings.Web.5.0.0\lib\net461\System.Text.Encodings.Web.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Text.Json, Version=5.0.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Text.Json.5.0.1\lib\net461\System.Text.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Threading.Tasks.Extensions.4.5.4\lib\net461\System.Threading.Tasks.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.ValueTuple.4.5.0\lib\net461\System.ValueTuple.dll</HintPath>
     </Reference>
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
@@ -141,11 +153,16 @@
     <Compile Include="Data\AppSettings.cs" />
     <Compile Include="Data\Import\FileSystem.cs" />
     <Compile Include="Data\Import\IFileSystem.cs" />
+    <Compile Include="Data\Metadata.cs" />
+    <Compile Include="Data\Migration\DatabaseUpdate-1.0.1-1.0.2.cs" />
     <Compile Include="Data\Migration\DatabaseUpdate-Null-1.0.0.cs" />
     <Compile Include="Data\Migration\DatabaseUpdate-1.0.0-1.0.1.cs" />
     <Compile Include="Data\Migration\DatabaseMigrationResult.cs" />
+    <Compile Include="Data\Migration\DeprecatedAppSettings.cs" />
     <Compile Include="Data\Migration\IDatabaseUpdate.cs" />
     <Compile Include="Data\Migration\SqliteDatabaseUpdater.cs" />
+    <Compile Include="Data\Migration\SqliteDeprecatedContext.cs" />
+    <Compile Include="Data\Migration\SqliteUpdateContext.cs" />
     <Compile Include="Data\TableObject.cs" />
     <Compile Include="Data\IContentManager.cs" />
     <Compile Include="Data\IRepositoryManager.cs" />
@@ -189,9 +206,14 @@
     <Compile Include="Trigger\Responder\BlockLinks.cs" />
     <Compile Include="Trigger\Responder\NoceanMan.cs" />
     <Compile Include="Trigger\TriggerManager.cs" />
+    <Compile Include="Trigger\TriggerResult.cs" />
+    <Compile Include="Twitch\DataTimer.cs" />
+    <Compile Include="Twitch\TwitchClient.cs" />
+    <Compile Include="Twitch\WhisperQueue.cs" />
     <Compile Include="Utils\AutofacSetup.cs" />
     <Compile Include="Utils\ChatController.cs" />
     <Compile Include="Utils\Extensions.cs" />
+    <Compile Include="Utils\RollingTimer.cs" />
     <Compile Include="Wolfcoins.cs" />
   </ItemGroup>
   <ItemGroup>

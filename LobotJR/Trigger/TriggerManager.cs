@@ -1,6 +1,4 @@
-﻿using LobotJR.Trigger.Responder;
-using System.Collections.Generic;
-using Wolfcoins;
+﻿using System.Collections.Generic;
 
 namespace LobotJR.Trigger
 {
@@ -11,16 +9,8 @@ namespace LobotJR.Trigger
     {
         private IEnumerable<ITriggerResponder> Responders;
 
-        /// <summary>
-        /// Loads all of the responders.
-        /// </summary>
-        /// <param name="currency">The currency object that contains user XP
-        /// data.</param>
-        public void LoadAllResponders(Currency currency)
+        public TriggerManager(IEnumerable<ITriggerResponder> responders)
         {
-            var responders = new List<ITriggerResponder>();
-            responders.Add(new BlockLinks(currency));
-            responders.Add(new NoceanMan());
             Responders = responders;
         }
 
@@ -33,8 +23,8 @@ namespace LobotJR.Trigger
         /// </summary>
         /// <param name="message">A message sent by a user.</param>
         /// <param name="user">The name of the user who sent the message.</param>
-        /// <returns>A collection of strings the bot should respond with.</returns>
-        public IEnumerable<string> ProcessTrigger(string message, string user)
+        /// <returns>An object containing all actions resulting from the trigger.</returns>
+        public TriggerResult ProcessTrigger(string message, string user)
         {
             foreach (var responder in Responders)
             {
@@ -44,7 +34,7 @@ namespace LobotJR.Trigger
                     return responder.Process(match, user);
                 }
             }
-            return new List<string>();
+            return new TriggerResult() { Processed = false };
         }
     }
 }

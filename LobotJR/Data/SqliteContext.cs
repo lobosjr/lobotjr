@@ -1,7 +1,7 @@
-﻿using Autofac;
-using LobotJR.Command;
+﻿using LobotJR.Command;
 using LobotJR.Command.Model.Fishing;
 using LobotJR.Data.User;
+using LobotJR.Twitch;
 using System.Data.Common;
 using System.Data.Entity;
 
@@ -10,9 +10,11 @@ namespace LobotJR.Data
     /// <summary>
     /// SQLite implementation of the EF6 DbContext
     /// </summary>
-    public class SqliteContext : DbContext, IStartable
+    public class SqliteContext : DbContext
     {
+        public DbSet<Metadata> Metadata { get; set; }
         public DbSet<AppSettings> AppSettings { get; set; }
+        public DbSet<DataTimer> DataTimers { get; set; }
 
         /** User data */
         public DbSet<UserMap> Users { get; set; }
@@ -35,7 +37,7 @@ namespace LobotJR.Data
             Database.SetInitializer(sqliteConnectionInitializer);
         }
 
-        public void Start()
+        public void Initialize()
         {
             this.Database.Initialize(false);
         }
