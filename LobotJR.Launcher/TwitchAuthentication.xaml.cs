@@ -54,7 +54,7 @@ namespace LobotJR.Launcher
 
             if (_tokenData.ChatToken != null || _tokenData.BroadcastToken != null)
             {
-                ValidateTokens();
+                await ValidateTokens();
             }
             else
             {
@@ -177,7 +177,8 @@ namespace LobotJR.Launcher
                         var validationResponse = await AuthToken.Validate(tokenData.ChatToken.AccessToken);
                         if (validationResponse == null)
                         {
-                            tokenData.ChatToken = await AuthToken.Refresh(_clientData.ClientId, _clientData.ClientSecret, tokenData.ChatToken.RefreshToken);
+                            var response = await AuthToken.Refresh(_clientData.ClientId, _clientData.ClientSecret, tokenData.ChatToken.RefreshToken);
+                            tokenData.ChatToken = response.Data;
                         }
                         else if (!validationResponse.Login.Equals(tokenData.ChatUser) || _chatScopes.Any(x => !validationResponse.Scopes.Contains(x)))
                         {
@@ -189,7 +190,8 @@ namespace LobotJR.Launcher
                         var validationResponse = await AuthToken.Validate(tokenData.BroadcastToken.AccessToken);
                         if (validationResponse == null)
                         {
-                            tokenData.BroadcastToken = await AuthToken.Refresh(_clientData.ClientId, _clientData.ClientSecret, tokenData.BroadcastToken.RefreshToken);
+                            var response = await AuthToken.Refresh(_clientData.ClientId, _clientData.ClientSecret, tokenData.BroadcastToken.RefreshToken);
+                            tokenData.BroadcastToken = response.Data;
                         }
                         else if (!validationResponse.Login.Equals(tokenData.BroadcastUser) || _broadcastScopes.Any(x => !validationResponse.Scopes.Contains(x)))
                         {
@@ -272,10 +274,10 @@ namespace LobotJR.Launcher
                 _tokenData.BroadcastToken = await HandleAuthResponse(new Uri(StreamerToken.Text));
             }
 
-            ValidateTokens();
+            await ValidateTokens();
         }
 
-        private async void ValidateTokens()
+        private async Task ValidateTokens()
         {
             var resultText = "Token validation failed. Try again.";
             ChatToken.Text = "Validating token...";

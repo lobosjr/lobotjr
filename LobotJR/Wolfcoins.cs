@@ -2,7 +2,6 @@
 using Classes;
 using Equipment;
 using LobotJR.Shared.Client;
-using LobotJR.Shared.User;
 using LobotJR.Twitch;
 using Newtonsoft.Json;
 using System;
@@ -11,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Wolfcoins
 {
@@ -553,66 +553,20 @@ namespace Wolfcoins
             return -1;
         }
 
-        public async void UpdateSubs(string broadcastToken, string clientId)
+        public async Task UpdateSubs(TwitchClient twitchClient)
         {
-            var userData = await Users.Get(broadcastToken, clientId);
-            var channelId = userData.Data.First().Id;
-            var nextLink = $"https://api.twitch.tv/helix/subscriptions?broadcaster_id={channelId}&first=100";
-            do
+            var subs = await twitchClient.GetSubscriberListAsync();
+            if (subs == null)
             {
-                var request = (HttpWebRequest)WebRequest.Create(nextLink);
-                request.Accept = "application/vnd.twitchtv.v5+json";
-                request.Headers.Add("Client-ID", clientId);
-                request.Headers.Add("Authorization", string.Format("Bearer {0}", broadcastToken));
-                request.UserAgent = "LobosJrBot";
+                Console.WriteLine("Unable to retrieve subscriber list.");
+                return;
+            }
 
-                try
-                {
-                    using (var response = (HttpWebResponse)request.GetResponse())
-                    {
-                        if (response.StatusCode == HttpStatusCode.Unauthorized)
-                        {
-                            Console.WriteLine($"Unauthorized response retrieving subscribers using broadcast token {broadcastToken}");
-                            break;
-                        }
-                        using (var stream = response.GetResponseStream())
-                        {
-                            using (var reader = new StreamReader(stream))
-                            {
-                                var data = reader.ReadToEnd();
-                                var subList = JsonConvert.DeserializeObject<SubscriberData.RootObject>(data);
-                                if (subList.data.Count > 0)
-                                {
-                                    if (!string.IsNullOrWhiteSpace(subList.pagination.cursor))
-                                    {
-                                        nextLink = $"https://api.twitch.tv/helix/subscriptions?broadcaster_id={channelId}&after={subList.pagination.cursor}&first=100";
-                                    }
-                                    else
-                                    {
-                                        nextLink = "";
-                                    }
-                                    foreach (var datum in subList.data)
-                                    {
-                                        subSet.Add(datum.user_name);
-                                    }
-                                }
-                                else
-                                {
-                                    nextLink = "";
-                                }
-                            }
-                        }
-                    }
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine("Unable to retrieve full sub list.");
-                    Console.WriteLine(e);
-                    nextLink = "";
-                }
-            } while (!string.IsNullOrWhiteSpace(nextLink));
-
-            Console.WriteLine("Subscriber list may or may not have been updated!");
+            foreach (var sub in subs)
+            {
+                subSet.Add(sub.UserName);
+            }
+            Console.WriteLine("Subscriber list has been updated!");
         }
 
         public void UpdateViewers(string channel)

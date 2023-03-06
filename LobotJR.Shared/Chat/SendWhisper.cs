@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
+﻿using LobotJR.Shared.Utility;
 using RestSharp;
 using RestSharp.Serializers.NewtonsoftJson;
 using System.Net;
@@ -26,13 +25,7 @@ namespace LobotJR.Shared.Chat
         {
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             var client = new RestClient("https://api.twitch.tv");
-            client.UseNewtonsoftJson(new JsonSerializerSettings()
-            {
-                ContractResolver = new DefaultContractResolver()
-                {
-                    NamingStrategy = new SnakeCaseNamingStrategy(true, false, true),
-                },
-            });
+            client.UseNewtonsoftJson(SerializerSettings.Default);
             var request = new RestRequest("helix/whispers", Method.Post);
             request.AddHeader("Accept", "application/json");
             request.AddHeader("Authorization", $"Bearer {token}");

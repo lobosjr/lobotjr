@@ -109,7 +109,7 @@ namespace LobotJR.Data.User
         /// <returns>Whether or not the user id cache should be updated.</returns>
         public bool IsUpdateTime(DateTime current)
         {
-            return (current - lastUpdate).TotalMinutes >= this.UpdateTime;
+            return (current - lastUpdate).TotalSeconds >= this.UpdateTime;
         }
     }
 }

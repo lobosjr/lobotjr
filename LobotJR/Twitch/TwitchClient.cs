@@ -3,7 +3,10 @@ using LobotJR.Data.User;
 using LobotJR.Shared.Authentication;
 using LobotJR.Shared.Chat;
 using LobotJR.Shared.Client;
+using LobotJR.Shared.Subscription;
 using LobotJR.Shared.User;
+using LobotJR.Shared.Utility;
+using RestSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,19 +24,81 @@ namespace LobotJR.Twitch
 
         private WhisperQueue Queue;
         private UserLookup UserLookup;
-        private string ClientId;
-        private string AccessToken;
         private string BroadcasterId;
         private string ChatId;
+        private ClientData ClientData;
+        private TokenData TokenData;
+
 
         public TwitchClient(IRepositoryManager repositoryManager, UserLookup userLookup, ClientData clientData, TokenData tokenData)
         {
             Queue = new WhisperQueue(repositoryManager);
             UserLookup = userLookup;
-            ClientId = clientData.ClientId;
-            AccessToken = tokenData.ChatToken.AccessToken;
-            BroadcasterId = UserLookup.GetId(tokenData.BroadcastUser);
-            ChatId = UserLookup.GetId(tokenData.ChatUser);
+            ClientData = clientData;
+            TokenData = tokenData;
+        }
+
+        /// <summary>
+        /// Loads the Twitch id for the broadcast and chat users.
+        /// </summary>
+        /// <exception cref="Exception">Thrown if the id for either user cannot
+        /// be retrieved from Twitch.</exception>
+        public void GetBotIds()
+        {
+            BroadcasterId = UserLookup.GetId(TokenData.BroadcastUser);
+            ChatId = UserLookup.GetId(TokenData.ChatUser);
+            if (string.IsNullOrWhiteSpace(BroadcasterId) || string.IsNullOrWhiteSpace(ChatId))
+            {
+                UserLookup.UpdateCache(TokenData.ChatToken.AccessToken, ClientData.ClientId).GetAwaiter().GetResult();
+                BroadcasterId = UserLookup.GetId(TokenData.BroadcastUser);
+                ChatId = UserLookup.GetId(TokenData.ChatUser);
+                if (string.IsNullOrWhiteSpace(BroadcasterId) || string.IsNullOrWhiteSpace(ChatId))
+                {
+                    throw new Exception($"Unable to retrieve required twitch ids: {TokenData.BroadcastUser}: {BroadcasterId}, {TokenData.ChatUser}: {ChatId}");
+                }
+            }
+        }
+
+        private async Task<RestResponse<TokenResponse>> RefreshToken(TokenResponse token)
+        {
+            if (token.ExpirationDate < DateTime.Now)
+            {
+                return await AuthToken.Refresh(ClientData.ClientId, ClientData.ClientSecret, token.RefreshToken);
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Attempts to refresh the chat and broadcast tokens.
+        /// </summary>
+        /// <exception cref="Exception">Exception is thrown if the tokens fail to refresh.</exception>
+        public async Task RefreshTokens()
+        {
+            var updated = false;
+            var response = await RefreshToken(TokenData.ChatToken);
+            if (response != null)
+            {
+                if (response.StatusCode != HttpStatusCode.OK)
+                {
+                    throw new Exception($"Encountered an error trying to refresh the token for {TokenData.ChatUser}. {response.StatusCode}: {response.Content}");
+                }
+                TokenData.ChatToken.CopyFrom(response.Data);
+                updated = true;
+            }
+            response = await RefreshToken(TokenData.BroadcastToken);
+            if (response != null)
+            {
+                if (response.StatusCode != HttpStatusCode.OK)
+                {
+                    throw new Exception($"Encountered an error trying to refresh the token for {TokenData.BroadcastUser}. {response.StatusCode}: {response.Content}");
+                }
+                TokenData.BroadcastToken.CopyFrom(response.Data);
+                updated = true;
+            }
+            if (updated)
+            {
+                FileUtils.WriteTokenData(TokenData);
+            }
         }
 
         /// <summary>
@@ -44,7 +109,7 @@ namespace LobotJR.Twitch
         /// <returns>True if the whisper was sent successfully.</returns>
         private async Task<HttpStatusCode> WhisperAsync(string userId, string message)
         {
-            var result = await SendWhisper.Post(AccessToken, ClientId, ChatId, userId, message);
+            var result = await SendWhisper.Post(TokenData.ChatToken.AccessToken, ClientData.ClientId, ChatId, userId, message);
             return result;
         }
 
@@ -79,9 +144,14 @@ namespace LobotJR.Twitch
         /// <summary>
         /// Attempts to re-send all whispers that failed due to the id not being in the cache.
         /// </summary>
-        public async void ProcessQueue(bool cacheUpdated)
+        public async Task ProcessQueue(bool cacheUpdated)
         {
+            await RefreshTokens();
             var toSend = Queue.GetMessagesToSend(cacheUpdated, UserLookup).ToList();
+            if (toSend.Count == 0)
+            {
+                return;
+            }
             var results = await Task.WhenAll(toSend.Select(x => WhisperAsync(x.UserId, x.Message)));
             for (var i = 0; i < results.Length; i++)
             {
@@ -121,17 +191,18 @@ namespace LobotJR.Twitch
         /// <exception cref="Exception">If the Twitch user id cannot be retrieved.</exception>
         public async Task<bool> TimeoutAsync(string user, int? duration, string message)
         {
+            await RefreshTokens();
             var userId = UserLookup.GetId(user);
             if (userId == null)
             {
-                await UserLookup.UpdateCache(AccessToken, ClientId);
+                await UserLookup.UpdateCache(TokenData.ChatToken.AccessToken, ClientData.ClientId);
                 userId = UserLookup.GetId(user);
                 if (userId == null)
                 {
                     throw new Exception($"Failed to get user id for timeout of user {user} with reason \"{message ?? "null"}\"");
                 }
             }
-            var result = await BanUser.Post(AccessToken, ClientId, BroadcasterId, ChatId, userId, duration, message);
+            var result = await BanUser.Post(TokenData.ChatToken.AccessToken, ClientData.ClientId, BroadcasterId, ChatId, userId, duration, message);
             return result == HttpStatusCode.OK;
         }
 
@@ -146,6 +217,17 @@ namespace LobotJR.Twitch
         public bool Timeout(string user, int? duration, string message)
         {
             return TimeoutAsync(user, duration, message).GetAwaiter().GetResult();
+        }
+
+        public async Task<IEnumerable<SubscriptionResponseData>> GetSubscriberListAsync()
+        {
+            await RefreshTokens();
+            return await Subscriptions.GetAll(TokenData.ChatToken.AccessToken, ClientData.ClientId, BroadcasterId);
+        }
+
+        public IEnumerable<SubscriptionResponseData> GetSubscriberList()
+        {
+            return GetSubscriberListAsync().GetAwaiter().GetResult();
         }
     }
 }

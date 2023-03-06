@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
+﻿using LobotJR.Shared.Utility;
 using RestSharp;
 using RestSharp.Serializers.NewtonsoftJson;
 using System;
@@ -25,13 +24,7 @@ namespace LobotJR.Shared.Authentication
         {
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             var client = new RestClient("https://id.twitch.tv");
-            client.UseNewtonsoftJson(new JsonSerializerSettings()
-            {
-                ContractResolver = new DefaultContractResolver()
-                {
-                    NamingStrategy = new SnakeCaseNamingStrategy(true, false, true)
-                }
-            });
+            client.UseNewtonsoftJson(SerializerSettings.Default);
             var request = new RestRequest("oauth2/token", Method.Post);
             request.AddHeader("Accept", "application/json");
             request.AddQueryParameter("client_id", clientId);
@@ -57,13 +50,7 @@ namespace LobotJR.Shared.Authentication
         {
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             var client = new RestClient("https://id.twitch.tv");
-            client.UseNewtonsoftJson(new JsonSerializerSettings()
-            {
-                ContractResolver = new DefaultContractResolver()
-                {
-                    NamingStrategy = new SnakeCaseNamingStrategy(true, false, true)
-                }
-            });
+            client.UseNewtonsoftJson(SerializerSettings.Default);
             var request = new RestRequest("oauth2/validate", Method.Get);
             request.AddHeader("Accept", "application/json");
             request.AddHeader("Authorization", $"OAuth {token}");
@@ -82,28 +69,24 @@ namespace LobotJR.Shared.Authentication
         /// <param name="clientSecret"></param>
         /// <param name="refreshToken"></param>
         /// <returns></returns>
-        public static async Task<TokenResponse> Refresh(string clientId, string clientSecret, string refreshToken)
+        public static async Task<RestResponse<TokenResponse>> Refresh(string clientId, string clientSecret, string refreshToken)
         {
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             var client = new RestClient("https://id.twitch.tv");
-            client.UseNewtonsoftJson(new JsonSerializerSettings()
-            {
-                ContractResolver = new DefaultContractResolver()
-                {
-                    NamingStrategy = new SnakeCaseNamingStrategy(true, false, true)
-                }
-            });
+            client.UseNewtonsoftJson(SerializerSettings.Default);
             var request = new RestRequest("oauth2/token", Method.Post);
             request.AddHeader("Accept", "application/json");
             request.AddHeader("Content-Type", "application/x-www-form-urlencoded");
-            request.AddParameter("application/x-www-form-urlencoded", $"grant_type=refresh_token&refresh_token={refreshToken}&client_id={clientId}&client_secret={clientSecret}", ParameterType.RequestBody);
+            request.AddParameter("grant_type", "refresh_token");
+            request.AddParameter("refresh_token", refreshToken);
+            request.AddParameter("client_id", clientId);
+            request.AddParameter("client_secret", clientSecret);
             var response = await client.ExecuteAsync<TokenResponse>(request);
             if (response.StatusCode == HttpStatusCode.OK)
             {
                 response.Data.ExpirationDate = DateTime.Now.AddSeconds(response.Data.ExpiresIn);
-                return response.Data;
             }
-            return null;
+            return response;
         }
     }
 }

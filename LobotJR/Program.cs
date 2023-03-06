@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using Wolfcoins;
 
 namespace TwitchBot
@@ -402,6 +403,7 @@ namespace TwitchBot
             var container = AutofacSetup.Setup(clientData, tokenData);
             var scope = container.BeginLifetimeScope();
             var context = scope.Resolve<SqliteContext>();
+            context.Initialize();
             var repoManager = scope.Resolve<IRepositoryManager>();
             var metadata = repoManager.Metadata.Read().FirstOrDefault();
             if (metadata == null)
@@ -425,11 +427,12 @@ namespace TwitchBot
 
             #region Twitch API Setup
             var twitchClient = scope.Resolve<TwitchClient>();
+            twitchClient.GetBotIds();
             #endregion
 
             if (connected)
             {
-                UpdateTokens(tokenData, clientData);
+                UpdateTokens(tokenData, clientData).GetAwaiter().GetResult();
                 Console.WriteLine($"Logged in as {tokenData.ChatUser}");
                 irc.sendIrcMessage("twitch.tv/membership");
             }
@@ -445,7 +448,7 @@ namespace TwitchBot
                 group.joinRoom("jtv");
                 DateTime awardLast = DateTime.Now;
                 wolfcoins.UpdateViewers(channel);
-                wolfcoins.UpdateSubs(tokenData.BroadcastToken.AccessToken, clientData.ClientId);
+                wolfcoins.UpdateSubs(twitchClient).GetAwaiter().GetResult();
 
                 #region System Setup
                 var systemManager = scope.Resolve<ISystemManager>();
@@ -520,7 +523,7 @@ namespace TwitchBot
                 {
                     if (!irc.connected)
                     {
-                        UpdateTokens(tokenData, clientData);
+                        UpdateTokens(tokenData, clientData).GetAwaiter().GetResult();
                         if ((DateTime.Now - lastConnectAttempt).TotalSeconds > 5)
                         {
                             irc = new IrcClient("irc.chat.twitch.tv", 80, tokenData.ChatUser, tokenData.ChatToken.AccessToken);
@@ -556,7 +559,7 @@ namespace TwitchBot
                         }
                     }
                     systemManager.Process(broadcasting);
-                    twitchClient.ProcessQueue(cacheUpdate);
+                    twitchClient.ProcessQueue(cacheUpdate).GetAwaiter().GetResult();
                     #endregion
 
                     // message[0] has username, message[1] has message
@@ -3976,7 +3979,7 @@ namespace TwitchBot
                 }
 
                 Console.WriteLine("Connection terminated.");
-                UpdateTokens(tokenData, clientData, true);
+                UpdateTokens(tokenData, clientData, true).GetAwaiter().GetResult();
                 connected = false;
                 #endregion
             }
@@ -4077,7 +4080,7 @@ namespace TwitchBot
 
         }
 
-        static async void UpdateTokens(TokenData tokenData, LobotJR.Shared.Client.ClientData clientData, bool force = false)
+        static async Task UpdateTokens(TokenData tokenData, LobotJR.Shared.Client.ClientData clientData, bool force = false)
         {
             bool tokenUpdated = false;
             if (force || DateTime.Now >= tokenData.ChatToken.ExpirationDate)
@@ -4085,7 +4088,12 @@ namespace TwitchBot
                 tokenUpdated = true;
                 try
                 {
-                    tokenData.ChatToken = await AuthToken.Refresh(clientData.ClientId, clientData.ClientSecret, tokenData.ChatToken.RefreshToken);
+                    var newToken = await AuthToken.Refresh(clientData.ClientId, clientData.ClientSecret, tokenData.ChatToken.RefreshToken);
+                    if (newToken.Data == null)
+                    {
+                        throw new Exception($"Twitch response {newToken.StatusCode}: {newToken.Content}");
+                    }
+                    tokenData.ChatToken.CopyFrom(newToken.Data);
                 }
                 catch (Exception e)
                 {
@@ -4097,7 +4105,12 @@ namespace TwitchBot
                 tokenUpdated = true;
                 try
                 {
-                    tokenData.BroadcastToken = await AuthToken.Refresh(clientData.ClientId, clientData.ClientSecret, tokenData.BroadcastToken.RefreshToken);
+                    var newToken = await AuthToken.Refresh(clientData.ClientId, clientData.ClientSecret, tokenData.BroadcastToken.RefreshToken);
+                    if (newToken.Data == null)
+                    {
+                        throw new Exception($"Twitch response {newToken.StatusCode}: {newToken.Content}");
+                    }
+                    tokenData.BroadcastToken.CopyFrom(newToken.Data);
                 }
                 catch (Exception e)
                 {

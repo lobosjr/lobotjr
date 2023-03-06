@@ -18,7 +18,8 @@ namespace LobotJR.Data.Migration
             {
                 "DROP TABLE \"Fishers\"",
                 "CREATE TABLE \"DataTimers\" ([Name] TEXT PRIMARY KEY, [Timestamp] datetime NOT NULL)",
-                "CREATE TABLE \"Metadata\" ([Id] INTEGER PRIMARY KEY, [DatabaseVersion] nvarchar, [LastSchemaUpdate] datetime)"
+                "CREATE TABLE \"Metadata\" ([Id] INTEGER PRIMARY KEY, [DatabaseVersion] nvarchar, [LastSchemaUpdate] datetime)",
+                "ALTER TABLE \"AppSettings\" DROP COLUMN [DatabaseVersion]"
             };
             result.DebugOutput.Add("Executing SQL statements to add/update tables...");
             foreach (var command in commands)

@@ -39,7 +39,7 @@ namespace LobotJR.Utils
 
         private static void RegisterDatabase(ContainerBuilder builder, ClientData clientData, TokenData tokenData)
         {
-            builder.RegisterType<SqliteContext>().AsSelf().As<DbContext>().As<IStartable>().InstancePerLifetimeScope();
+            builder.RegisterType<SqliteContext>().AsSelf().As<DbContext>().InstancePerLifetimeScope();
 
             builder.RegisterType<SqliteRepositoryManager>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
             builder.RegisterType<UserLookup>().AsSelf().InstancePerLifetimeScope();

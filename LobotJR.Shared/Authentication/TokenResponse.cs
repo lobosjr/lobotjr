@@ -32,5 +32,13 @@ namespace LobotJR.Shared.Authentication
         /// The type of token. This should always be "bearer"
         /// </summary>
         public string TokenType { get; set; }
+
+        public void CopyFrom(TokenResponse other)
+        {
+            AccessToken = other.AccessToken;
+            RefreshToken = other.RefreshToken;
+            ExpiresIn = other.ExpiresIn;
+            ExpirationDate = other.ExpirationDate;
+        }
     }
 }

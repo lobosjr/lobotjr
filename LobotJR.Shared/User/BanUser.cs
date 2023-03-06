@@ -1,10 +1,7 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
+﻿using LobotJR.Shared.Utility;
 using RestSharp;
 using RestSharp.Serializers.NewtonsoftJson;
-using System.Collections.Generic;
 using System.Net;
-using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace LobotJR.Shared.User
@@ -30,14 +27,7 @@ namespace LobotJR.Shared.User
         {
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             var client = new RestClient("https://api.twitch.tv");
-            client.UseNewtonsoftJson(new JsonSerializerSettings()
-            {
-                ContractResolver = new DefaultContractResolver()
-                {
-                    NamingStrategy = new SnakeCaseNamingStrategy(true, false, true),
-                },
-                NullValueHandling = NullValueHandling.Ignore
-            });
+            client.UseNewtonsoftJson(SerializerSettings.Default);
             var request = new RestRequest("helix/moderation/bans", Method.Post);
             request.AddHeader("Accept", "application/json");
             request.AddHeader("Authorization", $"Bearer {token}");
@@ -45,17 +35,6 @@ namespace LobotJR.Shared.User
             request.AddParameter("broadcaster_id", broadcasterId, ParameterType.QueryString);
             request.AddParameter("moderator_id", moderatorId, ParameterType.QueryString);
             request.AddJsonBody(new BanRequest(userId, duration, reason));
-            request.OnBeforeRequest = (HttpRequestMessage msg) =>
-            {
-                var log = new List<string>();
-                log.Add(msg.RequestUri.ToString());
-                foreach (var header in msg.Headers)
-                {
-                    log.Add($"{header.Key}: {string.Join(", ", header.Value)}");
-                }
-                log.Add(msg.Content.ReadAsStringAsync().GetAwaiter().GetResult());
-                return new ValueTask();
-            };
             var response = await client.ExecuteAsync(request);
             return response.StatusCode;
         }

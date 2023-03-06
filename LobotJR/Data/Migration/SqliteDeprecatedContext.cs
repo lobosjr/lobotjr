@@ -7,7 +7,7 @@ namespace LobotJR.Data.Migration
     /// </summary>
     public class SqliteDeprecatedContext : DbContext
     {
-        public DbSet<AppSettings> AppSettings { get; set; }
+        public DbSet<DeprecatedAppSettings> AppSettings { get; set; }
 
         public SqliteDeprecatedContext() { }
     }

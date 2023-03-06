@@ -71,7 +71,7 @@ namespace LobotJR.Twitch
         /// <summary>
         /// The names of every recipient of a whisper sent. This is used to ensure we do not exceed the limit on unique recipents of 40 per day.
         /// </summary>
-        public List<string> WhisperRecipients { get; set; }
+        public List<string> WhisperRecipients { get; set; } = new List<string>();
 
         public WhisperQueue(IRepositoryManager repositoryManager)
         {
