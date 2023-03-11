@@ -63,7 +63,7 @@ namespace LobotJR.Shared.Subscription
                 var response = await Get(token, clientId, broadcasterId, cursor);
                 if (response == null)
                 {
-                    break;
+                    return null;
                 }
                 data.AddRange(response.Data);
                 cursor = response.Pagination?.Cursor;
