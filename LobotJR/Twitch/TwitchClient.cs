@@ -9,6 +9,7 @@ using LobotJR.Shared.Utility;
 using RestSharp;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -242,13 +243,32 @@ namespace LobotJR.Twitch
         /// <returns>A collection of subscription responses from Twitch.</returns>
         public async Task<IEnumerable<SubscriptionResponseData>> GetSubscriberListAsync()
         {
-            var result = await Subscriptions.GetAll(TokenData.ChatToken.AccessToken, ClientData.ClientId, BroadcasterId);
-            if (result == null)
+            var results = await Subscriptions.GetAll(TokenData.BroadcastToken.AccessToken, ClientData.ClientId, BroadcasterId);
+            if (results.Any(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized))
             {
-                await RefreshTokens();
-                result = await Subscriptions.GetAll(TokenData.ChatToken.AccessToken, ClientData.ClientId, BroadcasterId);
+                var failure = results.FirstOrDefault(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized);
+                Console.WriteLine($"Encountered an unexpected response retrieving subscribers: {failure.StatusCode}: {failure.Content}");
+                return null;
             }
-            return result;
+            else if (results.Any(x => x.StatusCode == HttpStatusCode.Unauthorized))
+            {
+
+                Console.WriteLine("Encountered a 401 (Unauthorized) response retrieving subscriber list. Attempting to refresh tokens.");
+                await RefreshTokens();
+                results = await Subscriptions.GetAll(TokenData.ChatToken.AccessToken, ClientData.ClientId, BroadcasterId);
+                if (results.Any(x => x.StatusCode == HttpStatusCode.Unauthorized))
+                {
+                    Console.WriteLine("Something may be wrong with the access token, please delete your token.json and relaunch the application.");
+                    return null;
+                }
+                else if (results.Any(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized))
+                {
+                    var failure = results.FirstOrDefault(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized);
+                    Console.WriteLine($"Encountered an unexpected response retrieving subscribers: {failure.StatusCode}: {failure.Content}");
+                    return null;
+                }
+            }
+            return results.Where(x => x.Data != null && x.Data.Data != null).SelectMany(x => x.Data.Data);
         }
     }
 }
