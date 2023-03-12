@@ -75,7 +75,7 @@ namespace LobotJR.Data.Import
             {
                 userLookup.GetId(fisher);
             }
-            userLookup.UpdateCache(token, clientId);
+            userLookup.UpdateCache(token, clientId).GetAwaiter().GetResult();
         }
 
         /// <summary>

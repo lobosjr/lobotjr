@@ -24,7 +24,7 @@ namespace LobotJR.Shared.Subscription
         /// <param name="start">The pagination cursor value to start from. If
         /// this is the first request, set to null.</param>
         /// <returns>The response body from the API, or null if the response code is not 200 (OK).</returns>
-        public static async Task<SubscriptionResponse> Get(string token, string clientId, string broadcasterId, string start = null)
+        public static async Task<RestResponse<SubscriptionResponse>> Get(string token, string clientId, string broadcasterId, string start = null)
         {
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             var client = new RestClient("https://api.twitch.tv");
@@ -39,12 +39,7 @@ namespace LobotJR.Shared.Subscription
                 request.AddParameter("after", start, ParameterType.QueryString);
             }
             request.AddParameter("first", 100, ParameterType.QueryString);
-            var response = await client.ExecuteAsync<SubscriptionResponse>(request);
-            if (response.StatusCode == HttpStatusCode.OK)
-            {
-                return response.Data;
-            }
-            return null;
+            return await client.ExecuteAsync<SubscriptionResponse>(request);
         }
 
         /// <summary>
@@ -54,19 +49,15 @@ namespace LobotJR.Shared.Subscription
         /// <param name="clientId">The client id of the application.</param>
         /// <param name="broadcasterId">The id of the channel to ban the user from.</param>
         /// <returns></returns>
-        public static async Task<IEnumerable<SubscriptionResponseData>> GetAll(string token, string clientId, string broadcasterId)
+        public static async Task<IEnumerable<RestResponse<SubscriptionResponse>>> GetAll(string token, string clientId, string broadcasterId)
         {
-            List<SubscriptionResponseData> data = new List<SubscriptionResponseData>();
+            List<RestResponse<SubscriptionResponse>> data = new List<RestResponse<SubscriptionResponse>>();
             string cursor = null;
             do
             {
                 var response = await Get(token, clientId, broadcasterId, cursor);
-                if (response == null)
-                {
-                    break;
-                }
-                data.AddRange(response.Data);
-                cursor = response.Pagination?.Cursor;
+                data.Add(response);
+                cursor = response.Data?.Pagination?.Cursor;
             }
             while (cursor != null);
             return data;

@@ -11,7 +11,6 @@ using LobotJR.Data;
 using LobotJR.Data.Import;
 using LobotJR.Data.Migration;
 using LobotJR.Data.User;
-using LobotJR.Shared.Authentication;
 using LobotJR.Shared.Utility;
 using LobotJR.Trigger;
 using LobotJR.Twitch;
@@ -22,7 +21,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using Wolfcoins;
 
 namespace TwitchBot
@@ -435,7 +433,7 @@ namespace TwitchBot
 
                 if (connected)
                 {
-                    UpdateTokens(tokenData, clientData).GetAwaiter().GetResult();
+                    twitchClient.RefreshTokens().GetAwaiter().GetResult();
                     Console.WriteLine($"Logged in as {tokenData.ChatUser}");
                     irc.sendIrcMessage("twitch.tv/membership");
                 }
@@ -526,7 +524,7 @@ namespace TwitchBot
                     {
                         if (!irc.connected)
                         {
-                            UpdateTokens(tokenData, clientData).GetAwaiter().GetResult();
+                            twitchClient.RefreshTokens().GetAwaiter().GetResult();
                             if ((DateTime.Now - lastConnectAttempt).TotalSeconds > 5)
                             {
                                 irc = new IrcClient("irc.chat.twitch.tv", 80, tokenData.ChatUser, tokenData.ChatToken.AccessToken);
@@ -3982,7 +3980,7 @@ namespace TwitchBot
                     }
 
                     Console.WriteLine("Connection terminated.");
-                    UpdateTokens(tokenData, clientData, true).GetAwaiter().GetResult();
+                    twitchClient.RefreshTokens().GetAwaiter().GetResult();
                     connected = false;
                     #endregion
                 }
@@ -4091,56 +4089,6 @@ namespace TwitchBot
 
             return new Pet();
 
-        }
-
-        static async Task UpdateTokens(TokenData tokenData, LobotJR.Shared.Client.ClientData clientData, bool force = false)
-        {
-            bool tokenUpdated = false;
-            if (force || DateTime.Now >= tokenData.ChatToken.ExpirationDate)
-            {
-                tokenUpdated = true;
-                try
-                {
-                    var newToken = await AuthToken.Refresh(clientData.ClientId, clientData.ClientSecret, tokenData.ChatToken.RefreshToken);
-                    if (newToken.Data == null)
-                    {
-                        throw new Exception($"Twitch response {newToken.StatusCode}: {newToken.Content}");
-                    }
-                    tokenData.ChatToken.CopyFrom(newToken.Data);
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine($"Exception occurred refreshing the chat token: {e.Message}\n{e.StackTrace}");
-                }
-            }
-            if (force || DateTime.Now >= tokenData.BroadcastToken.ExpirationDate)
-            {
-                tokenUpdated = true;
-                try
-                {
-                    var newToken = await AuthToken.Refresh(clientData.ClientId, clientData.ClientSecret, tokenData.BroadcastToken.RefreshToken);
-                    if (newToken.Data == null)
-                    {
-                        throw new Exception($"Twitch response {newToken.StatusCode}: {newToken.Content}");
-                    }
-                    tokenData.BroadcastToken.CopyFrom(newToken.Data);
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine($"Exception occurred refreshing the streamer token: {e.Message}\n{e.StackTrace}");
-                }
-            }
-            if (tokenUpdated)
-            {
-                try
-                {
-                    FileUtils.WriteTokenData(tokenData);
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine($"Exception occurred writing the updated token data: {e.Message}\n{e.StackTrace}");
-                }
-            }
         }
 
         static string GetDungeonName(int dungeonID, Dictionary<int, string> dungeonList)

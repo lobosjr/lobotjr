@@ -117,17 +117,27 @@ namespace LobotJR.Twitch
         /// them from the queue.
         /// </summary>
         /// <returns>A collection of records that should be sent.</returns>
-        public IEnumerable<WhisperRecord> GetMessagesToSend()
+        public bool TryGetMessage(out WhisperRecord record)
         {
-            var maxToSend = Math.Min(SecondTimer.AvailableOccurrences(), MinuteTimer.AvailableOccurrences());
-            var toSend = Queue.Where(x => !string.IsNullOrWhiteSpace(x.UserId)).OrderBy(x => x.QueueTime).Take(maxToSend).ToList();
-            var newRecipients = toSend.Select(x => x.Username).Distinct().Except(WhisperRecipients);
-            var allowedRecipients = newRecipients.Take(MaxRecipients - WhisperRecipients.Count);
-            var overflow = newRecipients.Except(allowedRecipients);
-            toSend.RemoveAll(x => overflow.Contains(x.Username));
-            Queue = Queue.Except(toSend).ToList();
-
-            return toSend;
+            record = null;
+            var canSend = SecondTimer.AvailableOccurrences() > 0 && MinuteTimer.AvailableOccurrences() > 0;
+            if (canSend)
+            {
+                if (WhisperRecipients.Count < MaxRecipients)
+                {
+                    record = Queue.Where(x => !string.IsNullOrWhiteSpace(x.UserId)).OrderBy(x => x.QueueTime).FirstOrDefault();
+                }
+                else
+                {
+                    record = Queue.Where(x => !string.IsNullOrWhiteSpace(x.UserId) && WhisperRecipients.Contains(x.Username)).OrderBy(x => x.QueueTime).FirstOrDefault();
+                }
+                if (record != null)
+                {
+                    Queue.Remove(record);
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>
@@ -161,6 +171,18 @@ namespace LobotJR.Twitch
             MinuteTimer.AddOccurrence(DateTime.Now);
             SecondTimer.AddOccurrence(DateTime.Now);
             WhisperRecipients.Add(record.Username);
+        }
+
+        /// <summary>
+        /// Reports that a whisper failed to send, but not for a reason that
+        /// would prevent it from being sent again in the future (e.g. token
+        /// expired, rate limit exceeded).
+        /// The essentially just requeues the record.
+        /// </summary>
+        /// <param name="record">The record that failed to send.</param>
+        public void ReportFailure(WhisperRecord record)
+        {
+            Queue.Add(record);
         }
 
         /// <summary>
