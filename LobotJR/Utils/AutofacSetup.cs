@@ -16,6 +16,7 @@ using LobotJR.Shared.Client;
 using LobotJR.Trigger;
 using LobotJR.Trigger.Responder;
 using LobotJR.Twitch;
+using NLog;
 using System.Data.Entity;
 using Wolfcoins;
 
@@ -95,6 +96,8 @@ namespace LobotJR.Utils
             RegisterModules(builder);
             RegisterTriggers(builder);
             RegisterManagers(builder, clientData, tokenData);
+
+            builder.RegisterGeneric(typeof(Logger)).As(typeof(ILogger)).InstancePerLifetimeScope();
 
             return builder.Build();
         }

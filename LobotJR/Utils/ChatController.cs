@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NLog;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -156,6 +157,8 @@ namespace LobotJR.Utils
 
     public class ChatController
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         [DllImport("User32.dll")]
         static extern int SetForegroundWindow(IntPtr point);
 
@@ -221,7 +224,7 @@ namespace LobotJR.Utils
                     }
                 }
             }
-            Console.WriteLine("Connection terminated.");
+            Logger.Info("Connection terminated.");
         }
     }
 }

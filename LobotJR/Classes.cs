@@ -1,5 +1,6 @@
 ﻿using Companions;
 using Equipment;
+using NLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +10,8 @@ namespace Classes
 
     public class CharClass
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         public const int WARRIOR = 1;
         public const int MAGE = 2;
         public const int ROGUE = 3;
@@ -64,7 +67,7 @@ namespace Classes
         public string PrintItems()
         {
             string itemList = "";
-            foreach(var itm in myItems)
+            foreach (var itm in myItems)
             {
                 string isActive = "No";
                 if (itm.isActive)
@@ -77,7 +80,7 @@ namespace Classes
 
         public bool releasePet(int stableID)
         {
-            
+
             if (myPets.Remove(myPets.ElementAt(stableID - 1)))
             {
 
@@ -109,7 +112,7 @@ namespace Classes
             foreach (var itm in myItems)
             {
 
-                if(itm.inventoryID != i)
+                if (itm.inventoryID != i)
                 {
                     itm.inventoryID = i;
                     numErrors++;
@@ -174,7 +177,7 @@ namespace Classes
                 }
             }
 
-            Console.WriteLine("Fixed " + numFixes + " Active errors.");
+            Logger.Info($"Fixed {numFixes} Active errors.");
         }
 
         public void RemoveDupes()
@@ -190,7 +193,7 @@ namespace Classes
                         continue;
 
                     // if two items w/ matching ids exist
-                    if(itm.itemID == myItems[id].itemID)
+                    if (itm.itemID == myItems[id].itemID)
                     {
                         // duplicate found
                         RemoveItem(itm);
@@ -200,7 +203,7 @@ namespace Classes
                 id++;
             }
 
-            Console.WriteLine("Removed " + dupesRemoved + " duplicates from " + name + "'s inventory.");
+            Logger.Info($"Removed {dupesRemoved} duplicates from {name}'s inventory.");
         }
 
         public float GetTotalSuccessChance()
@@ -208,7 +211,7 @@ namespace Classes
             float chance = 0;
             foreach (var itm in myItems)
             {
-                if(itm.isActive)
+                if (itm.isActive)
                     chance += itm.successChance;
             }
 
@@ -217,7 +220,7 @@ namespace Classes
 
         public Item GetItem(int inventoryID)
         {
-            foreach(var itm in myItems)
+            foreach (var itm in myItems)
             {
                 if (itm.inventoryID == inventoryID)
                     return itm;
@@ -271,9 +274,9 @@ namespace Classes
 
         public void ActivateItem(Item itm)
         {
-            foreach(var iterItem in myItems)
+            foreach (var iterItem in myItems)
             {
-                if(itm.itemType == iterItem.itemType && iterItem != itm)
+                if (itm.itemType == iterItem.itemType && iterItem != itm)
                 {
                     iterItem.isActive = false;
                 }
@@ -285,14 +288,14 @@ namespace Classes
         {
             foreach (var iterItem in myItems)
             {
-                if(itm == iterItem)
+                if (itm == iterItem)
                 {
                     int tempType = itm.itemType;
                     myItems.Remove(itm);
                     int listPos = 0;
-                    foreach(var newActive in myItems)
+                    foreach (var newActive in myItems)
                     {
-                        if(tempType == newActive.itemType)
+                        if (tempType == newActive.itemType)
                         {
                             myItems.ElementAt(listPos).isActive = true;
                             break;

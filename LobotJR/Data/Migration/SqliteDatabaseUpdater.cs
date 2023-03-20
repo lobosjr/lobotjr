@@ -13,7 +13,7 @@ namespace LobotJR.Data.Migration
     /// </summary>
     public class SqliteDatabaseUpdater
     {
-        public static readonly SemanticVersion LatestVersion = new SemanticVersion(1, 0, 2);
+        public static readonly SemanticVersion LatestVersion = new SemanticVersion(1, 0, 3);
 
         private readonly IEnumerable<IDatabaseUpdate> DatabaseUpdates;
 

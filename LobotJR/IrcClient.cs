@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NLog;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
@@ -8,6 +9,8 @@ namespace TwitchBot
 {
     public class IrcClient
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         public DateTime timeLast;
         public DateTime dungeonTimeLast;
         public DateTime lastReconnect;
@@ -40,7 +43,7 @@ namespace TwitchBot
 
             if (connected)
             {
-                Console.WriteLine("Successfully connected to IRC server: " + ip);
+                Logger.Info("Successfully connected to IRC server: {0}", ip);
                 inputStream = new StreamReader(tcpClient.GetStream());
                 outputStream = new StreamWriter(tcpClient.GetStream());
 
@@ -51,7 +54,7 @@ namespace TwitchBot
             }
             else
             {
-                Console.WriteLine("Unable to connect to IRC server: " + ip);
+                Logger.Warn("Unable to connect to IRC server: {0}", ip);
 
             }
 
@@ -62,7 +65,7 @@ namespace TwitchBot
             this.channel = channel;
             outputStream.WriteLine("JOIN #" + channel);
             outputStream.Flush();
-            Console.WriteLine("Joined channel: " + channel);
+            Logger.Info("Joined channel: {0}", channel);
         }
 
         public void sendIrcMessage(string message)
@@ -153,7 +156,7 @@ namespace TwitchBot
             if (connected)
             {
                 connected = false;
-                Console.WriteLine("Disconnected from server. Retrying connection...");
+                Logger.Warn("Disconnected from server. Retrying connection...");
             }
 
             if ((DateTime.Now - lastReconnect).TotalSeconds > 5)
@@ -164,7 +167,7 @@ namespace TwitchBot
                 if (connected)
                 {
                     connected = true;
-                    Console.WriteLine("Successfully reconnected to IRC server: " + myIp);
+                    Logger.Info("Successfully reconnected to IRC server: {0}", myIp);
                     inputStream = new StreamReader(tcpClient.GetStream());
                     outputStream = new StreamWriter(tcpClient.GetStream());
 
@@ -175,7 +178,7 @@ namespace TwitchBot
                 }
                 else
                 {
-                    Console.WriteLine("Failed to reconnect to IRC server: " + myIp);
+                    Logger.Warn("Failed to reconnect to IRC server: {0}", myIp);
                     lastReconnect = DateTime.Now;
                 }
                 lastReconnect = DateTime.Now;
