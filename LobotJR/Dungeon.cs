@@ -528,12 +528,12 @@ namespace Adventures
                 int petLoot = awardPet(member);
                 if (myLoot == -1 && petLoot == -1)
                 {
-                    Console.WriteLine(DateTime.Now.ToString() + ": " + member.name + " completed a dungeon and earned " + xp + " xp and " + coins + " Wolfcoins.", whisper);
+                    Logger.Info("{user} completed a dungeon and earned {xp} xp and {coins} Wolfcoins.", member.name, xp, coins);
                     continue;
                 }
                 else
                 {
-                    Console.WriteLine(DateTime.Now.ToString() + ": " + member.name + " completed a dungeon and earned " + xp + " xp and " + coins + " Wolfcoins.", whisper);
+                    Logger.Info("{user} completed a dungeon and earned {xp} xp and {coins} Wolfcoins.", member.name, xp, coins);
                     member.itemEarned = myLoot;
                     member.petEarned = petLoot;
                 }

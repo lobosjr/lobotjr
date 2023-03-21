@@ -43,7 +43,7 @@ namespace TwitchBot
 
             if (connected)
             {
-                Logger.Info("Successfully connected to IRC server: {0}", ip);
+                Logger.Info("Successfully connected to IRC server: {ip}", ip);
                 inputStream = new StreamReader(tcpClient.GetStream());
                 outputStream = new StreamWriter(tcpClient.GetStream());
 
@@ -54,7 +54,7 @@ namespace TwitchBot
             }
             else
             {
-                Logger.Warn("Unable to connect to IRC server: {0}", ip);
+                Logger.Warn("Unable to connect to IRC server: {ip}", ip);
 
             }
 
@@ -65,7 +65,7 @@ namespace TwitchBot
             this.channel = channel;
             outputStream.WriteLine("JOIN #" + channel);
             outputStream.Flush();
-            Logger.Info("Joined channel: {0}", channel);
+            Logger.Info("Joined channel: {channel}", channel);
         }
 
         public void sendIrcMessage(string message)
@@ -99,7 +99,7 @@ namespace TwitchBot
                 catch (Exception e)
                 {
                     messageQueue.Enqueue(temp);
-                    //Console.WriteLine("Error occured: " + e);
+                    Logger.Error(e);
                     Reconnect();
                 }
                 timeLast = DateTime.Now;
@@ -167,7 +167,7 @@ namespace TwitchBot
                 if (connected)
                 {
                     connected = true;
-                    Logger.Info("Successfully reconnected to IRC server: {0}", myIp);
+                    Logger.Info("Successfully reconnected to IRC server: {ip}", myIp);
                     inputStream = new StreamReader(tcpClient.GetStream());
                     outputStream = new StreamWriter(tcpClient.GetStream());
 
@@ -178,7 +178,7 @@ namespace TwitchBot
                 }
                 else
                 {
-                    Logger.Warn("Failed to reconnect to IRC server: {0}", myIp);
+                    Logger.Warn("Failed to reconnect to IRC server: {ip}", myIp);
                     lastReconnect = DateTime.Now;
                 }
                 lastReconnect = DateTime.Now;
@@ -209,7 +209,8 @@ namespace TwitchBot
             }
             catch (Exception ex)
             {
-                //Console.WriteLine("Bot disconnected. Reason: " + ex);
+                Logger.Error("Bot disconnected.");
+                Logger.Error(ex);
                 string[] buf = { "Bot disconnected. Reason: " + ex };
                 Reconnect();
                 return buf;

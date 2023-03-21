@@ -170,13 +170,13 @@ namespace LobotJR.Twitch
                 }
                 else if (result == HttpStatusCode.Unauthorized)
                 {
-                    Logger.Info("Token for chat user ({0}) has expired. Refreshing token.", TokenData.ChatUser);
+                    Logger.Info("Token for chat user {user} has expired. Refreshing token.", TokenData.ChatUser);
                     Queue.ReportFailure(message);
                     await RefreshTokens();
                 }
                 else if (result == HttpStatusCode.NotFound)
                 {
-                    Logger.Warn("User name {0} returned id {1} from Twitch. Twitch says this user id doesn't exist. User {2} has been blacklisted from whispers.", message.Username, message.UserId, message.Username);
+                    Logger.Warn("User name {user} returned id {id} from Twitch. Twitch says this user id doesn't exist. User {user} has been blacklisted from whispers.", message.Username, message.UserId);
                     Blacklist.Add(message.Username);
                 }
                 else if (result == (HttpStatusCode)429)
@@ -191,7 +191,7 @@ namespace LobotJR.Twitch
                 }
                 else
                 {
-                    Logger.Error("Something went wrong trying to send a whisper. Twitch response: {0}", result);
+                    Logger.Error("Something went wrong trying to send a whisper. Twitch response: {response}", result);
                 }
                 canSend = Queue.TryGetMessage(out message);
             }
@@ -214,7 +214,7 @@ namespace LobotJR.Twitch
                 userId = UserLookup.GetId(user);
                 if (userId == null)
                 {
-                    Logger.Error("Failed to get user id for timeout of user {0} with reason \"{1}\"", user, message ?? "null");
+                    Logger.Error("Failed to get user id for timeout of user {user} with reason {message}", user, message ?? "null");
                     return false;
                 }
             }
@@ -250,7 +250,7 @@ namespace LobotJR.Twitch
             if (results.Any(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized))
             {
                 var failure = results.FirstOrDefault(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized);
-                Logger.Warn("Encountered an unexpected response retrieving subscribers: {0}: {1}", failure.StatusCode, failure.Content);
+                Logger.Warn("Encountered an unexpected response retrieving subscribers: {statusCode}: {content}", failure.StatusCode, failure.Content);
                 return null;
             }
             else if (results.Any(x => x.StatusCode == HttpStatusCode.Unauthorized))
@@ -267,7 +267,7 @@ namespace LobotJR.Twitch
                 else if (results.Any(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized))
                 {
                     var failure = results.FirstOrDefault(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized);
-                    Logger.Error("Encountered an unexpected response retrieving subscribers: {0}: {1}", failure.StatusCode, failure.Content);
+                    Logger.Error("Encountered an unexpected response retrieving subscribers: {statusCode}: {content}", failure.StatusCode, failure.Content);
                     return null;
                 }
             }

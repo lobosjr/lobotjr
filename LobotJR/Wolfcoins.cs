@@ -226,7 +226,7 @@ namespace Wolfcoins
                 }
 
             }
-            Logger.Info("Added {0} coins to current viewers.", coins);
+            Logger.Info("Added {coins} coins to current viewers.", coins);
         }
 
         public void AwardCoins(int coins, string user)
@@ -395,7 +395,7 @@ namespace Wolfcoins
                 }
 
             }
-            Logger.Info("Granted {0} xp to current viewers.", xp);
+            Logger.Info("Granted {xp} xp to current viewers.", xp);
         }
 
         public void SetClass(string user, string choice, TwitchClient twitchClient)
@@ -518,7 +518,7 @@ namespace Wolfcoins
                 else
                 {
                     xpList.Add(user, xp);
-                    Logger.Info("Added user {0} and set their XP to {1}.", user, xp);
+                    Logger.Info("Added user {user} and set their XP to {xp}.", user, xp);
                 }
                 SaveXP();
 
@@ -541,12 +541,12 @@ namespace Wolfcoins
                 if (coinList.Keys.Contains(user))
                 {
                     coinList[user] = coins;
-                    Logger.Info("Set {0}'s coins to {1}.", user, coins);
+                    Logger.Info("Set {user}'s coins to {coins}.", user, coins);
                 }
                 else
                 {
                     coinList.Add(user, coins);
-                    Logger.Info("Added user {0} and set their coins to {1}.", user, coins);
+                    Logger.Info("Added user {user} and set their coins to {coins}.", user, coins);
                 }
                 SaveCoins();
 
