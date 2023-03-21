@@ -377,10 +377,16 @@ namespace TwitchBot
 
                 var clientData = FileUtils.ReadClientData();
                 var tokenData = FileUtils.ReadTokenData();
+                RestLogger.SetSensitiveData(clientData, tokenData);
                 IrcClient irc = new IrcClient("irc.chat.twitch.tv", 80, tokenData.ChatUser, tokenData.ChatToken.AccessToken);
                 IrcClient group = new IrcClient("irc.chat.twitch.tv", 80, tokenData.ChatUser, tokenData.ChatToken.AccessToken);
                 // 199.9.253.119
                 connected = irc.connected;
+
+                LogManager.Setup().LoadConfiguration(builder =>
+                {
+                    builder.ForLogger().FilterMinLevel(LogLevel.Info).WriteToConsole(layout: "${time}|${level:uppercase=true}|${message:withexception=true}");
+                });
 
                 #region Database Update
                 var updaterContainer = AutofacSetup.SetupUpdater(clientData, tokenData);
@@ -427,7 +433,6 @@ namespace TwitchBot
                 userLookup.UpdateTime = appSettings.GeneralCacheUpdateTime;
                 LogManager.Setup().LoadConfiguration(builder =>
                 {
-                    builder.ForLogger().FilterMinLevel(LogLevel.Info).WriteToConsole();
                     builder.ForLogger().FilterMinLevel(LogLevel.Debug).WriteToFile(fileName: appSettings.LoggingFile);
                 });
                 #endregion

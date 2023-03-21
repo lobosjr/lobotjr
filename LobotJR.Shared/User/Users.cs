@@ -1,4 +1,5 @@
 ﻿using LobotJR.Shared.Utility;
+using NLog;
 using RestSharp;
 using RestSharp.Serializers.NewtonsoftJson;
 using System;
@@ -14,6 +15,8 @@ namespace LobotJR.Shared.User
     /// </summary>
     public class Users
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         /// <summary>
         /// Calls the twitch Get Users API with no parameters.
         /// </summary>
@@ -29,6 +32,7 @@ namespace LobotJR.Shared.User
             request.AddHeader("Accept", "application/json");
             request.AddHeader("Authorization", $"Bearer {token}");
             request.AddHeader("Client-ID", clientId);
+            RestLogger.AddLogging(request, Logger);
             var response = await client.ExecuteAsync<UserResponse>(request);
             switch (response.StatusCode)
             {
@@ -61,6 +65,7 @@ namespace LobotJR.Shared.User
             {
                 request.AddParameter("login", user, ParameterType.QueryString);
             }
+            RestLogger.AddLogging(request, Logger);
             var response = await client.ExecuteAsync<UserResponse>(request);
             switch (response.StatusCode)
             {

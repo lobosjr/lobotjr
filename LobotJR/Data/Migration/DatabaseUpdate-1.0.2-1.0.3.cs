@@ -16,7 +16,8 @@ namespace LobotJR.Data.Migration
             var result = new DatabaseMigrationResult { Success = true };
             var commands = new string[]
             {
-                "ALTER TABLE \"AppSettings\" ADD COLUMN [LoggingFile] nvarchar"
+                "ALTER TABLE \"AppSettings\" ADD COLUMN [LoggingFile] nvarchar",
+                "UPDATE \"AppSettings\" SET [LoggingFile] = 'output.log'"
             };
             result.DebugOutput.Add("Executing SQL statements to add/update tables...");
             foreach (var command in commands)

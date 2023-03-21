@@ -16,7 +16,6 @@ using LobotJR.Shared.Client;
 using LobotJR.Trigger;
 using LobotJR.Trigger.Responder;
 using LobotJR.Twitch;
-using NLog;
 using System.Data.Entity;
 using Wolfcoins;
 
@@ -32,6 +31,7 @@ namespace LobotJR.Utils
                 .WithParameters(new Parameter[] { new TypedParameter(typeof(ClientData), clientData), new TypedParameter(typeof(TokenData), tokenData) });
             builder.RegisterType<DatabaseUpdate_1_0_0_1_0_1>().As<IDatabaseUpdate>().InstancePerLifetimeScope();
             builder.RegisterType<DatabaseUpdate_1_0_1_1_0_2>().As<IDatabaseUpdate>().InstancePerLifetimeScope();
+            builder.RegisterType<DatabaseUpdate_1_0_2_1_0_3>().As<IDatabaseUpdate>().InstancePerLifetimeScope();
 
             builder.RegisterType<SqliteDatabaseUpdater>().AsSelf().InstancePerLifetimeScope();
 
@@ -96,8 +96,6 @@ namespace LobotJR.Utils
             RegisterModules(builder);
             RegisterTriggers(builder);
             RegisterManagers(builder, clientData, tokenData);
-
-            builder.RegisterGeneric(typeof(Logger)).As(typeof(ILogger)).InstancePerLifetimeScope();
 
             return builder.Build();
         }

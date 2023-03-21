@@ -1,4 +1,5 @@
 ﻿using LobotJR.Shared.Utility;
+using NLog;
 using RestSharp;
 using RestSharp.Serializers.NewtonsoftJson;
 using System.Collections.Generic;
@@ -13,6 +14,8 @@ namespace LobotJR.Shared.Subscription
     /// </summary>
     public class Subscriptions
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         /// <summary>
         /// Calls the Twitch Get Broadcaster Subscriptions API to get the list
         /// of all subscribers to a channel. Retrieves the first 100 users
@@ -39,6 +42,7 @@ namespace LobotJR.Shared.Subscription
                 request.AddParameter("after", start, ParameterType.QueryString);
             }
             request.AddParameter("first", 100, ParameterType.QueryString);
+            RestLogger.AddLogging(request, Logger);
             return await client.ExecuteAsync<SubscriptionResponse>(request);
         }
 

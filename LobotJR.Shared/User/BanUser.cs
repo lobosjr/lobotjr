@@ -1,4 +1,5 @@
 ﻿using LobotJR.Shared.Utility;
+using NLog;
 using RestSharp;
 using RestSharp.Serializers.NewtonsoftJson;
 using System.Net;
@@ -12,6 +13,8 @@ namespace LobotJR.Shared.User
     /// </summary>
     public class BanUser
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         /// <summary>
         /// Calls the twitch Ban User API to ban a user for a set duration.
         /// </summary>
@@ -35,6 +38,7 @@ namespace LobotJR.Shared.User
             request.AddParameter("broadcaster_id", broadcasterId, ParameterType.QueryString);
             request.AddParameter("moderator_id", moderatorId, ParameterType.QueryString);
             request.AddJsonBody(new BanRequest(userId, duration, reason));
+            RestLogger.AddLogging(request, Logger);
             var response = await client.ExecuteAsync(request);
             return response.StatusCode;
         }
