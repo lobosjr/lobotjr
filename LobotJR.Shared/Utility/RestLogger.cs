@@ -70,9 +70,9 @@ namespace LobotJR.Shared.Utility
                 var value = header.Value.First();
                 if (ReplacementKeys.Contains(header.Key))
                 {
-                    value = value.Replace(ClientData.ClientId, "{ClientId}");
-                    value = value.Replace(TokenData.ChatToken.AccessToken, "{ChatToken}");
-                    value = value.Replace(TokenData.BroadcastToken.AccessToken, "{BroadcastToken}");
+                    value = ClientData?.ClientId == null ? value : value.Replace(ClientData.ClientId, "{ClientId}");
+                    value = TokenData?.ChatToken?.AccessToken == null ? value : value.Replace(TokenData.ChatToken.AccessToken, "{ChatToken}");
+                    value = TokenData?.BroadcastToken?.AccessToken == null ? value : value.Replace(TokenData.BroadcastToken.AccessToken, "{BroadcastToken}");
                 }
                 logger.Debug("{header}: {value}", header.Key, value);
             }
@@ -81,10 +81,10 @@ namespace LobotJR.Shared.Utility
                 var content = await request.Content.ReadAsStringAsync();
                 if (maskExtra)
                 {
-                    content = content.Replace(ClientData.ClientId, "{ClientId}");
-                    content = content.Replace(ClientData.ClientSecret, "{ClientSecret}");
-                    content = content.Replace(TokenData.ChatToken.RefreshToken, "{ChatRefreshToken}");
-                    content = content.Replace(TokenData.BroadcastToken.RefreshToken, "{BroadcastRefreshToken}");
+                    content = ClientData?.ClientId == null ? content : content.Replace(ClientData.ClientId, "{ClientId}");
+                    content = ClientData?.ClientSecret == null ? content : content.Replace(ClientData.ClientSecret, "{ClientSecret}");
+                    content = TokenData?.ChatToken?.RefreshToken == null ? content : content.Replace(TokenData.ChatToken.RefreshToken, "{ChatRefreshToken}");
+                    content = TokenData?.BroadcastToken?.RefreshToken == null ? content : content.Replace(TokenData.BroadcastToken.RefreshToken, "{BroadcastRefreshToken}");
                 }
                 logger.Debug(content);
             }
@@ -108,9 +108,9 @@ namespace LobotJR.Shared.Utility
                 var value = header.Value.First();
                 if (ReplacementKeys.Contains(header.Key))
                 {
-                    value = value.Replace(ClientData.ClientId, "{ClientId}");
-                    value = value.Replace(TokenData.ChatToken.AccessToken, "{ChatToken}");
-                    value = value.Replace(TokenData.BroadcastToken.AccessToken, "{BroadcastToken}");
+                    value = ClientData?.ClientId == null ? value : value.Replace(ClientData.ClientId, "{ClientId}");
+                    value = TokenData?.ChatToken.AccessToken == null ? value : value.Replace(TokenData.ChatToken.AccessToken, "{ChatToken}");
+                    value = TokenData?.BroadcastToken.AccessToken == null ? value : value.Replace(TokenData.BroadcastToken.AccessToken, "{BroadcastToken}");
                 }
                 logger.Debug("{header}: {value}", header.Key, value);
             }

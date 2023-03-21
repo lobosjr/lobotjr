@@ -51,6 +51,7 @@ namespace LobotJR.Launcher
 
             _clientData = LoadClientData();
             _tokenData = await LoadTokenData();
+            RestLogger.SetSensitiveData(_clientData, _tokenData);
 
             if (_tokenData.ChatToken != null || _tokenData.BroadcastToken != null)
             {
@@ -170,6 +171,7 @@ namespace LobotJR.Launcher
             if (FileUtils.HasTokenData())
             {
                 var tokenData = FileUtils.ReadTokenData();
+                RestLogger.SetSensitiveData(_clientData, _tokenData);
                 if (tokenData != null)
                 {
                     if (tokenData.ChatToken != null)
