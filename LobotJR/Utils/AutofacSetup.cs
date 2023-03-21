@@ -31,6 +31,7 @@ namespace LobotJR.Utils
                 .WithParameters(new Parameter[] { new TypedParameter(typeof(ClientData), clientData), new TypedParameter(typeof(TokenData), tokenData) });
             builder.RegisterType<DatabaseUpdate_1_0_0_1_0_1>().As<IDatabaseUpdate>().InstancePerLifetimeScope();
             builder.RegisterType<DatabaseUpdate_1_0_1_1_0_2>().As<IDatabaseUpdate>().InstancePerLifetimeScope();
+            builder.RegisterType<DatabaseUpdate_1_0_2_1_0_3>().As<IDatabaseUpdate>().InstancePerLifetimeScope();
 
             builder.RegisterType<SqliteDatabaseUpdater>().AsSelf().InstancePerLifetimeScope();
 

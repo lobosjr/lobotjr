@@ -1,4 +1,5 @@
 ﻿using LobotJR.Shared.Utility;
+using NLog;
 using RestSharp;
 using RestSharp.Serializers.NewtonsoftJson;
 using System.Net;
@@ -12,6 +13,8 @@ namespace LobotJR.Shared.Chat
     /// </summary>
     public class SendWhisper
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         /// <summary>
         /// Calls the twitch Send Whisper API to whisper a message to a user.
         /// </summary>
@@ -33,6 +36,7 @@ namespace LobotJR.Shared.Chat
             request.AddParameter("from_user_id", senderId, ParameterType.QueryString);
             request.AddParameter("to_user_id", userId, ParameterType.QueryString);
             request.AddBody(new Whisper(message));
+            RestLogger.AddLogging(request, Logger);
             var response = await client.ExecuteAsync(request);
             return response.StatusCode;
         }

@@ -1,4 +1,5 @@
 ﻿using LobotJR.Shared.User;
+using NLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,6 +21,8 @@ namespace LobotJR.Data.User
     /// </summary>
     public class UserLookup
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         private DateTime lastUpdate = DateTime.Now;
         private readonly List<string> cacheMisses = new List<string>();
 
@@ -76,7 +79,12 @@ namespace LobotJR.Data.User
                 var removed = cacheMisses.GetRange(0, limit);
                 cacheMisses.RemoveRange(0, limit);
                 var response = await Users.Get(token, clientId, removed);
-                results.UpdatedUsers.AddRange(response.Data.Select(x => x.DisplayName));
+                if (response == null || response.Data == null)
+                {
+                    Logger.Warn("Null response attempting to fetch user ids while updating user cache.");
+                    return results;
+                }
+                results.UpdatedUsers.AddRange(response.Data.Where(x => x != null).Select(x => x.DisplayName));
                 results.FailedUsers.AddRange(removed.Except(results.UpdatedUsers));
                 foreach (var entry in response.Data)
                 {

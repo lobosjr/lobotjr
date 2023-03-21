@@ -1,6 +1,7 @@
 ﻿using Classes;
 using Equipment;
 using LobotJR.Twitch;
+using NLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +13,8 @@ namespace Adventures
 {
     public class DungeonMessager
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         public static string DUNGEON_COMPLETE = "doneguid74293847562934";
         public static int MSG_INSTANT = 0;
         public static int MSG_QUEUED = 1;
@@ -120,7 +123,7 @@ namespace Adventures
                     }
                     catch (Exception e)
                     {
-                        Console.WriteLine(DateTime.Now.ToString() + ": Error occured: " + e);
+                        Logger.Error(e);
                         return 0;
                     }
                     if (numReceivers > i)
@@ -156,6 +159,8 @@ namespace Adventures
 
     public class Dungeon
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         public int dungeonID = -1;
         public int adventureType = -1;
         public string adventureTitle = "";
@@ -203,7 +208,7 @@ namespace Adventures
             textIter++;
             string[] enemies = fileText.ElementAt(textIter).Split(',');
             if ((enemies.Count() / 2) != numEncounters)
-                Console.WriteLine(DateTime.Now.ToString() + ": Dungeon at " + path + " has a mismatch for # of encounters & encounter data.");
+                Logger.Error($"Dungeon at {path} has a mismatch for # of encounters & encounter data.");
 
             for (int i = 0; i < enemies.Count(); i += 2)
             {
@@ -252,7 +257,7 @@ namespace Adventures
             textIter++;
             string[] enemies = fileText.ElementAt(textIter).Split(',');
             if ((enemies.Count() / 2) != numEncounters)
-                Console.WriteLine(DateTime.Now.ToString() + ": Dungeon at " + path + " has a mismatch for # of encounters & encounter data.");
+                Logger.Error($"Dungeon at {path} has a mismatch for # of encounters & encounter data.");
 
             for (int i = 0; i < enemies.Count(); i += 2)
             {
@@ -464,7 +469,7 @@ namespace Adventures
                                 messenger.sendChatMessage("In the chaos, " + player.name + " lost their life. Seek vengeance in their honor!", member.name);
                             }
 
-                            Console.WriteLine(DateTime.Now.ToString() + ": " + player.name + " has died in a dungeon.");
+                            Logger.Info($"{player.name} has died in a dungeon.");
                             defeatLogText += player.name + ", " + player.className + " (Died. -" + xp + " xp, -" + coins + " coins.) ";
                         }
                         else
@@ -523,12 +528,12 @@ namespace Adventures
                 int petLoot = awardPet(member);
                 if (myLoot == -1 && petLoot == -1)
                 {
-                    Console.WriteLine(DateTime.Now.ToString() + ": " + member.name + " completed a dungeon and earned " + xp + " xp and " + coins + " Wolfcoins.", whisper);
+                    Logger.Info("{user} completed a dungeon and earned {xp} xp and {coins} Wolfcoins.", member.name, xp, coins);
                     continue;
                 }
                 else
                 {
-                    Console.WriteLine(DateTime.Now.ToString() + ": " + member.name + " completed a dungeon and earned " + xp + " xp and " + coins + " Wolfcoins.", whisper);
+                    Logger.Info("{user} completed a dungeon and earned {xp} xp and {coins} Wolfcoins.", member.name, xp, coins);
                     member.itemEarned = myLoot;
                     member.petEarned = petLoot;
                 }

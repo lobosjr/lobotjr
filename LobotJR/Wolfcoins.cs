@@ -4,6 +4,7 @@ using Equipment;
 using LobotJR.Shared.Client;
 using LobotJR.Twitch;
 using Newtonsoft.Json;
+using NLog;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -73,6 +74,7 @@ namespace Wolfcoins
 
     public class Currency
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         public Dictionary<string, int> coinList = new Dictionary<string, int>();
         public Dictionary<string, int> xpList = new Dictionary<string, int>();
@@ -224,7 +226,7 @@ namespace Wolfcoins
                 }
 
             }
-            Console.WriteLine("Added " + coins + " coins to current viewers.");
+            Logger.Info("Added {coins} coins to current viewers.", coins);
         }
 
         public void AwardCoins(int coins, string user)
@@ -253,8 +255,8 @@ namespace Wolfcoins
                     }
                     catch (Exception e)
                     {
-                        Console.WriteLine("Error adding coins.");
-                        Console.WriteLine(e);
+                        Logger.Error("Error adding coins.");
+                        Logger.Error(e);
                     }
 
                 }
@@ -287,8 +289,8 @@ namespace Wolfcoins
                     }
                     catch (Exception e)
                     {
-                        Console.WriteLine("Error adding xp.");
-                        Console.WriteLine(e);
+                        Logger.Error("Error adding xp.");
+                        Logger.Error(e);
                     }
 
                     int newLevel = determineLevel(user);
@@ -393,7 +395,7 @@ namespace Wolfcoins
                 }
 
             }
-            Console.WriteLine("Granted " + xp + " xp to current viewers.");
+            Logger.Info("Granted {xp} xp to current viewers.", xp);
         }
 
         public void SetClass(string user, string choice, TwitchClient twitchClient)
@@ -516,7 +518,7 @@ namespace Wolfcoins
                 else
                 {
                     xpList.Add(user, xp);
-                    Console.WriteLine("Added user " + user + " and set their XP to " + xp + ".");
+                    Logger.Info("Added user {user} and set their XP to {xp}.", user, xp);
                 }
                 SaveXP();
 
@@ -539,12 +541,12 @@ namespace Wolfcoins
                 if (coinList.Keys.Contains(user))
                 {
                     coinList[user] = coins;
-                    Console.WriteLine("Set " + user + "'s coins to " + coins + ".");
+                    Logger.Info("Set {user}'s coins to {coins}.", user, coins);
                 }
                 else
                 {
                     coinList.Add(user, coins);
-                    Console.WriteLine("Added user " + user + " and set their coins to " + coins + ".");
+                    Logger.Info("Added user {user} and set their coins to {coins}.", user, coins);
                 }
                 SaveCoins();
 
@@ -558,7 +560,7 @@ namespace Wolfcoins
             var subs = await twitchClient.GetSubscriberListAsync();
             if (subs == null)
             {
-                Console.WriteLine("Unable to retrieve subscriber list.");
+                Logger.Error("Unable to retrieve subscriber list.");
                 return;
             }
 
@@ -566,7 +568,7 @@ namespace Wolfcoins
             {
                 subSet.Add(sub.UserName);
             }
-            Console.WriteLine("Subscriber list has been updated!");
+            Logger.Info("Subscriber list has been updated!");
         }
 
         public void UpdateViewers(string channel)
@@ -618,7 +620,8 @@ namespace Wolfcoins
                     }
                     catch (Exception e)
                     {
-                        Console.WriteLine("Error updating viewers: " + e);
+                        Logger.Error("Error updating viewers");
+                        Logger.Error(e);
                     }
                 }
             }
@@ -692,8 +695,8 @@ namespace Wolfcoins
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("Error adding coins.");
-                    Console.WriteLine(e);
+                    Logger.Error("Error adding coins.");
+                    Logger.Error(e);
                 }
 
             }
@@ -761,8 +764,8 @@ namespace Wolfcoins
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("Error adding xp.");
-                    Console.WriteLine(e);
+                    Logger.Error("Error adding xp.");
+                    Logger.Error(e);
                 }
 
 
@@ -813,8 +816,8 @@ namespace Wolfcoins
                     }
                     catch (Exception e)
                     {
-                        Console.WriteLine("Error removing coins.");
-                        Console.WriteLine(e);
+                        Logger.Error("Error removing coins.");
+                        Logger.Error(e);
                     }
                 }
             }
@@ -832,8 +835,8 @@ namespace Wolfcoins
             }
             catch (Exception e)
             {
-                Console.WriteLine("Error saving coins file: ");
-                Console.WriteLine(e);
+                Logger.Error("Error saving coins file: ");
+                Logger.Error(e);
                 return false;
             }
 
@@ -906,8 +909,8 @@ namespace Wolfcoins
             }
             catch (Exception e)
             {
-                Console.WriteLine("Error saving backup files: ");
-                Console.WriteLine(e);
+                Logger.Error("Error saving backup files");
+                Logger.Error(e);
                 return false;
             }
 
@@ -923,8 +926,8 @@ namespace Wolfcoins
             }
             catch (Exception e)
             {
-                Console.WriteLine("Error saving XP file: ");
-                Console.WriteLine(e);
+                Logger.Error("Error saving XP file");
+                Logger.Error(e);
                 return false;
             }
 
@@ -941,8 +944,8 @@ namespace Wolfcoins
             }
             catch (Exception e)
             {
-                Console.WriteLine("Error saving Class data file: ");
-                Console.WriteLine(e);
+                Logger.Error("Error saving Class data file");
+                Logger.Error(e);
                 return false;
             }
 
@@ -953,23 +956,23 @@ namespace Wolfcoins
             if (File.Exists(path))
             {
                 coinList = JsonConvert.DeserializeObject<Dictionary<string, int>>(File.ReadAllText(path));
-                Console.WriteLine("Wolfcoins collection loaded.");
+                Logger.Info("Wolfcoins collection loaded.");
             }
             else
             {
                 coinList = new Dictionary<string, int>();
-                Console.WriteLine("Path not found. Coins initialized to default.");
+                Logger.Warn("Path not found. Coins initialized to default.");
             }
 
             if (File.Exists(xpPath))
             {
                 xpList = JsonConvert.DeserializeObject<Dictionary<string, int>>(File.ReadAllText(xpPath));
-                Console.WriteLine("Viewer XP loaded.");
+                Logger.Info("Viewer XP loaded.");
             }
             else
             {
                 xpList = new Dictionary<string, int>();
-                Console.WriteLine("Path not found. XP file initialized to default.");
+                Logger.Warn("Path not found. XP file initialized to default.");
             }
 
             if (File.Exists(classPath))
@@ -982,12 +985,12 @@ namespace Wolfcoins
                     player.Value.numInvitesSent = 0;
                     player.Value.pendingInvite = false;
                 }
-                Console.WriteLine("Class data loaded.");
+                Logger.Info("Class data loaded.");
             }
             else
             {
                 classList = new Dictionary<string, CharClass>();
-                Console.WriteLine("Path not found. Class data file initialized to default.");
+                Logger.Warn("Path not found. Class data file initialized to default.");
             }
         }
 

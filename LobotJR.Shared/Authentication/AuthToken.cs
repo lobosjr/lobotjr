@@ -1,4 +1,5 @@
 ﻿using LobotJR.Shared.Utility;
+using NLog;
 using RestSharp;
 using RestSharp.Serializers.NewtonsoftJson;
 using System;
@@ -12,6 +13,8 @@ namespace LobotJR.Shared.Authentication
     /// </summary>
     public class AuthToken
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         /// <summary>
         /// Acquires a user access token using the oauth authorization code flow.
         /// </summary>
@@ -32,6 +35,7 @@ namespace LobotJR.Shared.Authentication
             request.AddQueryParameter("code", code);
             request.AddQueryParameter("grant_type", "authorization_code");
             request.AddQueryParameter("redirect_uri", redirectUri);
+            RestLogger.AddLogging(request, Logger, true);
             var response = await client.ExecuteAsync<TokenResponse>(request);
             if (response.StatusCode == HttpStatusCode.OK)
             {
@@ -53,7 +57,8 @@ namespace LobotJR.Shared.Authentication
             client.UseNewtonsoftJson(SerializerSettings.Default);
             var request = new RestRequest("oauth2/validate", Method.Get);
             request.AddHeader("Accept", "application/json");
-            request.AddHeader("Authorization", $"OAuth {token}");
+            request.AddHeader("Authorization", $"Bearer {token}");
+            RestLogger.AddLogging(request, Logger, true);
             var response = await client.ExecuteAsync<ValidationResponse>(request);
             if (response.StatusCode == HttpStatusCode.OK)
             {
@@ -81,6 +86,7 @@ namespace LobotJR.Shared.Authentication
             request.AddParameter("refresh_token", refreshToken);
             request.AddParameter("client_id", clientId);
             request.AddParameter("client_secret", clientSecret);
+            RestLogger.AddLogging(request, Logger, true);
             var response = await client.ExecuteAsync<TokenResponse>(request);
             if (response.StatusCode == HttpStatusCode.OK)
             {

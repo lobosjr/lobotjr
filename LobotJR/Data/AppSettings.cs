@@ -63,5 +63,10 @@
         /// tournament. Default is 30 seconds.
         /// </summary>        
         public int FishingTournamentCastMaximum { get; set; } = 30;
+
+        /// <summary>
+        /// The name of the logging file to write output data to.
+        /// </summary>
+        public string LoggingFile { get; set; } = "output.log";
     }
 }
